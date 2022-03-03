@@ -8,6 +8,7 @@
 
 #include "core/events/Event.h"
 #include "core/Codes.h"
+#include "core/Render/Renderer.h"
 
 #include <spdlog/spdlog.h>
 #include <glm/glm.hpp>
@@ -65,5 +66,6 @@ private:
 
     static inline Application* _instance = nullptr;
 
+    Renderer _renderer;
 };
 

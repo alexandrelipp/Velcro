@@ -17,3 +17,4 @@ target_precompile_headers(${PROJECT_NAME} PUBLIC pch/pch.h)
 ##target_include_directories(${PROJECT_NAME} PUBLIC pch)
 
 include("${CMAKE_CURRENT_LIST_DIR}/dep/CMakeLists.txt")
+include("${CMAKE_CURRENT_LIST_DIR}/core/CMakeLists.txt")
