@@ -1,9 +1,8 @@
-#include <iostream>
-
-#include "dep/glm/glm/glm.hpp"
+#include "Application.h"
 
 int main() {
-    std::cout << "Hello, World!" << std::endl;
-    glm::vec3 test;
+    Application app;
+    app.run();
+    app.clean();
     return 0;
 }
