@@ -16,6 +16,14 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         spdlog
     )
 
-target_link_directories(${PROJECT_NAME} PUBLIC
-        "C:/VulkanSDK/1.3.204.1/Lib" ## only works if the vulkan sdk version 1.3.204.1 is installed at default path
-        )
+# we could also use the findVulkan cmake command
+set(ENV{VULKAN_SDK} "C:/VulkanSDK/1.3.204.1")
+find_package(Vulkan REQUIRED)
+if(NOT Vulkan_FOUND)
+    message("Vulkan not found. Cannot generate")
+    return()
+endif()
+
+message("Linking with ${Vulkan_LIBRARIES}")
+target_link_libraries(${PROJECT_NAME} PUBLIC ${Vulkan_LIBRARIES})
+

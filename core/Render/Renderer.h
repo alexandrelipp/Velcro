@@ -10,9 +10,13 @@
 class Renderer {
 public:
     Renderer();
+    bool init();
 
 private:
-    VkInstance _instance;
+    static bool isInstanceExtensionSupported(const char* extension);
+
+private:
+    VkInstance _instance = nullptr;
 };
 
 

@@ -142,7 +142,9 @@ bool Application::init(){
 //        data->eventCallback(e);
 //    });
 
-    setVSync(true);
+    //setVSync(true);
+
+    _renderer.init();
     return true;
 }
 
@@ -161,7 +163,6 @@ void Application::run() {
 //            _imGuiLayer->end();
 //        }
 
-        // swap buffers (double buffering is used by default)
         glfwPollEvents();
     }
 }
@@ -206,10 +207,10 @@ void Application::clean(){
     glfwTerminate();
 }
 
-void Application::setVSync(bool enable) {
-    glfwSwapInterval(enable ? 1 : 0);
-    _windowData.VSync = enable;
-}
+//void Application::setVSync(bool enable) {
+//    glfwSwapInterval(enable ? 1 : 0);
+//    _windowData.VSync = enable;
+//}
 
 bool Application::isVsync() {
    return _windowData.VSync;

@@ -4,17 +4,17 @@
 
 #pragma once
 
-#define GLFW_INCLUDE_NONE
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 
 #include "core/events/Event.h"
 #include "core/Codes.h"
 #include "core/Render/Renderer.h"
+//#include "core/Render/Renderer.h"
 
 #include <spdlog/spdlog.h>
 #include <glm/glm.hpp>
 #include <memory>
-
-#include <GLFW/glfw3.h>
 
 
 class Application {
@@ -41,7 +41,7 @@ public:
     uint32_t getWindowWidth();
     uint32_t getWindowHeight();
     float getAspectRatio();
-    void setVSync(bool enable);
+   // void setVSync(bool enable);
     bool isVsync();
 
 private:
