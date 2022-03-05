@@ -4,13 +4,24 @@
 
 #include "FactoryVulkan.h"
 
-// TODO : why do we need two callback ? they seem to always log the same messages
 static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT Severity,
         VkDebugUtilsMessageTypeFlagsEXT Type,
         const VkDebugUtilsMessengerCallbackDataEXT* CallbackData,
         void* UserData) {
-    printf("Validation layer: %s\n", CallbackData->pMessage);
+    if (Severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT){
+        SPDLOG_TRACE("Validation Layer : {}", CallbackData->pMessage);
+    }
+    if (Severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT){
+        SPDLOG_INFO("Validation Layer : {}", CallbackData->pMessage);
+    }
+    if (Severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT){
+        SPDLOG_WARN("Validation Layer : {}", CallbackData->pMessage);
+    }
+    if (Severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT){
+        SPDLOG_ERROR("Validation Layer : {}", CallbackData->pMessage);
+    }
+
     return VK_FALSE;
 }
 

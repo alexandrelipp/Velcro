@@ -14,9 +14,15 @@ public:
     bool init();
 
 private:
+    void createInstance();
 
 private:
+
     VkInstance _instance = nullptr;
+    VkPhysicalDevice _physicalDevice = nullptr;
+    VkDevice _device = nullptr; ///< Logical device
+
+    /// ONLY PRESENT IN DEBUG ///
 #ifdef VELCRO_DEBUG
     VkDebugUtilsMessengerEXT _messenger = nullptr;
     VkDebugReportCallbackEXT _reportCallback = nullptr;

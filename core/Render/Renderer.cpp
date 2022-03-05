@@ -14,6 +14,7 @@ Renderer::Renderer() {
 }
 
 Renderer::~Renderer() {
+    vkDestroyDevice(_device, nullptr);
 #ifdef VELCRO_DEBUG
     Factory::freeDebugCallbacks(_instance, _messenger, _reportCallback);
 #endif
@@ -21,6 +22,51 @@ Renderer::~Renderer() {
 }
 
 bool Renderer::init() {
+    createInstance();
+    _physicalDevice = utils::pickPhysicalDevice(_instance);
+    utils::printPhysicalDeviceProps(_physicalDevice);
+
+    utils::printQueueFamiliesInfo(_physicalDevice);
+
+    // queue create info for the graphics queue
+    float priority = 1.f;
+    VkDeviceQueueCreateInfo queueCreateInfo = {
+            .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0u,
+            .queueFamilyIndex = utils::getGraphicsQueueFamilyIndex(_physicalDevice),
+            .queueCount = 1,
+            .pQueuePriorities = &priority,
+    };
+
+    // gpu feature to be enabled (all disabled by default)
+    VkPhysicalDeviceFeatures features{};
+    features.geometryShader = VK_TRUE;
+
+    const std::vector<const char*> extensions = {
+            VK_KHR_SWAPCHAIN_EXTENSION_NAME
+    };
+
+    // create logical device
+    VkDeviceCreateInfo createInfo = {
+            .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0u,
+            .queueCreateInfoCount = 1u,
+            .pQueueCreateInfos = &queueCreateInfo,
+            .enabledLayerCount = 0u,
+            .ppEnabledLayerNames = nullptr,
+            .enabledExtensionCount = (uint32_t)extensions.size(),
+            .ppEnabledExtensionNames = extensions.data(),
+            .pEnabledFeatures = &features,
+    };
+    VK_CHECK(vkCreateDevice(_physicalDevice, &createInfo, nullptr, &_device));
+
+    utils::printQueueFamiliesInfo(_physicalDevice);
+    return true;
+}
+
+void Renderer::createInstance() {
     std::vector<const char*> extensions;
     uint32_t count;
     const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&count);
@@ -58,7 +104,7 @@ bool Renderer::init() {
             .pEngineName = "Velcro",
             .engineVersion = VK_MAKE_API_VERSION(0, 0, 0, 1),
             .apiVersion = VK_API_VERSION_1_3,
-        };
+    };
     VkInstanceCreateInfo createInfo = {
             .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
             .pNext = nullptr,
@@ -68,12 +114,10 @@ bool Renderer::init() {
             .ppEnabledLayerNames = layers.data(),
             .enabledExtensionCount = (uint32_t)extensions.size(),
             .ppEnabledExtensionNames = extensions.data(),
-        };
+    };
     VK_CHECK(vkCreateInstance(&createInfo, nullptr, &_instance));
 
 #ifdef VELCRO_DEBUG
     Factory::setupDebugCallbacks(_instance, &_messenger, &_reportCallback);
 #endif
-
-    return true;
 }
