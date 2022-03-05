@@ -3,14 +3,26 @@
 //
 
 #include "FactoryVulkan.h"
+#include "../../Utils/UtilsVulkan.h"
 
-// TODO : why do we need two callback ? they seem to always log the same messages
 static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT Severity,
         VkDebugUtilsMessageTypeFlagsEXT Type,
         const VkDebugUtilsMessengerCallbackDataEXT* CallbackData,
         void* UserData) {
-    printf("Validation layer: %s\n", CallbackData->pMessage);
+    if (Severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT){
+        SPDLOG_TRACE("Validation Layer : {}", CallbackData->pMessage);
+    }
+    if (Severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT){
+        SPDLOG_INFO("Validation Layer : {}", CallbackData->pMessage);
+    }
+    if (Severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT){
+        SPDLOG_WARN("Validation Layer : {}", CallbackData->pMessage);
+    }
+    if (Severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT){
+        SPDLOG_ERROR("Validation Layer : {}", CallbackData->pMessage);
+    }
+
     return VK_FALSE;
 }
 
@@ -102,5 +114,43 @@ namespace Factory{
 
         vkDestroyDebugReportCallbackEXT(instance, reportCallback, nullptr);
         vkDestroyDebugUtilsMessengerEXT(instance, messenger, nullptr);
+    }
+
+    VkDevice createDevice(VkPhysicalDevice physicalDevice) {
+        VkDevice device;
+        // queue create info for the graphics queue
+        float priority = 1.f;
+        VkDeviceQueueCreateInfo queueCreateInfo = {
+                .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0u,
+                .queueFamilyIndex = utils::getQueueFamilyIndex(physicalDevice, VK_QUEUE_GRAPHICS_BIT),
+                .queueCount = 1,
+                .pQueuePriorities = &priority,
+        };
+
+        // gpu feature to be enabled (all disabled by default)
+        VkPhysicalDeviceFeatures features{};
+        features.geometryShader = VK_TRUE;
+
+        const std::vector<const char*> extensions = {
+                VK_KHR_SWAPCHAIN_EXTENSION_NAME
+        };
+
+        // create logical device
+        VkDeviceCreateInfo createInfo = {
+                .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0u,
+                .queueCreateInfoCount = 1u,
+                .pQueueCreateInfos = &queueCreateInfo,
+                .enabledLayerCount = 0u,
+                .ppEnabledLayerNames = nullptr,
+                .enabledExtensionCount = (uint32_t)extensions.size(),
+                .ppEnabledExtensionNames = extensions.data(),
+                .pEnabledFeatures = &features,
+        };
+        VK_CHECK(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device));
+        return device;
     }
 }

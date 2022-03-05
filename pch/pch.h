@@ -32,7 +32,7 @@
 } while (0)
 
 #define handleErrorRelease(result) do { \
-SPDLOG_ERROR("Check success failed with code {}", magic_enum::enum_name(result)); \
+SPDLOG_CRITICAL("Check success failed with code {}", magic_enum::enum_name(result)); \
 } while (0)
 
 
@@ -43,7 +43,7 @@ SPDLOG_ERROR("Check success failed with code {}", magic_enum::enum_name(result))
 #endif
 
 #define VK_ASSERT(result, mes) if (!(result)) \
-        throw std::runtime_error(mes);
+        throw std::runtime_error(mes)
 
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>

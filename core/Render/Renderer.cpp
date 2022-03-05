@@ -14,6 +14,7 @@ Renderer::Renderer() {
 }
 
 Renderer::~Renderer() {
+    vkDestroyDevice(_device, nullptr);
 #ifdef VELCRO_DEBUG
     Factory::freeDebugCallbacks(_instance, _messenger, _reportCallback);
 #endif
@@ -21,6 +22,21 @@ Renderer::~Renderer() {
 }
 
 bool Renderer::init() {
+    // create the context
+    createInstance();
+
+    // pick a physical device (gpu)
+    _physicalDevice = utils::pickPhysicalDevice(_instance);
+    utils::printPhysicalDeviceProps(_physicalDevice);
+
+    // create a logical device (interface to gpu)
+    utils::printQueueFamiliesInfo(_physicalDevice);
+    _device = Factory::createDevice(_physicalDevice);
+
+    return true;
+}
+
+void Renderer::createInstance() {
     std::vector<const char*> extensions;
     uint32_t count;
     const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&count);
@@ -58,7 +74,7 @@ bool Renderer::init() {
             .pEngineName = "Velcro",
             .engineVersion = VK_MAKE_API_VERSION(0, 0, 0, 1),
             .apiVersion = VK_API_VERSION_1_3,
-        };
+    };
     VkInstanceCreateInfo createInfo = {
             .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
             .pNext = nullptr,
@@ -68,12 +84,10 @@ bool Renderer::init() {
             .ppEnabledLayerNames = layers.data(),
             .enabledExtensionCount = (uint32_t)extensions.size(),
             .ppEnabledExtensionNames = extensions.data(),
-        };
+    };
     VK_CHECK(vkCreateInstance(&createInfo, nullptr, &_instance));
 
 #ifdef VELCRO_DEBUG
     Factory::setupDebugCallbacks(_instance, &_messenger, &_reportCallback);
 #endif
-
-    return true;
 }
