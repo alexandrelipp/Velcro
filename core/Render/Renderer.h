@@ -22,6 +22,8 @@ private:
     VkPhysicalDevice _physicalDevice = nullptr;
     VkDevice _device = nullptr; ///< Logical device
 
+    VkSurfaceKHR _surface = nullptr;
+
     /// ONLY PRESENT IN DEBUG ///
 #ifdef VELCRO_DEBUG
     VkDebugUtilsMessengerEXT _messenger = nullptr;

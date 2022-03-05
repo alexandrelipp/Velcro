@@ -14,6 +14,7 @@ Renderer::Renderer() {
 }
 
 Renderer::~Renderer() {
+    vkDestroySurfaceKHR(_instance, _surface, nullptr);
     vkDestroyDevice(_device, nullptr);
 #ifdef VELCRO_DEBUG
     Factory::freeDebugCallbacks(_instance, _messenger, _reportCallback);
@@ -33,6 +34,39 @@ bool Renderer::init() {
     utils::printQueueFamiliesInfo(_physicalDevice);
     _device = Factory::createDevice(_physicalDevice);
 
+    // create surface
+    glfwCreateWindowSurface(_instance, Application::getApp()->getWindow(), nullptr, &_surface);
+
+    // pick a format and a present mode for the surface
+    VkSurfaceFormatKHR surfaceFormat = utils::pickSurfaceFormat(_physicalDevice, _surface);
+    VkPresentModeKHR presentMode = utils::pickSurfacePresentMode(_physicalDevice, _surface);
+
+
+    VkSurfaceCapabilitiesKHR capabilites;
+    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_physicalDevice, _surface, &capabilites);
+
+    VkSwapchainCreateInfoKHR createInfo = {
+            .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+            .pNext = nullptr,
+            .flags = 0u,
+            .surface = _surface,
+            .minImageCount = ,
+            .imageFormat = surfaceFormat.format,
+            .imageColorSpace = surfaceFormat.colorSpace,
+            .imageExtent = ,
+            .imageArrayLayers = ,
+            .imageUsage = ,
+            .imageSharingMode = ,
+            .queueFamilyIndexCount = ,
+            .pQueueFamilyIndices = ,
+            .preTransform = ,
+            .compositeAlpha = ,
+            .presentMode = presentMode,
+            .clipped = ,
+            .oldSwapchain = nullptr,
+    };
+    vkCreateSwapchainKHR(_device, )
+
     return true;
 }
 
@@ -41,7 +75,6 @@ void Renderer::createInstance() {
     uint32_t count;
     const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&count);
     for (int i = 0; i < count; ++i){
-        VK_ASSERT(utils::isInstanceExtensionSupported(glfwExtensions[i]), "Extension not supported");
         extensions.push_back(glfwExtensions[i]);
     }
 
@@ -52,6 +85,7 @@ void Renderer::createInstance() {
 #endif
 
     for (auto e : extensions){
+        VK_ASSERT(utils::isInstanceExtensionSupported(e), "Extension not supported");
         SPDLOG_INFO("Enabled instanced extension {}", e);
     }
 

@@ -13,8 +13,13 @@ namespace utils {
     // Device
     VkPhysicalDevice pickPhysicalDevice(VkInstance instance);
     void printPhysicalDeviceProps(VkPhysicalDevice device);
+    bool isDeviceExtensionSupported(VkPhysicalDevice device, const char* extension);
 
     // Queue
     uint32_t getQueueFamilyIndex(VkPhysicalDevice device, VkQueueFlagBits queueFlags);
     void printQueueFamiliesInfo(VkPhysicalDevice device);
+
+    // Surface
+    VkSurfaceFormatKHR pickSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
+    VkPresentModeKHR pickSurfacePresentMode(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
 }

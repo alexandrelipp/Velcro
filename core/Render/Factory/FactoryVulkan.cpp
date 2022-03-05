@@ -137,6 +137,10 @@ namespace Factory{
                 VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
 
+        for (auto e : extensions){
+            VK_ASSERT(utils::isDeviceExtensionSupported(physicalDevice, e), "Device extension not supported");
+        }
+
         // create logical device
         VkDeviceCreateInfo createInfo = {
                 .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,

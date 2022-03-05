@@ -59,6 +59,19 @@ namespace utils{
         SPDLOG_INFO("GPU Type {}", magic_enum::enum_name(props.deviceType));
     }
 
+    bool isDeviceExtensionSupported(VkPhysicalDevice device, const char* extension) {
+        uint32_t extensionCount;
+        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+        std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+        for (auto e : availableExtensions){
+            if (strcmp(e.extensionName, extension) == 0)
+                return true;
+        }
+        return false;
+    }
+
     uint32_t getQueueFamilyIndex(VkPhysicalDevice device, VkQueueFlagBits queueFlags) {
         uint32_t count;
         vkGetPhysicalDeviceQueueFamilyProperties(device, &count, nullptr);
@@ -91,6 +104,34 @@ namespace utils{
                 type += " SparseBinding";
             SPDLOG_INFO("Type {}", type);
         }
+    }
+
+    VkSurfaceFormatKHR pickSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
+        uint32_t count;
+        VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &count, nullptr));
+        std::vector<VkSurfaceFormatKHR> formats(count);
+
+        VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &count, formats.data()));
+        for (auto& format : formats){
+            if (format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+                return format;
+        }
+        VK_ASSERT(false, "Failed to find surfaceFormat");
+        return formats[0];
+    }
+
+    VkPresentModeKHR pickSurfacePresentMode(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
+        uint32_t count;
+        VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &count, nullptr));
+        std::vector<VkPresentModeKHR> presentModes(count);
+        VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &count, presentModes.data()));
+
+        // use mailbox if possible ; default to fifo if not present
+        for (auto mode : presentModes){
+            if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
+                return mode;
+        }
+        return VK_PRESENT_MODE_FIFO_KHR;
     }
 
 }
