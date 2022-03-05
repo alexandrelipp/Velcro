@@ -22,47 +22,17 @@ Renderer::~Renderer() {
 }
 
 bool Renderer::init() {
+    // create the context
     createInstance();
+
+    // pick a physical device (gpu)
     _physicalDevice = utils::pickPhysicalDevice(_instance);
     utils::printPhysicalDeviceProps(_physicalDevice);
 
+    // create a logical device (interface to gpu)
     utils::printQueueFamiliesInfo(_physicalDevice);
+    _device = Factory::createDevice(_physicalDevice);
 
-    // queue create info for the graphics queue
-    float priority = 1.f;
-    VkDeviceQueueCreateInfo queueCreateInfo = {
-            .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0u,
-            .queueFamilyIndex = utils::getGraphicsQueueFamilyIndex(_physicalDevice),
-            .queueCount = 1,
-            .pQueuePriorities = &priority,
-    };
-
-    // gpu feature to be enabled (all disabled by default)
-    VkPhysicalDeviceFeatures features{};
-    features.geometryShader = VK_TRUE;
-
-    const std::vector<const char*> extensions = {
-            VK_KHR_SWAPCHAIN_EXTENSION_NAME
-    };
-
-    // create logical device
-    VkDeviceCreateInfo createInfo = {
-            .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0u,
-            .queueCreateInfoCount = 1u,
-            .pQueueCreateInfos = &queueCreateInfo,
-            .enabledLayerCount = 0u,
-            .ppEnabledLayerNames = nullptr,
-            .enabledExtensionCount = (uint32_t)extensions.size(),
-            .ppEnabledExtensionNames = extensions.data(),
-            .pEnabledFeatures = &features,
-    };
-    VK_CHECK(vkCreateDevice(_physicalDevice, &createInfo, nullptr, &_device));
-
-    utils::printQueueFamiliesInfo(_physicalDevice);
     return true;
 }
 

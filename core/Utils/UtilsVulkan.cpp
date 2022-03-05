@@ -37,6 +37,7 @@ namespace utils{
         VK_CHECK(vkEnumeratePhysicalDevices(instance, &count, nullptr));
         std::vector<VkPhysicalDevice> devices(count);
         VK_CHECK(vkEnumeratePhysicalDevices(instance, &count, devices.data()));
+        SPDLOG_INFO("Number of available physical devices {}", count);
 
         for (VkPhysicalDevice device : devices){
             VkPhysicalDeviceFeatures features;
