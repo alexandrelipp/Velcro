@@ -15,6 +15,6 @@ namespace utils {
     void printPhysicalDeviceProps(VkPhysicalDevice device);
 
     // Queue
-    uint32_t getGraphicsQueueFamilyIndex(VkPhysicalDevice device);
+    uint32_t getQueueFamilyIndex(VkPhysicalDevice device, VkQueueFlagBits queueFlags);
     void printQueueFamiliesInfo(VkPhysicalDevice device);
 }

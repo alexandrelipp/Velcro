@@ -124,7 +124,7 @@ namespace Factory{
                 .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                 .pNext = nullptr,
                 .flags = 0u,
-                .queueFamilyIndex = utils::getGraphicsQueueFamilyIndex(physicalDevice),
+                .queueFamilyIndex = utils::getQueueFamilyIndex(physicalDevice, VK_QUEUE_GRAPHICS_BIT),
                 .queueCount = 1,
                 .pQueuePriorities = &priority,
         };

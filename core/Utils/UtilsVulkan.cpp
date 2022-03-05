@@ -59,14 +59,14 @@ namespace utils{
         SPDLOG_INFO("GPU Type {}", magic_enum::enum_name(props.deviceType));
     }
 
-    uint32_t getGraphicsQueueFamilyIndex(VkPhysicalDevice device) {
+    uint32_t getQueueFamilyIndex(VkPhysicalDevice device, VkQueueFlagBits queueFlags) {
         uint32_t count;
         vkGetPhysicalDeviceQueueFamilyProperties(device, &count, nullptr);
         std::vector<VkQueueFamilyProperties> properties(count);
         vkGetPhysicalDeviceQueueFamilyProperties(device, &count, properties.data());
 
         for (int i = 0; i < properties.size(); ++i){
-            if (properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
+            if (properties[i].queueFlags & queueFlags)
                 return i;
         }
         VK_ASSERT(false, "Failed to find a queue family supporting graphics");
