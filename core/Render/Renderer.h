@@ -10,13 +10,17 @@
 class Renderer {
 public:
     Renderer();
+    ~Renderer();
     bool init();
 
 private:
-    static bool isInstanceExtensionSupported(const char* extension);
 
 private:
     VkInstance _instance = nullptr;
+#ifdef VELCRO_DEBUG
+    VkDebugUtilsMessengerEXT _messenger = nullptr;
+    VkDebugReportCallbackEXT _reportCallback = nullptr;
+#endif
 };
 
 
