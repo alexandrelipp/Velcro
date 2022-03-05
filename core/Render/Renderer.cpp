@@ -43,7 +43,9 @@ bool Renderer::init() {
 
 
     VkSurfaceCapabilitiesKHR capabilites;
-    vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_physicalDevice, _surface, &capabilites);
+    VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_physicalDevice, _surface, &capabilites));
+
+    capabilites.
 
     VkSwapchainCreateInfoKHR createInfo = {
             .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
