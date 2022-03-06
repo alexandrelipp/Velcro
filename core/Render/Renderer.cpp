@@ -50,41 +50,9 @@ bool Renderer::init() {
     // pick a format and a present mode for the surface
     VkSurfaceFormatKHR surfaceFormat = utils::pickSurfaceFormat(_physicalDevice, _surface);
     VkPresentModeKHR presentMode = utils::pickSurfacePresentMode(_physicalDevice, _surface);
-    
-    VkSurfaceCapabilitiesKHR capabilites;
-    VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_physicalDevice, _surface, &capabilites));
-    
-    // get the swap chain extent. The FB size is required if surface capabilites does not contain valid value (unlikely)
-    int FBwidth, FBheight;
-    glfwGetFramebufferSize(Application::getApp()->getWindow(), &FBwidth, &FBheight);
-    VkExtent2D swapchainExtent = utils::pickSwapchainExtent(capabilites, FBwidth, FBheight);
 
-    // we request to have at least one more FB then the min image count, to prevent waiting on GPU
-    SPDLOG_INFO("Min image count with current GPU and surface {}", capabilites.minImageCount);
-    VK_ASSERT(capabilites.minImageCount < FB_COUNT, "Number wrong");
-
-    VkSwapchainCreateInfoKHR createInfo = {
-            .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-            .pNext = nullptr,
-            .flags = 0u,
-            .surface = _surface,
-            .minImageCount = FB_COUNT,
-            .imageFormat = surfaceFormat.format,
-            .imageColorSpace = surfaceFormat.colorSpace,
-            .imageExtent = swapchainExtent,
-            .imageArrayLayers = 1,                                  // number of views in a multiview/stereo (holo) surface. Always 1 either
-            .imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT |         // image can be used as the destination of a transfer command
-                          VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,      // image can be used to create a view for use as a color attachment // TODO : necesary?
-            .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,          // swapchain is not shared between queue (only used by graphics queue)
-            .queueFamilyIndexCount = 0u,                            // only relevant when sharing mode is Concurent
-            .pQueueFamilyIndices = nullptr,                         // only relevant when sharing mode is Concurent
-            .preTransform = capabilites.currentTransform,           // Transform applied to image before presentation
-            .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,    // blending mode with other surfaces
-            .presentMode = presentMode,
-            .clipped = VK_TRUE,
-            .oldSwapchain = nullptr,
-    };
-    VK_CHECK(vkCreateSwapchainKHR(_device, &createInfo, nullptr, &_swapchain));
+    // create the swapchain
+    _swapchain = Factory::createSwapchain(_physicalDevice, _device, _surface, surfaceFormat, presentMode, FB_COUNT);
 
     // retreive images from the swapchain after making sure the count is correct. Note : images are freed automatically when the SP is destroyed
     uint32_t count;
@@ -92,12 +60,11 @@ bool Renderer::init() {
     VK_ASSERT(count == FB_COUNT, "images count in swapchain does not match FB count");
     VK_CHECK(vkGetSwapchainImagesKHR(_device, _swapchain, &count, _swapchainImages.data()));
 
-
+    // create image views from the fetched images
     VkImageAspectFlags flags = VK_IMAGE_ASPECT_COLOR_BIT;
     for (int i = 0; i < FB_COUNT; ++i) {
         _swapchainImageViews[i] = utils::createImageView(_device, _swapchainImages[i], surfaceFormat.format, flags);
     }
-
 
     return true;
 }

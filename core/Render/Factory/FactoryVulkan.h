@@ -14,6 +14,9 @@ namespace Factory {
 
    /// create a logical device
    VkDevice createDevice(VkPhysicalDevice physicalDevice, uint32_t graphicsQueueFamilyIndex);
+
+   VkSwapchainKHR createSwapchain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface,
+       VkSurfaceFormatKHR surfaceFormat, VkPresentModeKHR presentMode, uint32_t framebufferCount);
 }
 
 

@@ -178,5 +178,4 @@ namespace utils{
         VK_CHECK(vkCreateImageView(device, &viewInfo, nullptr, &imageView));
         return imageView;
     }
-
 }
