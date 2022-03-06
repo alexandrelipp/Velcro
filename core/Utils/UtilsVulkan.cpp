@@ -134,7 +134,49 @@ namespace utils{
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 
+    VkExtent2D pickSwapchainExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilites, int frameBufferW, int frameBufferH)
+    {
+        // if current extent is at numeric limits, it can vary. Otherwise it's the size of the window
+        if (surfaceCapabilites.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+            return surfaceCapabilites.currentExtent;
+        }
+
+        // return new extent using window size
+        VkExtent2D newExtent = { frameBufferW, frameBufferH };
+
+        // clamp values to make sure extent size fits within the max surface extent
+        newExtent.width = glm::clamp(newExtent.width, surfaceCapabilites.minImageExtent.width, surfaceCapabilites.maxImageExtent.height);
+        newExtent.height = glm::clamp(newExtent.height, surfaceCapabilites.minImageExtent.width, surfaceCapabilites.maxImageExtent.height);
+
+        return newExtent;
+    }
+
+    VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
+        VkImageView imageView = nullptr;
+        const VkImageViewCreateInfo viewInfo = {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .image = image,
+            .viewType = VK_IMAGE_VIEW_TYPE_2D,
+            .format = format,
+            .components = {
+                .r = VK_COMPONENT_SWIZZLE_IDENTITY, // component used when swizzling : vec.rrr Identy means no change. Allows remaping
+                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .a = VK_COMPONENT_SWIZZLE_IDENTITY,
+            },
+            .subresourceRange = {
+                .aspectMask = aspectFlags,
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1
+            }
+        };
+
+        VK_CHECK(vkCreateImageView(device, &viewInfo, nullptr, &imageView));
+        return imageView;
+    }
+
 }
-
-
-

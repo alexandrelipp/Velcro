@@ -116,7 +116,7 @@ namespace Factory{
         vkDestroyDebugUtilsMessengerEXT(instance, messenger, nullptr);
     }
 
-    VkDevice createDevice(VkPhysicalDevice physicalDevice) {
+    VkDevice createDevice(VkPhysicalDevice physicalDevice, uint32_t graphicsQueueFamilyIndex) {
         VkDevice device;
         // queue create info for the graphics queue
         float priority = 1.f;
@@ -124,7 +124,7 @@ namespace Factory{
                 .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                 .pNext = nullptr,
                 .flags = 0u,
-                .queueFamilyIndex = utils::getQueueFamilyIndex(physicalDevice, VK_QUEUE_GRAPHICS_BIT),
+                .queueFamilyIndex = graphicsQueueFamilyIndex,
                 .queueCount = 1,
                 .pQueuePriorities = &priority,
         };

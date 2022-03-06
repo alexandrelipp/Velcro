@@ -17,6 +17,8 @@ Application::Application() {
         throw std::runtime_error("Failed to init the application");
     _instance = this;
 
+    _renderer.init();
+
     //_imGuiLayer = new ImGuiLayer();
     //_layerStack.addLayer(_imGuiLayer);
     //_editorLayer = new MainLayer();
@@ -51,6 +53,12 @@ bool Application::init(){
         SPDLOG_ERROR("Failed to init glfw");
         return false;
     }
+
+    //no openGL nor openGL es
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+    // complex for now
+    glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
 
     // create window and make sure it's successful
     _window = glfwCreateWindow(_windowData.width, _windowData.height, "Reborn", nullptr, nullptr);
@@ -143,8 +151,6 @@ bool Application::init(){
 //    });
 
     //setVSync(true);
-
-    _renderer.init();
     return true;
 }
 
