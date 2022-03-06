@@ -17,10 +17,21 @@ private:
     void createInstance();
 
 private:
+    static constexpr uint32_t FB_COUNT = 3; ///< triple buffering is used
 
+private:
+    // context
     VkInstance _instance = nullptr;
     VkPhysicalDevice _physicalDevice = nullptr;
     VkDevice _device = nullptr; ///< Logical device
+    uint32_t _graphicsQueueFamilyIndex; ///< index of the graphics family
+
+    VkSurfaceKHR _surface = nullptr;
+
+    // swapchain
+    VkSwapchainKHR _swapchain = nullptr;
+    std::array<VkImage, FB_COUNT> _swapchainImages;
+    std::array<VkImageView, FB_COUNT> _swapchainImageViews;
 
     /// ONLY PRESENT IN DEBUG ///
 #ifdef VELCRO_DEBUG

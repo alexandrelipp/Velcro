@@ -14,6 +14,11 @@ Renderer::Renderer() {
 }
 
 Renderer::~Renderer() {
+    for (auto view : _swapchainImageViews) {
+        vkDestroyImageView(_device, view, nullptr);
+    }
+    vkDestroySwapchainKHR(_device, _swapchain, nullptr);
+    vkDestroySurfaceKHR(_instance, _surface, nullptr);
     vkDestroyDevice(_device, nullptr);
 #ifdef VELCRO_DEBUG
     Factory::freeDebugCallbacks(_instance, _messenger, _reportCallback);
@@ -31,7 +36,35 @@ bool Renderer::init() {
 
     // create a logical device (interface to gpu)
     utils::printQueueFamiliesInfo(_physicalDevice);
-    _device = Factory::createDevice(_physicalDevice);
+    _graphicsQueueFamilyIndex = utils::getQueueFamilyIndex(_physicalDevice, VK_QUEUE_GRAPHICS_BIT);
+    _device = Factory::createDevice(_physicalDevice, _graphicsQueueFamilyIndex);
+
+    // create surface
+    VK_CHECK(glfwCreateWindowSurface(_instance, Application::getApp()->getWindow(), nullptr, &_surface));
+
+    // make sure the graphics queue supports presentation
+    VkBool32 presentationSupport;
+    VK_CHECK(vkGetPhysicalDeviceSurfaceSupportKHR(_physicalDevice, _graphicsQueueFamilyIndex, _surface, &presentationSupport));
+    VK_ASSERT(presentationSupport == VK_TRUE, "Graphics queue does not support presentation");
+
+    // pick a format and a present mode for the surface
+    VkSurfaceFormatKHR surfaceFormat = utils::pickSurfaceFormat(_physicalDevice, _surface);
+    VkPresentModeKHR presentMode = utils::pickSurfacePresentMode(_physicalDevice, _surface);
+
+    // create the swapchain
+    _swapchain = Factory::createSwapchain(_physicalDevice, _device, _surface, surfaceFormat, presentMode, FB_COUNT);
+
+    // retreive images from the swapchain after making sure the count is correct. Note : images are freed automatically when the SP is destroyed
+    uint32_t count;
+    VK_CHECK(vkGetSwapchainImagesKHR(_device, _swapchain, &count, nullptr));
+    VK_ASSERT(count == FB_COUNT, "images count in swapchain does not match FB count");
+    VK_CHECK(vkGetSwapchainImagesKHR(_device, _swapchain, &count, _swapchainImages.data()));
+
+    // create image views from the fetched images
+    VkImageAspectFlags flags = VK_IMAGE_ASPECT_COLOR_BIT;
+    for (int i = 0; i < FB_COUNT; ++i) {
+        _swapchainImageViews[i] = utils::createImageView(_device, _swapchainImages[i], surfaceFormat.format, flags);
+    }
 
     return true;
 }
@@ -41,7 +74,6 @@ void Renderer::createInstance() {
     uint32_t count;
     const char** glfwExtensions = glfwGetRequiredInstanceExtensions(&count);
     for (int i = 0; i < count; ++i){
-        VK_ASSERT(utils::isInstanceExtensionSupported(glfwExtensions[i]), "Extension not supported");
         extensions.push_back(glfwExtensions[i]);
     }
 
@@ -52,6 +84,7 @@ void Renderer::createInstance() {
 #endif
 
     for (auto e : extensions){
+        VK_ASSERT(utils::isInstanceExtensionSupported(e), "Extension not supported");
         SPDLOG_INFO("Enabled instanced extension {}", e);
     }
 

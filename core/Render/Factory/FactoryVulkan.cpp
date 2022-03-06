@@ -3,6 +3,8 @@
 //
 
 #include "FactoryVulkan.h"
+
+#include "../../Application.h"
 #include "../../Utils/UtilsVulkan.h"
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback(
@@ -116,7 +118,7 @@ namespace Factory{
         vkDestroyDebugUtilsMessengerEXT(instance, messenger, nullptr);
     }
 
-    VkDevice createDevice(VkPhysicalDevice physicalDevice) {
+    VkDevice createDevice(VkPhysicalDevice physicalDevice, uint32_t graphicsQueueFamilyIndex) {
         VkDevice device;
         // queue create info for the graphics queue
         float priority = 1.f;
@@ -124,7 +126,7 @@ namespace Factory{
                 .sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                 .pNext = nullptr,
                 .flags = 0u,
-                .queueFamilyIndex = utils::getQueueFamilyIndex(physicalDevice, VK_QUEUE_GRAPHICS_BIT),
+                .queueFamilyIndex = graphicsQueueFamilyIndex,
                 .queueCount = 1,
                 .pQueuePriorities = &priority,
         };
@@ -136,6 +138,10 @@ namespace Factory{
         const std::vector<const char*> extensions = {
                 VK_KHR_SWAPCHAIN_EXTENSION_NAME
         };
+
+        for (auto e : extensions){
+            VK_ASSERT(utils::isDeviceExtensionSupported(physicalDevice, e), "Device extension not supported");
+        }
 
         // create logical device
         VkDeviceCreateInfo createInfo = {
@@ -152,5 +158,46 @@ namespace Factory{
         };
         VK_CHECK(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device));
         return device;
+    }
+    VkSwapchainKHR createSwapchain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, 
+        VkSurfaceFormatKHR surfaceFormat, VkPresentModeKHR presentMode, uint32_t framebufferCount)
+    {
+        VkSwapchainKHR swapchain;
+
+        VkSurfaceCapabilitiesKHR capabilites;
+        VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &capabilites));
+
+        // get the swap chain extent. The FB size is required if surface capabilites does not contain valid value (unlikely)
+        int FBwidth, FBheight;
+        glfwGetFramebufferSize(Application::getApp()->getWindow(), &FBwidth, &FBheight);
+        VkExtent2D swapchainExtent = utils::pickSwapchainExtent(capabilites, FBwidth, FBheight);
+
+        // we request to have at least one more FB then the min image count, to prevent waiting on GPU
+        SPDLOG_INFO("Min image count with current GPU and surface {}", capabilites.minImageCount);
+        VK_ASSERT(capabilites.minImageCount < framebufferCount, "Number wrong");
+
+        VkSwapchainCreateInfoKHR createInfo = {
+                .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+                .pNext = nullptr,
+                .flags = 0u,
+                .surface = surface,
+                .minImageCount = framebufferCount,
+                .imageFormat = surfaceFormat.format,
+                .imageColorSpace = surfaceFormat.colorSpace,
+                .imageExtent = swapchainExtent,
+                .imageArrayLayers = 1,                                  // number of views in a multiview/stereo (holo) surface. Always 1 either
+                .imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT |         // image can be used as the destination of a transfer command
+                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,      // image can be used to create a view for use as a color attachment // TODO : necesary?
+                .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,          // swapchain is not shared between queue (only used by graphics queue)
+                .queueFamilyIndexCount = 0u,                            // only relevant when sharing mode is Concurent
+                .pQueueFamilyIndices = nullptr,                         // only relevant when sharing mode is Concurent
+                .preTransform = capabilites.currentTransform,           // Transform applied to image before presentation
+                .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,    // blending mode with other surfaces
+                .presentMode = presentMode,
+                .clipped = VK_TRUE,
+                .oldSwapchain = nullptr,
+        };
+        VK_CHECK(vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain));
+        return swapchain;
     }
 }

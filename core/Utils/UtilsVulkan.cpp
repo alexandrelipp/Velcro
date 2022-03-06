@@ -59,6 +59,19 @@ namespace utils{
         SPDLOG_INFO("GPU Type {}", magic_enum::enum_name(props.deviceType));
     }
 
+    bool isDeviceExtensionSupported(VkPhysicalDevice device, const char* extension) {
+        uint32_t extensionCount;
+        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr);
+
+        std::vector<VkExtensionProperties> availableExtensions(extensionCount);
+        vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
+        for (auto e : availableExtensions){
+            if (strcmp(e.extensionName, extension) == 0)
+                return true;
+        }
+        return false;
+    }
+
     uint32_t getQueueFamilyIndex(VkPhysicalDevice device, VkQueueFlagBits queueFlags) {
         uint32_t count;
         vkGetPhysicalDeviceQueueFamilyProperties(device, &count, nullptr);
@@ -93,7 +106,76 @@ namespace utils{
         }
     }
 
+    VkSurfaceFormatKHR pickSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
+        uint32_t count;
+        VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &count, nullptr));
+        std::vector<VkSurfaceFormatKHR> formats(count);
+
+        VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &count, formats.data()));
+        for (auto& format : formats){
+            if (format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+                return format;
+        }
+        VK_ASSERT(false, "Failed to find surfaceFormat");
+        return formats[0];
+    }
+
+    VkPresentModeKHR pickSurfacePresentMode(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
+        uint32_t count;
+        VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &count, nullptr));
+        std::vector<VkPresentModeKHR> presentModes(count);
+        VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &count, presentModes.data()));
+
+        // use mailbox if possible ; default to fifo if not present
+        for (auto mode : presentModes){
+            if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
+                return mode;
+        }
+        return VK_PRESENT_MODE_FIFO_KHR;
+    }
+
+    VkExtent2D pickSwapchainExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilites, int frameBufferW, int frameBufferH)
+    {
+        // if current extent is at numeric limits, it can vary. Otherwise it's the size of the window
+        if (surfaceCapabilites.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
+            return surfaceCapabilites.currentExtent;
+        }
+
+        // return new extent using window size
+        VkExtent2D newExtent = { frameBufferW, frameBufferH };
+
+        // clamp values to make sure extent size fits within the max surface extent
+        newExtent.width = glm::clamp(newExtent.width, surfaceCapabilites.minImageExtent.width, surfaceCapabilites.maxImageExtent.height);
+        newExtent.height = glm::clamp(newExtent.height, surfaceCapabilites.minImageExtent.width, surfaceCapabilites.maxImageExtent.height);
+
+        return newExtent;
+    }
+
+    VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
+        VkImageView imageView = nullptr;
+        const VkImageViewCreateInfo viewInfo = {
+            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0,
+            .image = image,
+            .viewType = VK_IMAGE_VIEW_TYPE_2D,
+            .format = format,
+            .components = {
+                .r = VK_COMPONENT_SWIZZLE_IDENTITY, // component used when swizzling : vec.rrr Identy means no change. Allows remaping
+                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .a = VK_COMPONENT_SWIZZLE_IDENTITY,
+            },
+            .subresourceRange = {
+                .aspectMask = aspectFlags,
+                .baseMipLevel = 0,
+                .levelCount = 1,
+                .baseArrayLayer = 0,
+                .layerCount = 1
+            }
+        };
+
+        VK_CHECK(vkCreateImageView(device, &viewInfo, nullptr, &imageView));
+        return imageView;
+    }
 }
-
-
-

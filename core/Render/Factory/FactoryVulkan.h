@@ -13,7 +13,10 @@ namespace Factory {
    void freeDebugCallbacks(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VkDebugReportCallbackEXT reportCallback);
 
    /// create a logical device
-   VkDevice createDevice(VkPhysicalDevice physicalDevice);
+   VkDevice createDevice(VkPhysicalDevice physicalDevice, uint32_t graphicsQueueFamilyIndex);
+
+   VkSwapchainKHR createSwapchain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface,
+       VkSurfaceFormatKHR surfaceFormat, VkPresentModeKHR presentMode, uint32_t framebufferCount);
 }
 
 
