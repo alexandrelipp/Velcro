@@ -14,6 +14,8 @@ Renderer::Renderer() {
 }
 
 Renderer::~Renderer() {
+    vkFreeCommandBuffers(_device, _commandPool, FB_COUNT, _commandBuffers.data());
+    vkDestroyCommandPool(_device, _commandPool, nullptr);
     for (auto view : _swapchainImageViews) {
         vkDestroyImageView(_device, view, nullptr);
     }
@@ -65,13 +67,25 @@ bool Renderer::init() {
     for (int i = 0; i < FB_COUNT; ++i) {
         _swapchainImageViews[i] = utils::createImageView(_device, _swapchainImages[i], surfaceFormat.format, flags);
     }
-    
-    VkSemaphoreCreateInfo createInfo = {
-        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+
+    VkCommandPoolCreateInfo commandPoolCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .pNext = nullptr,
-        .flags = 0u;
-    }
-    vkCreateSemaphore(device, &createInfo, nullptr, &semaphore);
+        .flags = 0u,
+        .queueFamilyIndex = _graphicsQueueFamilyIndex
+    };
+    VK_CHECK(vkCreateCommandPool(_device, &commandPoolCreateInfo, nullptr, &_commandPool));
+
+    VkCommandBufferAllocateInfo allocateInfo = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        .pNext = nullptr,
+        .commandPool = _commandPool,
+        .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        .commandBufferCount = FB_COUNT,
+    };
+    VK_CHECK(vkAllocateCommandBuffers(_device, &allocateInfo, _commandBuffers.data()));
+    
+  
     return true;
 }
 

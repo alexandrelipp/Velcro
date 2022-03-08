@@ -200,4 +200,15 @@ namespace Factory{
         VK_CHECK(vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain));
         return swapchain;
     }
+
+    VkSemaphore createSemaphore(VkDevice device){
+        VkSemaphore semaphore;
+        VkSemaphoreCreateInfo createInfo = {
+           .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+           .pNext = nullptr,
+           .flags = 0u
+        };
+        VK_CHECK(vkCreateSemaphore(device, &createInfo, nullptr, &semaphore));
+        return semaphore;
+    }
 }

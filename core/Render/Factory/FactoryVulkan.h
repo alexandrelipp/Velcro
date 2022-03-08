@@ -17,6 +17,8 @@ namespace Factory {
 
    VkSwapchainKHR createSwapchain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface,
        VkSurfaceFormatKHR surfaceFormat, VkPresentModeKHR presentMode, uint32_t framebufferCount);
+
+   VkSemaphore createSemaphore(VkDevice device);
 }
 
 

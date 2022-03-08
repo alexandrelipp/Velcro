@@ -33,6 +33,10 @@ private:
     std::array<VkImage, FB_COUNT> _swapchainImages;
     std::array<VkImageView, FB_COUNT> _swapchainImageViews;
 
+    // commands
+    VkCommandPool _commandPool = nullptr;
+    std::array<VkCommandBuffer, FB_COUNT> _commandBuffers;
+
     /// ONLY PRESENT IN DEBUG ///
 #ifdef VELCRO_DEBUG
     VkDebugUtilsMessengerEXT _messenger = nullptr;
