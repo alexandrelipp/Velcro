@@ -65,7 +65,13 @@ bool Renderer::init() {
     for (int i = 0; i < FB_COUNT; ++i) {
         _swapchainImageViews[i] = utils::createImageView(_device, _swapchainImages[i], surfaceFormat.format, flags);
     }
-
+    
+    VkSemaphoreCreateInfo createInfo = {
+        .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+        .pNext = nullptr,
+        .flags = 0u;
+    }
+    vkCreateSemaphore(device, &createInfo, nullptr, &semaphore);
     return true;
 }
 
