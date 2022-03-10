@@ -24,7 +24,7 @@ namespace utils{
         std::vector<VkLayerProperties> layers(count);
         VK_CHECK(vkEnumerateInstanceLayerProperties(&count, layers.data()));
         for (auto l : layers){
-            // SPDLOG_INFO("Layer {}", l.layerName);
+             SPDLOG_INFO("Layer {}", l.layerName);
             // SPDLOG_INFO("Desc {}", l.description);
             if (strcmp(layer,l.layerName) == 0)
                 return true;

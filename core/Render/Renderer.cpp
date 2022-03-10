@@ -6,6 +6,7 @@
 #include "../../Application.h"
 
 #include "../Utils/UtilsVulkan.h"
+#include "../Utils/UtilsFile.h"
 #include "Factory/FactoryVulkan.h"
 
 
@@ -51,10 +52,10 @@ bool Renderer::init() {
 
     // pick a format and a present mode for the surface
     VkSurfaceFormatKHR surfaceFormat = utils::pickSurfaceFormat(_physicalDevice, _surface);
-    VkPresentModeKHR presentMode = utils::pickSurfacePresentMode(_physicalDevice, _surface);
 
     // create the swapchain
-    _swapchain = Factory::createSwapchain(_physicalDevice, _device, _surface, surfaceFormat, presentMode, FB_COUNT);
+    createSwapchain(surfaceFormat);
+    VK_ASSERT(_swapchain != nullptr, "Failed to create swapchain");
 
     // retreive images from the swapchain after making sure the count is correct. Note : images are freed automatically when the SP is destroyed
     uint32_t count;
@@ -68,6 +69,7 @@ bool Renderer::init() {
         _swapchainImageViews[i] = utils::createImageView(_device, _swapchainImages[i], surfaceFormat.format, flags);
     }
 
+    // create command pool
     VkCommandPoolCreateInfo commandPoolCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .pNext = nullptr,
@@ -76,6 +78,7 @@ bool Renderer::init() {
     };
     VK_CHECK(vkCreateCommandPool(_device, &commandPoolCreateInfo, nullptr, &_commandPool));
 
+    // allocate command buffers from created command pool
     VkCommandBufferAllocateInfo allocateInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         .pNext = nullptr,
@@ -84,7 +87,12 @@ bool Renderer::init() {
         .commandBufferCount = FB_COUNT,
     };
     VK_CHECK(vkAllocateCommandBuffers(_device, &allocateInfo, _commandBuffers.data()));
-    
+
+    ShaderFiles files = {
+        .vertex = "vert.spv",
+        .fragment = "frag.spv"
+    };
+    _graphicsPipeline = Factory::createGraphicsPipeline(_device, _swapchainExtent, _renderPass, )
   
     return true;
 }
@@ -143,4 +151,43 @@ void Renderer::createInstance() {
 #ifdef VELCRO_DEBUG
     Factory::setupDebugCallbacks(_instance, &_messenger, &_reportCallback);
 #endif
+}
+
+void Renderer::createSwapchain(const VkSurfaceFormatKHR& surfaceFormat){
+    VkSurfaceCapabilitiesKHR capabilites;
+    VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_physicalDevice, _surface, &capabilites));
+
+    // get the swap chain extent. The FB size is required if surface capabilites does not contain valid value (unlikely)
+    int FBwidth, FBheight;
+    glfwGetFramebufferSize(Application::getApp()->getWindow(), &FBwidth, &FBheight);
+    _swapchainExtent = utils::pickSwapchainExtent(capabilites, FBwidth, FBheight);
+
+    // we request to have at least one more FB then the min image count, to prevent waiting on GPU
+    SPDLOG_INFO("Min image count with current GPU and surface {}", capabilites.minImageCount);
+    VK_ASSERT(capabilites.minImageCount < FB_COUNT, "Number wrong");
+
+    VkPresentModeKHR presentMode = utils::pickSurfacePresentMode(_physicalDevice, _surface);
+
+    VkSwapchainCreateInfoKHR createInfo = {
+            .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+            .pNext = nullptr,
+            .flags = 0u,
+            .surface = _surface,
+            .minImageCount = FB_COUNT,
+            .imageFormat = surfaceFormat.format,
+            .imageColorSpace = surfaceFormat.colorSpace,
+            .imageExtent = _swapchainExtent,
+            .imageArrayLayers = 1,                                  // number of views in a multiview/stereo (holo) surface. Always 1 either
+            .imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT |         // image can be used as the destination of a transfer command
+                          VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,      // image can be used to create a view for use as a color attachment // TODO : necesary?
+            .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,          // swapchain is not shared between queue (only used by graphics queue)
+            .queueFamilyIndexCount = 0u,                            // only relevant when sharing mode is Concurent
+            .pQueueFamilyIndices = nullptr,                         // only relevant when sharing mode is Concurent
+            .preTransform = capabilites.currentTransform,           // Transform applied to image before presentation
+            .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,    // blending mode with other surfaces
+            .presentMode = presentMode,
+            .clipped = VK_TRUE,
+            .oldSwapchain = nullptr,
+    };
+    VK_CHECK(vkCreateSwapchainKHR(_device, &createInfo, nullptr, &_swapchain));
 }

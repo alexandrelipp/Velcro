@@ -15,6 +15,7 @@ public:
 
 private:
     void createInstance();
+    void createSwapchain(const VkSurfaceFormatKHR& surfaceFormat);
 
 private:
     static constexpr uint32_t FB_COUNT = 3; ///< triple buffering is used
@@ -32,10 +33,17 @@ private:
     VkSwapchainKHR _swapchain = nullptr;
     std::array<VkImage, FB_COUNT> _swapchainImages;
     std::array<VkImageView, FB_COUNT> _swapchainImageViews;
+    VkExtent2D _swapchainExtent = {0, 0};
+
+
+    // pipeline
+    VkPipeline _graphicsPipeline = nullptr;
 
     // commands
     VkCommandPool _commandPool = nullptr;
     std::array<VkCommandBuffer, FB_COUNT> _commandBuffers;
+
+
 
     /// ONLY PRESENT IN DEBUG ///
 #ifdef VELCRO_DEBUG

@@ -6,6 +6,12 @@
 
 #include <vulkan/vulkan.h>
 
+struct ShaderFiles {
+    std::optional<std::string> vertex = std::nullopt;
+    std::optional<std::string> geometry = std::nullopt;
+    std::optional<std::string> fragment = std::nullopt;
+};
+
 
 namespace Factory {
     // callbacks
@@ -15,10 +21,11 @@ namespace Factory {
    /// create a logical device
    VkDevice createDevice(VkPhysicalDevice physicalDevice, uint32_t graphicsQueueFamilyIndex);
 
-   VkSwapchainKHR createSwapchain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface,
-       VkSurfaceFormatKHR surfaceFormat, VkPresentModeKHR presentMode, uint32_t framebufferCount);
-
    VkSemaphore createSemaphore(VkDevice device);
+
+   VkShaderModule createShaderModule(VkDevice device, const std::string& filename);
+
+   VkPipeline createGraphicsPipeline(VkDevice device, VkExtent2D& extent, VkRenderPass renderPass, const ShaderFiles& shaders);
 }
 
 

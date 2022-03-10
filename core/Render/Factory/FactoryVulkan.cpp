@@ -6,6 +6,7 @@
 
 #include "../../Application.h"
 #include "../../Utils/UtilsVulkan.h"
+#include "../../Utils/UtilsFile.h"
 
 static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugCallback(
         VkDebugUtilsMessageSeverityFlagBitsEXT Severity,
@@ -159,47 +160,6 @@ namespace Factory{
         VK_CHECK(vkCreateDevice(physicalDevice, &createInfo, nullptr, &device));
         return device;
     }
-    VkSwapchainKHR createSwapchain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, 
-        VkSurfaceFormatKHR surfaceFormat, VkPresentModeKHR presentMode, uint32_t framebufferCount)
-    {
-        VkSwapchainKHR swapchain;
-
-        VkSurfaceCapabilitiesKHR capabilites;
-        VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &capabilites));
-
-        // get the swap chain extent. The FB size is required if surface capabilites does not contain valid value (unlikely)
-        int FBwidth, FBheight;
-        glfwGetFramebufferSize(Application::getApp()->getWindow(), &FBwidth, &FBheight);
-        VkExtent2D swapchainExtent = utils::pickSwapchainExtent(capabilites, FBwidth, FBheight);
-
-        // we request to have at least one more FB then the min image count, to prevent waiting on GPU
-        SPDLOG_INFO("Min image count with current GPU and surface {}", capabilites.minImageCount);
-        VK_ASSERT(capabilites.minImageCount < framebufferCount, "Number wrong");
-
-        VkSwapchainCreateInfoKHR createInfo = {
-                .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-                .pNext = nullptr,
-                .flags = 0u,
-                .surface = surface,
-                .minImageCount = framebufferCount,
-                .imageFormat = surfaceFormat.format,
-                .imageColorSpace = surfaceFormat.colorSpace,
-                .imageExtent = swapchainExtent,
-                .imageArrayLayers = 1,                                  // number of views in a multiview/stereo (holo) surface. Always 1 either
-                .imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT |         // image can be used as the destination of a transfer command
-                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,      // image can be used to create a view for use as a color attachment // TODO : necesary?
-                .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,          // swapchain is not shared between queue (only used by graphics queue)
-                .queueFamilyIndexCount = 0u,                            // only relevant when sharing mode is Concurent
-                .pQueueFamilyIndices = nullptr,                         // only relevant when sharing mode is Concurent
-                .preTransform = capabilites.currentTransform,           // Transform applied to image before presentation
-                .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,    // blending mode with other surfaces
-                .presentMode = presentMode,
-                .clipped = VK_TRUE,
-                .oldSwapchain = nullptr,
-        };
-        VK_CHECK(vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain));
-        return swapchain;
-    }
 
     VkSemaphore createSemaphore(VkDevice device){
         VkSemaphore semaphore;
@@ -210,5 +170,163 @@ namespace Factory{
         };
         VK_CHECK(vkCreateSemaphore(device, &createInfo, nullptr, &semaphore));
         return semaphore;
+    }
+    VkShaderModule createShaderModule(VkDevice device, const std::string& filename)
+    {
+        VkShaderModule shaderModule = nullptr;
+        std::filesystem::path path("..\\..\\..\\core\\Assets\\Shaders\\bin");
+        path /= filename;
+        VK_ASSERT(utils::fileExists(path), "Shader file does not exist");
+
+        std::vector<char> code = utils::getFileContent(path.string());
+
+        VkShaderModuleCreateInfo shaderCI = {
+            .sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+            .pNext = nullptr,
+            .codeSize = (uint32_t)code.size(),
+            .pCode = (uint32_t*)code.data(),
+        };
+
+        VK_CHECK(vkCreateShaderModule(device, &shaderCI, nullptr, &shaderModule));
+        return shaderModule;
+    }
+
+    VkPipeline createGraphicsPipeline(VkDevice device, VkExtent2D& extent, VkRenderPass renderPass, const ShaderFiles& shaders) {
+        VK_ASSERT(!shaders.geometry.has_value(), "Geo shader not supported yet");
+
+        VK_ASSERT(shaders.fragment.has_value() && shaders.vertex.has_value(), "Filenames are empty");
+        VkShaderModule vertModule = Factory::createShaderModule(device, shaders.vertex.value());
+        VkShaderModule fragModule = Factory::createShaderModule(device, shaders.fragment.value());
+
+        std::array<VkPipelineShaderStageCreateInfo, 2> shadersCI{};
+
+        shadersCI[0] = {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = nullptr,
+            .stage = VK_SHADER_STAGE_VERTEX_BIT,
+            .module = vertModule,
+            .pName = "main",
+            .pSpecializationInfo = nullptr // useful to configure compile time constant
+        };
+
+        shadersCI[1] = {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            .pNext = nullptr,
+            .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .module = fragModule,
+            .pName = "main",
+            .pSpecializationInfo = nullptr // useful to configure compile time constant
+        };
+
+        VkPipelineVertexInputStateCreateInfo inputInfo = {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0u,
+            .vertexBindingDescriptionCount = 0u,
+            .pVertexBindingDescriptions = nullptr,
+            .vertexAttributeDescriptionCount = 0u,
+            .pVertexAttributeDescriptions = nullptr,
+        };
+
+        VkPipelineInputAssemblyStateCreateInfo assemblyInfo = {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0u,
+            .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+            .primitiveRestartEnable = VK_FALSE, // if enabled a special index value (0xFFFFFFFF) restarts the assembly if drawing indexed
+        };
+
+        VkViewport viewPort = {
+            .x = 0.f,
+            .y = 0.f,
+            .width = (float)extent.width,
+            .height = (float)extent.height,
+            .minDepth = 0.f,
+            .maxDepth = 1.f,
+        };
+
+        VkRect2D scissor = {
+            .offset = {0, 0},
+            .extent = extent
+        };
+
+        VkPipelineViewportStateCreateInfo viewPortCI = {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0u,
+            .viewportCount = 1,
+            .pViewports = &viewPort,
+            .scissorCount = 1,
+            .pScissors = &scissor
+        };
+
+        VkPipelineRasterizationStateCreateInfo rastCI = {
+          .sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+          .pNext = nullptr,
+          .flags = 0u,
+          .depthClampEnable = VK_FALSE, // if true, fragments beyond the near and far planes are clamped to them instead of discarded
+          .polygonMode = VK_POLYGON_MODE_FILL,
+          .cullMode = VK_CULL_MODE_NONE,
+          .frontFace = VK_FRONT_FACE_CLOCKWISE,
+          .depthBiasEnable = VK_FALSE, // rasterizer can alter the depth values
+        };
+
+        // set up multisampling (disabled for now)
+        VkPipelineMultisampleStateCreateInfo multisampleCI = {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+            .pNext = nullptr,
+            .flags = 0u,
+            .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+            .sampleShadingEnable = VK_FALSE,
+        };
+
+        // set up color blending (disabled for now)
+        VkPipelineColorBlendAttachmentState colorBlendAttachment = {
+            .blendEnable = VK_FALSE
+        };
+        VkPipelineColorBlendStateCreateInfo colorBlendCI = {
+            .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+            .logicOpEnable = VK_FALSE,
+            .attachmentCount = 1,
+            .pAttachments = &colorBlendAttachment
+        };
+
+
+        // create pipeline layout (used for uniform and push constants)
+        VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        pipelineLayoutInfo.setLayoutCount = 0; // Optional
+        pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
+        pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
+        pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
+
+        VkPipelineLayout pipelineLayout = nullptr;
+        VK_CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout));
+
+        
+        VkGraphicsPipelineCreateInfo pipelineCI = {
+         .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+         .stageCount = shadersCI.size(),
+         .pStages = shadersCI.data(),
+         .pVertexInputState = &inputInfo,
+         .pInputAssemblyState = &assemblyInfo,
+         .pViewportState = &viewPortCI,
+         .pRasterizationState = &rastCI,
+         .pMultisampleState = &multisampleCI,
+         .pColorBlendState = &colorBlendCI,
+         .pDynamicState = nullptr, // not used for now
+         .layout = pipelineLayout,
+         .renderPass = renderPass,
+         .subpass = ??,
+
+        };
+
+        VkPipeline output = nullptr;
+        VK_CHECK(vkCreateGraphicsPipelines(device, nullptr, 1, &pipelineCI, nullptr, &output));
+
+        vkDestroyShaderModule(device, vertModule, nullptr);
+        vkDestroyShaderModule(device, fragModule, nullptr);
+
+        return output;
     }
 }
