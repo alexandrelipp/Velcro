@@ -191,7 +191,8 @@ namespace Factory{
         return shaderModule;
     }
 
-    VkPipeline createGraphicsPipeline(VkDevice device, VkExtent2D& extent, VkRenderPass renderPass, const ShaderFiles& shaders) {
+    VkPipeline createGraphicsPipeline(VkDevice device, VkExtent2D& extent, VkRenderPass renderPass, 
+                                      VkPipelineLayout pipelineLayout, const ShaderFiles& shaders) {
         VK_ASSERT(!shaders.geometry.has_value(), "Geo shader not supported yet");
 
         VK_ASSERT(shaders.fragment.has_value() && shaders.vertex.has_value(), "Filenames are empty");
@@ -269,6 +270,7 @@ namespace Factory{
           .cullMode = VK_CULL_MODE_NONE,
           .frontFace = VK_FRONT_FACE_CLOCKWISE,
           .depthBiasEnable = VK_FALSE, // rasterizer can alter the depth values
+          .lineWidth = 1.f,            // line width (in pixels)
         };
 
         // set up multisampling (disabled for now)
@@ -290,19 +292,6 @@ namespace Factory{
             .attachmentCount = 1,
             .pAttachments = &colorBlendAttachment
         };
-
-
-        // create pipeline layout (used for uniform and push constants)
-        VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-        pipelineLayoutInfo.setLayoutCount = 0; // Optional
-        pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
-        pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
-        pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
-
-        VkPipelineLayout pipelineLayout = nullptr;
-        VK_CHECK(vkCreatePipelineLayout(device, &pipelineLayoutInfo, nullptr, &pipelineLayout));
-
         
         VkGraphicsPipelineCreateInfo pipelineCI = {
          .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
@@ -317,7 +306,9 @@ namespace Factory{
          .pDynamicState = nullptr, // not used for now
          .layout = pipelineLayout,
          .renderPass = renderPass,
-         .subpass = ??,
+         .subpass = 0, // index of subpass where the graphics pipeline willbe used
+         .basePipelineHandle = nullptr,
+         .basePipelineIndex = -1,
 
         };
 

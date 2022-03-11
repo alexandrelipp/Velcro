@@ -15,6 +15,12 @@ Renderer::Renderer() {
 }
 
 Renderer::~Renderer() {
+    for (auto fb : _frameBuffers)
+        vkDestroyFramebuffer(_device, fb, nullptr);
+    vkDestroyRenderPass(_device, _renderPass, nullptr);
+    vkDestroyPipelineLayout(_device, _pipelineLayout, nullptr);
+    vkDestroyPipeline(_device, _graphicsPipeline, nullptr);
+
     vkFreeCommandBuffers(_device, _commandPool, FB_COUNT, _commandBuffers.data());
     vkDestroyCommandPool(_device, _commandPool, nullptr);
     for (auto view : _swapchainImageViews) {
@@ -88,11 +94,44 @@ bool Renderer::init() {
     };
     VK_CHECK(vkAllocateCommandBuffers(_device, &allocateInfo, _commandBuffers.data()));
 
+   
+    createRenderPass(surfaceFormat.format);
+
+    // create pipeline layout (used for uniform and push constants)
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.setLayoutCount = 0; // Optional
+    pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
+    pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
+    pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
+
+    VK_CHECK(vkCreatePipelineLayout(_device, &pipelineLayoutInfo, nullptr, &_pipelineLayout));
+
     ShaderFiles files = {
-        .vertex = "vert.spv",
-        .fragment = "frag.spv"
+       .vertex = "vert.spv",
+       .fragment = "frag.spv"
     };
-    _graphicsPipeline = Factory::createGraphicsPipeline(_device, _swapchainExtent, _renderPass, )
+
+
+    _graphicsPipeline = Factory::createGraphicsPipeline(_device, _swapchainExtent, _renderPass, _pipelineLayout, files);
+
+    // create framebuffers
+    for (int i = 0; i < FB_COUNT; ++i) {
+        VkFramebufferCreateInfo framebufferCI = {
+        .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+        .flags = 0u,
+        .renderPass = _renderPass,
+        .attachmentCount = 1,
+        .pAttachments = &_swapchainImageViews[i],
+        .width = _swapchainExtent.width,
+        .height = _swapchainExtent.height,
+        .layers = 1,
+        };
+        VK_CHECK(vkCreateFramebuffer(_device, &framebufferCI, nullptr, &_frameBuffers[i]));
+    }
+
+    
+
   
     return true;
 }
@@ -190,4 +229,48 @@ void Renderer::createSwapchain(const VkSurfaceFormatKHR& surfaceFormat){
             .oldSwapchain = nullptr,
     };
     VK_CHECK(vkCreateSwapchainKHR(_device, &createInfo, nullptr, &_swapchain));
+}
+
+void Renderer::createRenderPass(VkFormat swapchainFormat){
+    VkAttachmentDescription colorAttachment = {
+      .flags = 0u,
+      .format = swapchainFormat,
+      .samples = VK_SAMPLE_COUNT_1_BIT, // not using multisampling
+      .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR, // operation on color and depth at beginning of subpass
+      .storeOp = VK_ATTACHMENT_STORE_OP_STORE, //  Rendered contents will be stored in memory and can be read later
+      .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,   // we don't use stencil
+      .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,  // we don't use stencil
+      .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED, // layout of the image subressource when subpass begin. We don't care ; we clear it anyway
+      .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, // layout to be transitionned automatically when render pass instance ends 
+                                                              //We want the image to be ready for presentation using the swap chain after rendering
+
+    };
+
+    VkAttachmentReference colorRef = {
+        .attachment = 0,
+        .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+    };
+
+    // a render pass can consist of multiple subpasses. In our case we only use 1
+    VkSubpassDescription subpassDescription = {
+        .flags = 0u,
+        .pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS,
+        .inputAttachmentCount = 0u,
+        .pInputAttachments = nullptr,
+        .colorAttachmentCount = 1,
+        .pColorAttachments = &colorRef,  // The index of the attachment in this array is directly referenced from 
+                                         //the fragment shader with the layout(location = 0) out vec4 outColor directive!
+    };
+
+    // create our render pass with one attachment and one subpass
+    VkRenderPassCreateInfo renderPassCI = {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        .flags = 0u,
+        .attachmentCount = 1,
+        .pAttachments = &colorAttachment,
+        .subpassCount = 1,
+        .pSubpasses = &subpassDescription,
+    };
+
+    VK_CHECK(vkCreateRenderPass(_device, &renderPassCI, nullptr, &_renderPass));
 }

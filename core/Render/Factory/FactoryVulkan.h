@@ -25,7 +25,7 @@ namespace Factory {
 
    VkShaderModule createShaderModule(VkDevice device, const std::string& filename);
 
-   VkPipeline createGraphicsPipeline(VkDevice device, VkExtent2D& extent, VkRenderPass renderPass, const ShaderFiles& shaders);
+   VkPipeline createGraphicsPipeline(VkDevice device, VkExtent2D& extent, VkRenderPass renderPass, VkPipelineLayout pipelineLayout, const ShaderFiles& shaders);
 }
 
 
