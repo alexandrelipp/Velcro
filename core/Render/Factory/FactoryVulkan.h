@@ -21,7 +21,11 @@ namespace Factory {
    /// create a logical device
    VkDevice createDevice(VkPhysicalDevice physicalDevice, uint32_t graphicsQueueFamilyIndex);
 
+   // sync objects
    VkSemaphore createSemaphore(VkDevice device);
+
+   /// signaled = available to used
+   VkFence createFence(VkDevice device, bool startSignaled);
 
    VkShaderModule createShaderModule(VkDevice device, const std::string& filename);
 

@@ -15,6 +15,12 @@ Renderer::Renderer() {
 }
 
 Renderer::~Renderer() {
+    VK_CHECK(vkDeviceWaitIdle(_device));
+    // destroy sync objects
+    //vkDestroyFence(_device, _inFlightFence, nullptr);
+    vkDestroySemaphore(_device, _imageAvailSemaphore, nullptr);
+    vkDestroySemaphore(_device, _renderFinishedSemaphore, nullptr);
+
     for (auto fb : _frameBuffers)
         vkDestroyFramebuffer(_device, fb, nullptr);
     vkDestroyRenderPass(_device, _renderPass, nullptr);
@@ -56,6 +62,9 @@ bool Renderer::init() {
     VK_CHECK(vkGetPhysicalDeviceSurfaceSupportKHR(_physicalDevice, _graphicsQueueFamilyIndex, _surface, &presentationSupport));
     VK_ASSERT(presentationSupport == VK_TRUE, "Graphics queue does not support presentation");
 
+    // retreive queue handle
+    vkGetDeviceQueue(_device, _graphicsQueueFamilyIndex, 0, &_graphicsQueue);
+
     // pick a format and a present mode for the surface
     VkSurfaceFormatKHR surfaceFormat = utils::pickSurfaceFormat(_physicalDevice, _surface);
 
@@ -79,7 +88,7 @@ bool Renderer::init() {
     VkCommandPoolCreateInfo commandPoolCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .pNext = nullptr,
-        .flags = 0u,
+        .flags = 0,
         .queueFamilyIndex = _graphicsQueueFamilyIndex
     };
     VK_CHECK(vkCreateCommandPool(_device, &commandPoolCreateInfo, nullptr, &_commandPool));
@@ -130,10 +139,58 @@ bool Renderer::init() {
         VK_CHECK(vkCreateFramebuffer(_device, &framebufferCI, nullptr, &_frameBuffers[i]));
     }
 
-    
-
+    // create sync objects
+    //_inFlightFence = Factory::createFence(_device, true); // starts signaled
+    _imageAvailSemaphore = Factory::createSemaphore(_device);
+    _renderFinishedSemaphore = Factory::createSemaphore(_device);
   
     return true;
+}
+
+void Renderer::draw() {
+    // wait until the fence is signaled (ready to use)
+    //VK_CHECK(vkWaitForFences(_device, 1, &_inFlightFence, VK_TRUE, UINT64_MAX));
+
+    // then unsignal the fence for next use
+    //VK_CHECK(vkResetFences(_device, 1, &_inFlightFence));
+
+    uint32_t imageIndex;
+    VK_CHECK(vkAcquireNextImageKHR(_device, _swapchain, UINT64_MAX, _imageAvailSemaphore, nullptr, &imageIndex));
+
+    //VK_CHECK(vkResetCommandBuffer(_commandBuffers[imageIndex], 0));
+    // reset the command pool, probably not optimal but good enough for now
+    VK_CHECK(vkResetCommandPool(_device, _commandPool, 0));
+    recordCommandBuffer(imageIndex);
+
+    // semaphore check to occur before writing to the color attachment
+    VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
+
+    VkSubmitInfo submitInfo = {
+        .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &_imageAvailSemaphore, // wait until signaled before starting
+        .pWaitDstStageMask = waitStages,
+        .commandBufferCount = 1,
+        .pCommandBuffers = &_commandBuffers[imageIndex],
+        .signalSemaphoreCount = 1,
+        .pSignalSemaphores = &_renderFinishedSemaphore // signaled when command buffer is done executing
+    };
+    VK_CHECK(vkQueueSubmit(_graphicsQueue, 1, &submitInfo, nullptr));
+
+
+    VkPresentInfoKHR presentInfo = {
+        .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        .waitSemaphoreCount = 1,
+        .pWaitSemaphores = &_renderFinishedSemaphore,
+        .swapchainCount = 1,
+        .pSwapchains = &_swapchain,
+        .pImageIndices = &imageIndex,
+        .pResults = nullptr,
+    };
+    VK_CHECK(vkQueuePresentKHR(_graphicsQueue, &presentInfo));
+
+    // wait for completion of all operation on graphics queue (not optimal, but good enough for now)
+    VK_CHECK(vkDeviceWaitIdle(_device));
 }
 
 void Renderer::createInstance() {
@@ -262,6 +319,64 @@ void Renderer::createRenderPass(VkFormat swapchainFormat){
                                          //the fragment shader with the layout(location = 0) out vec4 outColor directive!
     };
 
+
+    VkSubpassDependency dependency{};
+    dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
+    dependency.dstSubpass = 0;
+    dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.srcAccessMask = 0;
+    dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    // Need to determine when layout transitions occur using subpass dependencies
+    // even though we only have one subpass, still need subpass dependencies for the external subpass -> everything hapeening outside the main render pass
+    std::array<VkSubpassDependency, 2> subpassDependencies = {};
+
+    // Conversion vrom VK_IMAGE_LAYOUT_UNDEFINED to VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+    // Transition must happen after.. 
+    subpassDependencies[0].srcSubpass = VK_SUBPASS_EXTERNAL;						// anything that takes places outside the subpasses
+    subpassDependencies[0].srcStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;		//  Pipeline stage
+    subpassDependencies[0].srcAccessMask = VK_ACCESS_MEMORY_READ_BIT;				// Stage access mask (memory access)
+
+    // But must happen before
+    subpassDependencies[0].dstSubpass = 0;
+    subpassDependencies[0].dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    subpassDependencies[0].dstStageMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+    subpassDependencies[0].dependencyFlags = 0;
+
+    // Conversion vrom VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL to VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+    // Transition must happen after.. 
+    subpassDependencies[1].srcSubpass = 0;								// subpass index
+    subpassDependencies[1].srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;	//  Pipeline stage
+    subpassDependencies[1].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;	 // Stage access mask (memory access)
+
+    // But must happen before
+    subpassDependencies[1].dstSubpass = VK_SUBPASS_EXTERNAL;
+    subpassDependencies[1].dstStageMask = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+    subpassDependencies[1].dstStageMask = VK_ACCESS_MEMORY_READ_BIT;
+    subpassDependencies[1].dependencyFlags = 0;
+
+    //VkSubpassDependency dependency;
+    //dependency.srcSubpass = VK_SUBPASS_EXTERNAL; // index of the first subpass
+    //dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    //dependency.srcAccessMask = 0;
+
+    //dependency.dstSubpass = 0; // index of the second subpass
+    //dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    //dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+
+    std::vector<VkSubpassDependency> dependencies = {
+        /* VkSubpassDependency */ {
+            .srcSubpass = VK_SUBPASS_EXTERNAL,
+            .dstSubpass = 0,
+            .srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            .srcAccessMask = 0,
+            .dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            .dependencyFlags = 0
+        }
+    };
+
     // create our render pass with one attachment and one subpass
     VkRenderPassCreateInfo renderPassCI = {
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
@@ -270,7 +385,51 @@ void Renderer::createRenderPass(VkFormat swapchainFormat){
         .pAttachments = &colorAttachment,
         .subpassCount = 1,
         .pSubpasses = &subpassDescription,
+        .dependencyCount = (uint32_t)dependencies.size(),
+        .pDependencies = dependencies.data()
     };
 
     VK_CHECK(vkCreateRenderPass(_device, &renderPassCI, nullptr, &_renderPass));
+}
+
+void Renderer::recordCommandBuffer(uint32_t index){
+    
+    // begin recording command
+    VkCommandBufferBeginInfo commandBufferCI = {
+        .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        .flags = 0,
+        .pInheritanceInfo = nullptr,
+    };
+    VK_CHECK(vkBeginCommandBuffer(_commandBuffers[index], &commandBufferCI));
+
+    // being render pass
+    VkRect2D renderArea = {
+        .offset = {
+            .x = 0,
+            .y = 0
+        },
+        .extent = _swapchainExtent
+    };
+
+    // TODO : is there a way to type pun this?
+    VkClearValue clearValue = { .color = { _clearValue.r, _clearValue.g, _clearValue.b, _clearValue.a} };
+    VkRenderPassBeginInfo beginCI = {
+        .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+        .renderPass = _renderPass,
+        .framebuffer = _frameBuffers[index],
+        .renderArea = renderArea,
+        .clearValueCount = 1,
+        .pClearValues = &clearValue,
+    };
+    vkCmdBeginRenderPass(_commandBuffers[index], &beginCI, VK_SUBPASS_CONTENTS_INLINE);
+
+    // bind pipeline and render 
+    vkCmdBindPipeline(_commandBuffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
+    vkCmdDraw(_commandBuffers[index], 3, 1, 0, 0);
+
+    // end the render pass
+    vkCmdEndRenderPass(_commandBuffers[index]);
+
+    // stop recording commands
+    VK_CHECK(vkEndCommandBuffer(_commandBuffers[index]));
 }

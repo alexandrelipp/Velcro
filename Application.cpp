@@ -168,7 +168,7 @@ void Application::run() {
 //            _layerStack.onImGuiRender();
 //            _imGuiLayer->end();
 //        }
-
+        _renderer.draw();
         glfwPollEvents();
     }
 }

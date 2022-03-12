@@ -171,6 +171,17 @@ namespace Factory{
         VK_CHECK(vkCreateSemaphore(device, &createInfo, nullptr, &semaphore));
         return semaphore;
     }
+
+    VkFence createFence(VkDevice device, bool startSignaled){
+        VkFenceCreateInfo createInfo = {
+            .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+            .flags = (startSignaled ? VK_FENCE_CREATE_SIGNALED_BIT : 0u),
+        };
+        VkFence output = nullptr;
+        VK_CHECK(vkCreateFence(device, &createInfo, nullptr, &output));
+        return output;
+    }
+
     VkShaderModule createShaderModule(VkDevice device, const std::string& filename)
     {
         VkShaderModule shaderModule = nullptr;
@@ -284,13 +295,21 @@ namespace Factory{
 
         // set up color blending (disabled for now)
         VkPipelineColorBlendAttachmentState colorBlendAttachment = {
-            .blendEnable = VK_FALSE
+            .blendEnable = VK_FALSE,
+            .colorWriteMask = VK_COLOR_COMPONENT_R_BIT |
+                              VK_COLOR_COMPONENT_G_BIT |
+                              VK_COLOR_COMPONENT_B_BIT |
+                              VK_COLOR_COMPONENT_A_BIT 
+
         };
+
         VkPipelineColorBlendStateCreateInfo colorBlendCI = {
             .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
             .logicOpEnable = VK_FALSE,
+            .logicOp = VK_LOGIC_OP_COPY,
             .attachmentCount = 1,
-            .pAttachments = &colorBlendAttachment
+            .pAttachments = &colorBlendAttachment,
+            //.blendConstants = {0.f, 0.f, 0.f, 0.f}
         };
         
         VkGraphicsPipelineCreateInfo pipelineCI = {
