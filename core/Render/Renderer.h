@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "Objects/UniformBuffer.h"
+
 #include <vulkan/vulkan.h>
 
 
@@ -64,6 +66,9 @@ private:
     //VkFence _inFlightFence = nullptr;
     VkSemaphore _imageAvailSemaphore = nullptr;
     VkSemaphore _renderFinishedSemaphore = nullptr;
+
+    // Buffers
+    UniformBuffer _mvpUniformBuffer;
 
 
     /// ONLY PRESENT IN DEBUG ///

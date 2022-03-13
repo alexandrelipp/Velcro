@@ -16,6 +16,8 @@ Renderer::Renderer() {
 
 Renderer::~Renderer() {
     VK_CHECK(vkDeviceWaitIdle(_device));
+
+    _mvpUniformBuffer.destroy(_device);
     // destroy sync objects
     //vkDestroyFence(_device, _inFlightFence, nullptr);
     vkDestroySemaphore(_device, _imageAvailSemaphore, nullptr);
@@ -340,30 +342,7 @@ void Renderer::createRenderPass(VkFormat swapchainFormat){
 }
 
 void Renderer::createPipelineLayout(){
-    VkBuffer _mvpUniformBuffer;
-    VkBufferCreateInfo bufferCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        .flags = 0u,
-        .size = sizeof(glm::mat4),
-        .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
-        .sharingMode = VK_SHARING_MODE_EXCLUSIVE, // only one queue can access
-    };
-
-    VkMemoryRequirements memRequirements;
-    vkGetBufferMemoryRequirements(_device, _mvpUniformBuffer, &memRequirements);
-
-    vkCreateBuffer(_device, &bufferCreateInfo, nullptr, &_mvpUniformBuffer);
-
-    VkMemoryAllocateInfo allocateInfo = {
-        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        .allocationSize = memRequirements.size,
-        .memoryTypeIndex = utils::findMemoryType(_physicalDevice, memRequirements.memoryTypeBits,
-                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
-    };
-    VkDeviceMemory _bufferMemory = nullptr;
-    VK_CHECK(vkAllocateMemory(_device, &allocateInfo, nullptr, &_bufferMemory));
-
-    vkBindBufferMemory(_device, _mvpUniformBuffer, _bufferMemory, 0);
+    _mvpUniformBuffer.init(_device, _physicalDevice, sizeof(glm::mat4));
 
 
     VkDescriptorSetLayoutBinding binding = {
