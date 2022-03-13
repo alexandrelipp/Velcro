@@ -17,7 +17,12 @@ Renderer::Renderer() {
 Renderer::~Renderer() {
     VK_CHECK(vkDeviceWaitIdle(_device));
 
-    _mvpUniformBuffer.destroy(_device);
+    for (auto& buffer : _mvpUniformBuffers)
+        buffer.destroy(_device);
+
+    vkDestroyDescriptorSetLayout(_device, _descriptorSetLayout, nullptr);
+    vkDestroyDescriptorPool(_device, _descriptorPool, nullptr);
+
     // destroy sync objects
     //vkDestroyFence(_device, _inFlightFence, nullptr);
     vkDestroySemaphore(_device, _imageAvailSemaphore, nullptr);
@@ -104,17 +109,19 @@ bool Renderer::init() {
         .commandBufferCount = FB_COUNT,
     };
     VK_CHECK(vkAllocateCommandBuffers(_device, &allocateInfo, _commandBuffers.data()));
-
    
     createRenderPass(surfaceFormat.format);
 
+    for (auto& buffer : _mvpUniformBuffers)
+        buffer.init(_device, _physicalDevice, sizeof(mvp));
+
     createPipelineLayout();
+    createDescriptorSets();
 
     ShaderFiles files = {
        .vertex = "vert.spv",
        .fragment = "frag.spv"
     };
-
 
     _graphicsPipeline = Factory::createGraphicsPipeline(_device, _swapchainExtent, _renderPass, _pipelineLayout, files);
 
@@ -148,9 +155,15 @@ void Renderer::draw() {
     // then unsignal the fence for next use
     //VK_CHECK(vkResetFences(_device, 1, &_inFlightFence));
 
+    static float angle = 0.f;
+    angle += 0.0001f;
+
+    mvp = glm::rotate(glm::mat4(1.f), angle, {0.f, 0.f, 1.f});
+
     uint32_t imageIndex;
     VK_CHECK(vkAcquireNextImageKHR(_device, _swapchain, UINT64_MAX, _imageAvailSemaphore, nullptr, &imageIndex));
 
+    VK_ASSERT(_mvpUniformBuffers[imageIndex].setData(_device, glm::value_ptr(mvp), sizeof(mvp)), "Failed to update");
     //VK_CHECK(vkResetCommandBuffer(_commandBuffers[imageIndex], 0));
     // reset the command pool, probably not optimal but good enough for now
     VK_CHECK(vkResetCommandPool(_device, _commandPool, 0));
@@ -341,8 +354,6 @@ void Renderer::createRenderPass(VkFormat swapchainFormat){
 }
 
 void Renderer::createPipelineLayout(){
-    _mvpUniformBuffer.init(_device, _physicalDevice, sizeof(glm::mat4));
-
 
     VkDescriptorSetLayoutBinding binding = {
         .binding = 0,
@@ -357,20 +368,55 @@ void Renderer::createPipelineLayout(){
         .pBindings = &binding
     };
 
-    VkDescriptorSetLayout descriptorSetLayout = nullptr;
-    VK_CHECK(vkCreateDescriptorSetLayout(_device, &descriptorLayoutCI, nullptr, &descriptorSetLayout));
+    VK_CHECK(vkCreateDescriptorSetLayout(_device, &descriptorLayoutCI, nullptr, &_descriptorSetLayout));
    
 
     // create pipeline layout (used for uniform and push constants)
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1; // Optional
-    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout; // Optional
+    pipelineLayoutInfo.pSetLayouts = &_descriptorSetLayout; // Optional
     pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
     pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
     VK_CHECK(vkCreatePipelineLayout(_device, &pipelineLayoutInfo, nullptr, &_pipelineLayout));
 }
+
+void Renderer::createDescriptorSets() {
+    _descriptorPool = Factory::createDescriptorPool(_device, FB_COUNT, 1, 0, 0);
+
+    std::array<VkDescriptorSetLayout, FB_COUNT> layouts = {_descriptorSetLayout, _descriptorSetLayout, _descriptorSetLayout};
+
+    VkDescriptorSetAllocateInfo descriptorSetAI = {
+            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            .descriptorPool = _descriptorPool,
+            .descriptorSetCount = (uint32_t)layouts.size(),
+            .pSetLayouts = layouts.data()
+    };
+
+    VK_CHECK(vkAllocateDescriptorSets(_device, &descriptorSetAI, _descriptorSets.data()));
+
+    for (size_t i = 0; i < _descriptorSets.size(); ++i){
+        VkDescriptorBufferInfo bufferInfo = {
+                .buffer = _mvpUniformBuffers[i].getBuffer(),
+                .offset = 0,
+                .range = _mvpUniformBuffers[i].getSize()
+        };
+
+        VkWriteDescriptorSet writeDescriptorSet = {
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .dstSet = _descriptorSets[i],
+                .dstBinding = 0,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .pBufferInfo = &bufferInfo
+        };
+
+        vkUpdateDescriptorSets(_device, 1, &writeDescriptorSet, 0, nullptr);
+    }
+}
+
 
 void Renderer::recordCommandBuffer(uint32_t index){
     
@@ -405,6 +451,9 @@ void Renderer::recordCommandBuffer(uint32_t index){
 
     // bind pipeline and render 
     vkCmdBindPipeline(_commandBuffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
+    vkCmdBindDescriptorSets(_commandBuffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout,
+                            0, 1, &_descriptorSets[index], 0, nullptr);
+
     vkCmdDraw(_commandBuffers[index], 3, 1, 0, 0);
 
     // end the render pass

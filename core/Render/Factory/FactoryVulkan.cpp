@@ -376,4 +376,41 @@ namespace Factory {
 
         return std::make_pair(buffer, bufferMemory);
     }
+
+    VkDescriptorPool createDescriptorPool(VkDevice device, uint32_t imageCount,
+                                                           uint32_t uniformBufferCount,
+                                                           uint32_t storageBufferCount,
+                                                           uint32_t samplerCount) {
+
+        std::vector<VkDescriptorPoolSize> poolSizes;
+        if (uniformBufferCount){
+            poolSizes.push_back(VkDescriptorPoolSize{
+                .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .descriptorCount = uniformBufferCount * imageCount
+            });
+        }
+        if (storageBufferCount){
+            poolSizes.push_back(VkDescriptorPoolSize{
+                .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                .descriptorCount = storageBufferCount * imageCount
+            });
+        }
+
+        if (samplerCount){
+            poolSizes.push_back(VkDescriptorPoolSize{
+                    .type = VK_DESCRIPTOR_TYPE_SAMPLER,
+                    .descriptorCount = storageBufferCount * imageCount
+            });
+        }
+
+        VkDescriptorPoolCreateInfo createInfo = {
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+                .maxSets = imageCount,
+                .poolSizeCount = (uint32_t)poolSizes.size(),
+                .pPoolSizes = poolSizes.empty() ? nullptr : poolSizes.data()
+        };
+        VkDescriptorPool output = nullptr;
+        vkCreateDescriptorPool(device, &createInfo, nullptr, &output);
+        return output;
+    }
 }

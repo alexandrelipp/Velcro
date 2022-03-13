@@ -24,6 +24,7 @@ private:
     void createSwapchain(const VkSurfaceFormatKHR& surfaceFormat);
     void createRenderPass(VkFormat swapchainFormat);
     void createPipelineLayout();
+    void createDescriptorSets();
 
     // 
     void recordCommandBuffer(uint32_t index);
@@ -68,8 +69,13 @@ private:
     VkSemaphore _renderFinishedSemaphore = nullptr;
 
     // Buffers
-    UniformBuffer _mvpUniformBuffer;
+    std::array<UniformBuffer, FB_COUNT> _mvpUniformBuffers{};
+    glm::mat4 mvp = glm::mat4(1.f);
 
+    // Descriptors
+    VkDescriptorPool _descriptorPool = nullptr;
+    VkDescriptorSetLayout _descriptorSetLayout = nullptr;
+    std::array<VkDescriptorSet, FB_COUNT> _descriptorSets{nullptr};
 
     /// ONLY PRESENT IN DEBUG ///
 #ifdef VELCRO_DEBUG
