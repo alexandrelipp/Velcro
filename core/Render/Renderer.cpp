@@ -106,15 +106,7 @@ bool Renderer::init() {
    
     createRenderPass(surfaceFormat.format);
 
-    // create pipeline layout (used for uniform and push constants)
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 0; // Optional
-    pipelineLayoutInfo.pSetLayouts = nullptr; // Optional
-    pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
-    pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
-
-    VK_CHECK(vkCreatePipelineLayout(_device, &pipelineLayoutInfo, nullptr, &_pipelineLayout));
+    createPipelineLayout();
 
     ShaderFiles files = {
        .vertex = "vert.spv",
@@ -156,6 +148,7 @@ void Renderer::draw() {
 
     uint32_t imageIndex;
     VK_CHECK(vkAcquireNextImageKHR(_device, _swapchain, UINT64_MAX, _imageAvailSemaphore, nullptr, &imageIndex));
+    SPDLOG_INFO("Index {}", imageIndex);
 
     //VK_CHECK(vkResetCommandBuffer(_commandBuffers[imageIndex], 0));
     // reset the command pool, probably not optimal but good enough for now
@@ -344,6 +337,61 @@ void Renderer::createRenderPass(VkFormat swapchainFormat){
     };
 
     VK_CHECK(vkCreateRenderPass(_device, &renderPassCI, nullptr, &_renderPass));
+}
+
+void Renderer::createPipelineLayout(){
+    VkBuffer _mvpUniformBuffer;
+    VkBufferCreateInfo bufferCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        .flags = 0u,
+        .size = sizeof(glm::mat4),
+        .usage = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,
+        .sharingMode = VK_SHARING_MODE_EXCLUSIVE, // only one queue can access
+    };
+
+    VkMemoryRequirements memRequirements;
+    vkGetBufferMemoryRequirements(_device, _mvpUniformBuffer, &memRequirements);
+
+    vkCreateBuffer(_device, &bufferCreateInfo, nullptr, &_mvpUniformBuffer);
+
+    VkMemoryAllocateInfo allocateInfo = {
+        .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+        .allocationSize = memRequirements.size,
+        .memoryTypeIndex = utils::findMemoryType(_physicalDevice, memRequirements.memoryTypeBits,
+                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT)
+    };
+    VkDeviceMemory _bufferMemory = nullptr;
+    VK_CHECK(vkAllocateMemory(_device, &allocateInfo, nullptr, &_bufferMemory));
+
+    vkBindBufferMemory(_device, _mvpUniformBuffer, _bufferMemory, 0);
+
+
+    VkDescriptorSetLayoutBinding binding = {
+        .binding = 0,
+        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        .descriptorCount = 1,
+        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
+    };
+
+    VkDescriptorSetLayoutCreateInfo descriptorLayoutCI = {
+        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        .bindingCount = 1,
+        .pBindings = &binding
+    };
+
+    VkDescriptorSetLayout descriptorSetLayout = nullptr;
+    VK_CHECK(vkCreateDescriptorSetLayout(_device, &descriptorLayoutCI, nullptr, &descriptorSetLayout));
+   
+
+    // create pipeline layout (used for uniform and push constants)
+    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+    pipelineLayoutInfo.setLayoutCount = 1; // Optional
+    pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout; // Optional
+    pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
+    pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
+
+    VK_CHECK(vkCreatePipelineLayout(_device, &pipelineLayoutInfo, nullptr, &_pipelineLayout));
 }
 
 void Renderer::recordCommandBuffer(uint32_t index){

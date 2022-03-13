@@ -339,4 +339,35 @@ namespace Factory{
 
         return output;
     }
+    
+    std::pair<VkBuffer, VkDeviceMemory> createBuffer(VkDevice device, VkPhysicalDevice physicalDevice, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties){
+        VkBuffer buffer = nullptr;
+        // create buffer (info about buffer, but a buffer does not contain data)
+        VkBufferCreateInfo bufferCreateInfo = {
+            .sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            .flags = 0u,
+            .size = size,
+            .usage = usage,
+            .sharingMode = VK_SHARING_MODE_EXCLUSIVE, // only one queue can access
+            .queueFamilyIndexCount = 0,         // only relevant if concurrent sharing mode
+            .pQueueFamilyIndices = nullptr,     // only relevant if concurrent sharing mode
+        };
+
+        VK_CHECK(vkCreateBuffer(device, &bufferCreateInfo, nullptr, &buffer));
+
+        // allocate memory on physical device for buffer
+        VkMemoryRequirements memRequirements;
+        vkGetBufferMemoryRequirements(device, buffer, &memRequirements);
+        VkMemoryAllocateInfo allocateInfo = {
+            .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            .allocationSize = memRequirements.size,
+            .memoryTypeIndex = utils::findMemoryType(physicalDevice, memRequirements.memoryTypeBits, properties)
+        };
+        VkDeviceMemory bufferMemory = nullptr;
+        VK_CHECK(vkAllocateMemory(device, &allocateInfo, nullptr, &bufferMemory));
+
+        // bind allocated memory to buffer
+        VK_CHECK(vkBindBufferMemory(device, buffer, bufferMemory, 0));
+
+        return std::make_pair(buffer, bufferMemory);
 }

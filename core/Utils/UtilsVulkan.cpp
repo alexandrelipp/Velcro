@@ -178,4 +178,20 @@ namespace utils{
         VK_CHECK(vkCreateImageView(device, &viewInfo, nullptr, &imageView));
         return imageView;
     }
+
+    int findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties){
+        VkPhysicalDeviceMemoryProperties memProperties;
+        vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
+
+        // NOTE : we could also check the heap types in the mem properties
+        for (size_t i = 0; i < memProperties.memoryTypeCount; ++i) {
+            if (((1 << i) & typeFilter) &&
+                // we want all flags, not only one (why we put the ==)
+                (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
+                return i;
+        }
+
+        VK_ASSERT(false, "Failed to find a memory type");
+        return -1;
+    }
 }

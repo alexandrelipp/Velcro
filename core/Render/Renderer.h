@@ -21,6 +21,7 @@ private:
     void createInstance();
     void createSwapchain(const VkSurfaceFormatKHR& surfaceFormat);
     void createRenderPass(VkFormat swapchainFormat);
+    void createPipelineLayout();
 
     // 
     void recordCommandBuffer(uint32_t index);
