@@ -150,7 +150,6 @@ void Renderer::draw() {
 
     uint32_t imageIndex;
     VK_CHECK(vkAcquireNextImageKHR(_device, _swapchain, UINT64_MAX, _imageAvailSemaphore, nullptr, &imageIndex));
-    SPDLOG_INFO("Index {}", imageIndex);
 
     //VK_CHECK(vkResetCommandBuffer(_commandBuffers[imageIndex], 0));
     // reset the command pool, probably not optimal but good enough for now

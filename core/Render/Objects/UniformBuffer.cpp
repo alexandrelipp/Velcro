@@ -13,8 +13,8 @@ void UniformBuffer::destroy(VkDevice device){
 	vkDestroyBuffer(device, _buffer, nullptr);
 	vkFreeMemory(device, _bufferMemory, nullptr);
 
-	_bufferMemory == nullptr;
-	_buffer == nullptr;
+	_bufferMemory = nullptr;
+	_buffer = nullptr;
 }
 
 

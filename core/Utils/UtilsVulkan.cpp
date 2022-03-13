@@ -142,7 +142,7 @@ namespace utils{
         }
 
         // return new extent using window size
-        VkExtent2D newExtent = { frameBufferW, frameBufferH };
+        VkExtent2D newExtent = { (uint32_t)frameBufferW, (uint32_t)frameBufferH };
 
         // clamp values to make sure extent size fits within the max surface extent
         newExtent.width = glm::clamp(newExtent.width, surfaceCapabilites.minImageExtent.width, surfaceCapabilites.maxImageExtent.height);
@@ -179,7 +179,7 @@ namespace utils{
         return imageView;
     }
 
-    int findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties){
+    uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties){
         VkPhysicalDeviceMemoryProperties memProperties;
         vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 
@@ -192,6 +192,6 @@ namespace utils{
         }
 
         VK_ASSERT(false, "Failed to find a memory type");
-        return -1;
+        return 0;
     }
 }
