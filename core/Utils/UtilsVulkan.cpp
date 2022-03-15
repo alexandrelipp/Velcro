@@ -136,7 +136,7 @@ namespace utils {
                 .pWaitDstStageMask = nullptr,
                 .commandBufferCount = 1,
                 .pCommandBuffers = &commandBuffer,
-                .signalSemaphoreCount = 1,
+                .signalSemaphoreCount = 0,
                 .pSignalSemaphores = nullptr
         };
         VK_CHECK(vkQueueSubmit(queue, 1, &submitInfo, nullptr));

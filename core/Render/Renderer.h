@@ -5,6 +5,7 @@
 #pragma once
 
 #include "Objects/UniformBuffer.h"
+#include "Objects/ShaderStorageBuffer.h"
 
 #include <vulkan/vulkan.h>
 
@@ -71,6 +72,8 @@ private:
     // Buffers
     std::array<UniformBuffer, FB_COUNT> _mvpUniformBuffers{};
     glm::mat4 mvp = glm::mat4(1.f);
+    ShaderStorageBuffer _vertices{};
+    ShaderStorageBuffer _indices{};
 
     // Descriptors
     VkDescriptorPool _descriptorPool = nullptr;

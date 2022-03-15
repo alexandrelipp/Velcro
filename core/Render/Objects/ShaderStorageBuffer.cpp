@@ -17,6 +17,23 @@ void ShaderStorageBuffer::init(VkDevice device, VkPhysicalDevice physicalDevice,
     _bufferMemory = memory;
 }
 
+void ShaderStorageBuffer::destroy(VkDevice device) {
+    vkFreeMemory(device, _bufferMemory, nullptr);
+    vkDestroyBuffer(device, _buffer, nullptr);
+
+    _bufferMemory = nullptr;
+    _buffer = nullptr;
+}
+
+uint32_t ShaderStorageBuffer::getSize() {
+    return _size;
+}
+
+VkBuffer ShaderStorageBuffer::getBuffer() {
+    return _buffer;
+}
+
+
 bool ShaderStorageBuffer::setData(VkDevice device, VkPhysicalDevice physicalDevice,
                              VkQueue queue, VkCommandPool commandPool, void* data, uint32_t size) {
     if (size > _size)
@@ -42,6 +59,7 @@ bool ShaderStorageBuffer::setData(VkDevice device, VkPhysicalDevice physicalDevi
         vkCmdCopyBuffer(commandBuffer, stagingBuffer.first, _buffer, 1, &bufferCopy);
     });
 
+    // destroy staging buffer
     vkFreeMemory(device, stagingBuffer.second, nullptr);
     vkDestroyBuffer(device, stagingBuffer.first, nullptr);
     return true;

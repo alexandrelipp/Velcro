@@ -6,11 +6,18 @@ layout(binding = 0) uniform UniformBuffer{
     mat4 mvp;
 } ubo;
 
-vec2 positions[3] = vec2[](
-    vec2(0.0, -0.5),
-    vec2(0.5, 0.5),
-    vec2(-0.5, 0.5)
-);
+struct Vertex{
+    float x;
+    float y;
+};
+
+layout(binding = 1) readonly buffer Vertices{
+    Vertex vertices[];
+};
+
+layout(binding = 2) readonly buffer Indices{
+    uint indices[];
+};
 
 vec3 colors[3] = vec3[](
     vec3(1.0, 0.0, 0.0),
@@ -19,6 +26,8 @@ vec3 colors[3] = vec3[](
 );
 
 void main() {
-    gl_Position = ubo.mvp * vec4(positions[gl_VertexIndex], 0.0, 1.0);
+    uint idx = indices[gl_VertexIndex];
+    Vertex vertex = vertices[idx];
+    gl_Position = ubo.mvp * vec4(vertex.x, vertex.y, 0.0, 1.0);
     fragColor = colors[gl_VertexIndex];
 }

@@ -21,9 +21,14 @@
 #define CONCAT_INNER(a, b) a ## b
 #define UNIQUE_NAME(base) CONCAT(base, __LINE__)
 
+// https://www.jetbrains.com/help/clion/performance-tuning-tips.html#clion-ide-macro
+#ifndef __CLION_IDE__
 #define VK_CHECK(result) auto UNIQUE_NAME(s) = result; \
     if (UNIQUE_NAME(s) != VK_SUCCESS) \
         handleError(UNIQUE_NAME(s))
+#else
+#define VK_CHECK(result) result
+#endif
 
 
 #define handleErrorDebug(result) do { \
@@ -42,8 +47,12 @@ SPDLOG_CRITICAL("Check success failed with code {}", magic_enum::enum_name(resul
 #define handleError handleErrorRelease
 #endif
 
+#ifndef __CLION_IDE__
 #define VK_ASSERT(result, mes) if (!(result)) \
         throw std::runtime_error(mes)
+#else
+#define VK_ASSERT(result, mes) result
+#endif
 
 #define GLM_FORCE_RADIANS
 // perspective matrix ranges from -1 to 1 by default. Vulkan range is 0 to 1

@@ -17,9 +17,13 @@ Renderer::Renderer() {
 Renderer::~Renderer() {
     VK_CHECK(vkDeviceWaitIdle(_device));
 
+    // destroy the buffers
     for (auto& buffer : _mvpUniformBuffers)
         buffer.destroy(_device);
+    _vertices.destroy(_device);
+    _indices.destroy(_device);
 
+    // destroy descriptors
     vkDestroyDescriptorSetLayout(_device, _descriptorSetLayout, nullptr);
     vkDestroyDescriptorPool(_device, _descriptorPool, nullptr);
 
@@ -112,8 +116,24 @@ bool Renderer::init() {
    
     createRenderPass(surfaceFormat.format);
 
+    // init the uniform buffers
     for (auto& buffer : _mvpUniformBuffers)
         buffer.init(_device, _physicalDevice, sizeof(mvp));
+
+    glm::vec2 vertices[] = {
+            glm::vec2(0.0, -0.9),
+            glm::vec2(0.5, 0.5),
+            glm::vec2(-0.5, 0.5)
+    };
+    _vertices.init(_device, _physicalDevice, sizeof(vertices));
+    VK_ASSERT(_vertices.setData(_device, _physicalDevice, _graphicsQueue, _commandPool, vertices, sizeof(vertices)), "set data failed");
+
+    uint32_t indices[] = {
+            0, 1, 2
+    };
+
+    _indices.init(_device, _physicalDevice, sizeof(vertices));
+    VK_ASSERT(_indices.setData(_device, _physicalDevice, _graphicsQueue, _commandPool, indices, sizeof(indices)), "set data failed");
 
     createPipelineLayout();
     createDescriptorSets();
@@ -354,18 +374,31 @@ void Renderer::createRenderPass(VkFormat swapchainFormat){
 }
 
 void Renderer::createPipelineLayout(){
-
-    VkDescriptorSetLayoutBinding binding = {
-        .binding = 0,
-        .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-        .descriptorCount = 1,
-        .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
+    std::array<VkDescriptorSetLayoutBinding, 3> layoutBindings = {
+            VkDescriptorSetLayoutBinding{
+                .binding = 0,
+                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
+            },
+            VkDescriptorSetLayoutBinding{
+                .binding = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
+            },
+            VkDescriptorSetLayoutBinding{
+                .binding = 2,
+                .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
+            }
     };
 
     VkDescriptorSetLayoutCreateInfo descriptorLayoutCI = {
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        .bindingCount = 1,
-        .pBindings = &binding
+        .bindingCount = layoutBindings.size(),
+        .pBindings = layoutBindings.data()
     };
 
     VK_CHECK(vkCreateDescriptorSetLayout(_device, &descriptorLayoutCI, nullptr, &_descriptorSetLayout));
@@ -383,7 +416,8 @@ void Renderer::createPipelineLayout(){
 }
 
 void Renderer::createDescriptorSets() {
-    _descriptorPool = Factory::createDescriptorPool(_device, FB_COUNT, 1, 0, 0);
+    // TODO : why is it still working if not allocating shader storage buffer???
+    _descriptorPool = Factory::createDescriptorPool(_device, FB_COUNT, 1, 2, 0);
 
     std::array<VkDescriptorSetLayout, FB_COUNT> layouts = {_descriptorSetLayout, _descriptorSetLayout, _descriptorSetLayout};
 
@@ -429,6 +463,22 @@ void Renderer::createDescriptorSets() {
                 .descriptorCount = 1,
                 .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                 .pBufferInfo = &verticesInfo
+        });
+
+        VkDescriptorBufferInfo indicesInfo = {
+                .buffer = _indices.getBuffer(),
+                .offset = 0,
+                .range = _indices.getSize()
+        };
+
+        writeDescriptorSets.push_back({
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .dstSet = _descriptorSets[i],
+                .dstBinding = 2,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                .pBufferInfo = &indicesInfo
         });
 
         vkUpdateDescriptorSets(_device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
