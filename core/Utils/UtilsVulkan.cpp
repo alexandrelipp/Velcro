@@ -106,8 +106,7 @@ namespace utils {
         }
     }
 
-
-    void executeOnQueueSync(VkQueue queue, VkDevice device, VkCommandPool pool, std::function<void()> commands) {
+    void executeOnQueueSync(VkQueue queue, VkDevice device, VkCommandPool pool, const std::function<void(VkCommandBuffer)>& commands) {
         // allocate command buffer
         VkCommandBufferAllocateInfo allocateInfo = {
                 .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -126,7 +125,7 @@ namespace utils {
 
         // record commands
         VK_CHECK(vkBeginCommandBuffer(commandBuffer, &beginInfo));
-        commands();
+        commands(commandBuffer);
         VK_CHECK(vkEndCommandBuffer(commandBuffer));
 
         // submit command to queue
@@ -140,11 +139,11 @@ namespace utils {
                 .signalSemaphoreCount = 1,
                 .pSignalSemaphores = nullptr
         };
-        vkQueueSubmit(queue, 1, &submitInfo, nullptr);
+        VK_CHECK(vkQueueSubmit(queue, 1, &submitInfo, nullptr));
 
         // wait until the queue is idle (done executing commands), making this function synchronous
         VK_CHECK(vkQueueWaitIdle(queue));
-        vkFreeCommandBuffers(_device, _pool, 1, &commandBuffer);
+        vkFreeCommandBuffers(device, pool, 1, &commandBuffer);
     }
 
 

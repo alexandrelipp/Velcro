@@ -18,7 +18,7 @@ namespace utils {
     // Queue
     uint32_t getQueueFamilyIndex(VkPhysicalDevice device, VkQueueFlagBits queueFlags);
     void printQueueFamiliesInfo(VkPhysicalDevice device);
-    void executeOnQueueSync(VkQueue queue, VkDevice device, VkCommandPool pool, std::function<void()> commands);
+    void executeOnQueueSync(VkQueue queue, VkDevice device, VkCommandPool pool,const std::function<void(VkCommandBuffer)>& commands);
 
     // Surface
     VkSurfaceFormatKHR pickSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);

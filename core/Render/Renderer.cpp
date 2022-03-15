@@ -403,7 +403,9 @@ void Renderer::createDescriptorSets() {
                 .range = _mvpUniformBuffers[i].getSize()
         };
 
-        VkWriteDescriptorSet writeDescriptorSet = {
+        std::vector<VkWriteDescriptorSet> writeDescriptorSets;
+
+        writeDescriptorSets.push_back({
                 .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
                 .dstSet = _descriptorSets[i],
                 .dstBinding = 0,
@@ -411,9 +413,25 @@ void Renderer::createDescriptorSets() {
                 .descriptorCount = 1,
                 .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                 .pBufferInfo = &bufferInfo
+        });
+
+        VkDescriptorBufferInfo verticesInfo = {
+                .buffer = _vertices.getBuffer(),
+                .offset = 0,
+                .range = _vertices.getSize()
         };
 
-        vkUpdateDescriptorSets(_device, 1, &writeDescriptorSet, 0, nullptr);
+        writeDescriptorSets.push_back({
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .dstSet = _descriptorSets[i],
+                .dstBinding = 1,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                .pBufferInfo = &verticesInfo
+        });
+
+        vkUpdateDescriptorSets(_device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
     }
 }
 
