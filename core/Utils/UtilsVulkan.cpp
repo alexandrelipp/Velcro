@@ -4,13 +4,13 @@
 
 #include "UtilsVulkan.h"
 
-namespace utils{
+namespace utils {
     bool isInstanceExtensionSupported(const char* extension) {
         uint32_t count;
         VK_CHECK(vkEnumerateInstanceExtensionProperties(nullptr, &count, nullptr));
         std::vector<VkExtensionProperties> extensions(count);
         VK_CHECK(vkEnumerateInstanceExtensionProperties(nullptr, &count, extensions.data()));
-        for (auto& e : extensions){
+        for (auto& e: extensions) {
             //SPDLOG_INFO("Extensions {}", e.extensionName);
             if (strcmp(e.extensionName, extension) == 0)
                 return true;
@@ -23,10 +23,10 @@ namespace utils{
         VK_CHECK(vkEnumerateInstanceLayerProperties(&count, nullptr));
         std::vector<VkLayerProperties> layers(count);
         VK_CHECK(vkEnumerateInstanceLayerProperties(&count, layers.data()));
-        for (auto l : layers){
-             SPDLOG_INFO("Layer {}", l.layerName);
+        for (auto l: layers) {
+            SPDLOG_INFO("Layer {}", l.layerName);
             // SPDLOG_INFO("Desc {}", l.description);
-            if (strcmp(layer,l.layerName) == 0)
+            if (strcmp(layer, l.layerName) == 0)
                 return true;
         }
         return false;
@@ -39,7 +39,7 @@ namespace utils{
         VK_CHECK(vkEnumeratePhysicalDevices(instance, &count, devices.data()));
         SPDLOG_INFO("Number of available physical devices {}", count);
 
-        for (VkPhysicalDevice device : devices){
+        for (VkPhysicalDevice device: devices) {
             VkPhysicalDeviceFeatures features;
             vkGetPhysicalDeviceFeatures(device, &features);
             VkPhysicalDeviceProperties props;
@@ -65,7 +65,7 @@ namespace utils{
 
         std::vector<VkExtensionProperties> availableExtensions(extensionCount);
         vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, availableExtensions.data());
-        for (auto e : availableExtensions){
+        for (auto e: availableExtensions) {
             if (strcmp(e.extensionName, extension) == 0)
                 return true;
         }
@@ -78,7 +78,7 @@ namespace utils{
         std::vector<VkQueueFamilyProperties> properties(count);
         vkGetPhysicalDeviceQueueFamilyProperties(device, &count, properties.data());
 
-        for (int i = 0; i < properties.size(); ++i){
+        for (int i = 0; i < properties.size(); ++i) {
             if (properties[i].queueFlags & queueFlags)
                 return i;
         }
@@ -91,7 +91,7 @@ namespace utils{
         vkGetPhysicalDeviceQueueFamilyProperties(device, &count, nullptr);
         std::vector<VkQueueFamilyProperties> properties(count);
         vkGetPhysicalDeviceQueueFamilyProperties(device, &count, properties.data());
-        for (auto props : properties){
+        for (auto props: properties) {
             SPDLOG_INFO("Queue count {}", props.queueCount);
             std::string type;
             if (props.queueFlags & VK_QUEUE_GRAPHICS_BIT)
@@ -106,13 +106,55 @@ namespace utils{
         }
     }
 
+
+    void executeOnQueueSync(VkQueue queue, VkDevice device, VkCommandPool pool, std::function<void()> commands) {
+        // allocate command buffer
+        VkCommandBufferAllocateInfo allocateInfo = {
+                .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+                .commandPool = pool,
+                .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+                .commandBufferCount = 1,
+        };
+        VkCommandBuffer commandBuffer = nullptr;
+        VK_CHECK(vkAllocateCommandBuffers(device, &allocateInfo, &commandBuffer));
+
+        // begin command buffer
+        VkCommandBufferBeginInfo beginInfo = {
+                .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT ,
+        };
+
+        // record commands
+        VK_CHECK(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+        commands();
+        VK_CHECK(vkEndCommandBuffer(commandBuffer));
+
+        // submit command to queue
+        VkSubmitInfo submitInfo = {
+                .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                .waitSemaphoreCount = 0,
+                .pWaitSemaphores = nullptr,
+                .pWaitDstStageMask = nullptr,
+                .commandBufferCount = 1,
+                .pCommandBuffers = &commandBuffer,
+                .signalSemaphoreCount = 1,
+                .pSignalSemaphores = nullptr
+        };
+        vkQueueSubmit(queue, 1, &submitInfo, nullptr);
+
+        // wait until the queue is idle (done executing commands), making this function synchronous
+        VK_CHECK(vkQueueWaitIdle(queue));
+        vkFreeCommandBuffers(_device, _pool, 1, &commandBuffer);
+    }
+
+
     VkSurfaceFormatKHR pickSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface) {
         uint32_t count;
         VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &count, nullptr));
         std::vector<VkSurfaceFormatKHR> formats(count);
 
         VK_CHECK(vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &count, formats.data()));
-        for (auto& format : formats){
+        for (auto& format: formats) {
             if (format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
                 return format;
         }
@@ -127,26 +169,28 @@ namespace utils{
         VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &count, presentModes.data()));
 
         // use mailbox if possible ; default to fifo if not present
-        for (auto mode : presentModes){
+        for (auto mode: presentModes) {
             if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
                 return mode;
         }
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 
-    VkExtent2D pickSwapchainExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilites, int frameBufferW, int frameBufferH)
-    {
-        // if current extent is at numeric limits, it can vary. Otherwise it's the size of the window
+    VkExtent2D
+    pickSwapchainExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilites, int frameBufferW, int frameBufferH) {
+        // if current extent is at numeric limits, it can vary. Otherwise, it's the size of the window
         if (surfaceCapabilites.currentExtent.width != std::numeric_limits<uint32_t>::max()) {
             return surfaceCapabilites.currentExtent;
         }
 
         // return new extent using window size
-        VkExtent2D newExtent = { (uint32_t)frameBufferW, (uint32_t)frameBufferH };
+        VkExtent2D newExtent = {(uint32_t) frameBufferW, (uint32_t) frameBufferH};
 
         // clamp values to make sure extent size fits within the max surface extent
-        newExtent.width = glm::clamp(newExtent.width, surfaceCapabilites.minImageExtent.width, surfaceCapabilites.maxImageExtent.height);
-        newExtent.height = glm::clamp(newExtent.height, surfaceCapabilites.minImageExtent.width, surfaceCapabilites.maxImageExtent.height);
+        newExtent.width = glm::clamp(newExtent.width, surfaceCapabilites.minImageExtent.width,
+                                     surfaceCapabilites.maxImageExtent.height);
+        newExtent.height = glm::clamp(newExtent.height, surfaceCapabilites.minImageExtent.width,
+                                      surfaceCapabilites.maxImageExtent.height);
 
         return newExtent;
     }
@@ -154,32 +198,32 @@ namespace utils{
     VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
         VkImageView imageView = nullptr;
         const VkImageViewCreateInfo viewInfo = {
-            .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            .pNext = nullptr,
-            .flags = 0,
-            .image = image,
-            .viewType = VK_IMAGE_VIEW_TYPE_2D,
-            .format = format,
-            .components = {
-                .r = VK_COMPONENT_SWIZZLE_IDENTITY, // component used when swizzling : vec.rrr Identy means no change. Allows remaping
-                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
-                .a = VK_COMPONENT_SWIZZLE_IDENTITY,
-            },
-            .subresourceRange = {
-                .aspectMask = aspectFlags,
-                .baseMipLevel = 0,
-                .levelCount = 1,
-                .baseArrayLayer = 0,
-                .layerCount = 1
-            }
+                .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0,
+                .image = image,
+                .viewType = VK_IMAGE_VIEW_TYPE_2D,
+                .format = format,
+                .components = {
+                        .r = VK_COMPONENT_SWIZZLE_IDENTITY, // component used when swizzling : vec.rrr Identity means no change. Allows remapping
+                        .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                        .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                        .a = VK_COMPONENT_SWIZZLE_IDENTITY,
+                },
+                .subresourceRange = {
+                        .aspectMask = aspectFlags,
+                        .baseMipLevel = 0,
+                        .levelCount = 1,
+                        .baseArrayLayer = 0,
+                        .layerCount = 1
+                }
         };
 
         VK_CHECK(vkCreateImageView(device, &viewInfo, nullptr, &imageView));
         return imageView;
     }
 
-    uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties){
+    uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties) {
         VkPhysicalDeviceMemoryProperties memProperties;
         vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memProperties);
 

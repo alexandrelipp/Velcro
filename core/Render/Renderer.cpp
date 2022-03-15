@@ -284,8 +284,8 @@ void Renderer::createSwapchain(const VkSurfaceFormatKHR& surfaceFormat){
             .imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT |         // image can be used as the destination of a transfer command
                           VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,      // image can be used to create a view for use as a color attachment // TODO : necesary?
             .imageSharingMode = VK_SHARING_MODE_EXCLUSIVE,          // swapchain is not shared between queue (only used by graphics queue)
-            .queueFamilyIndexCount = 0u,                            // only relevant when sharing mode is Concurent
-            .pQueueFamilyIndices = nullptr,                         // only relevant when sharing mode is Concurent
+            .queueFamilyIndexCount = 0u,                            // only relevant when sharing mode is Concurrent
+            .pQueueFamilyIndices = nullptr,                         // only relevant when sharing mode is Concurrent
             .preTransform = capabilites.currentTransform,           // Transform applied to image before presentation
             .compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,    // blending mode with other surfaces
             .presentMode = presentMode,
@@ -305,7 +305,7 @@ void Renderer::createRenderPass(VkFormat swapchainFormat){
       .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,   // we don't use stencil
       .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,  // we don't use stencil
       .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED, // layout of the image subressource when subpass begin. We don't care ; we clear it anyway
-      .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, // layout to be transitionned automatically when render pass instance ends 
+      .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, // layout to be transitioned automatically when render pass instance ends
                                                               //We want the image to be ready for presentation using the swap chain after rendering
 
     };
@@ -374,8 +374,8 @@ void Renderer::createPipelineLayout(){
     // create pipeline layout (used for uniform and push constants)
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 1; // Optional
-    pipelineLayoutInfo.pSetLayouts = &_descriptorSetLayout; // Optional
+    pipelineLayoutInfo.setLayoutCount = 1;
+    pipelineLayoutInfo.pSetLayouts = &_descriptorSetLayout;
     pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
     pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
