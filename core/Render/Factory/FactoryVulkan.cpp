@@ -343,9 +343,8 @@ namespace Factory {
         return output;
     }
 
-    std::pair<VkBuffer, VkDeviceMemory>
-    createBuffer(VkDevice device, VkPhysicalDevice physicalDevice, VkDeviceSize size, VkBufferUsageFlags usage,
-                 VkMemoryPropertyFlags properties) {
+    std::pair<VkBuffer, VkDeviceMemory> createBuffer(VkDevice device, VkPhysicalDevice physicalDevice, VkDeviceSize size,
+                                                     VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) {
         VkBuffer buffer = nullptr;
         // create buffer (info about buffer, but a buffer does not contain data)
         VkBufferCreateInfo bufferCreateInfo = {
@@ -375,6 +374,50 @@ namespace Factory {
         VK_CHECK(vkBindBufferMemory(device, buffer, bufferMemory, 0));
 
         return std::make_pair(buffer, bufferMemory);
+    }
+
+    std::pair<VkImage, VkDeviceMemory> createImage(VkDevice device, VkPhysicalDevice physicalDevice,
+                                                   uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
+                                            VkImageUsageFlags usage, VkMemoryPropertyFlags properties) {
+        // create image
+        VkImageCreateInfo imageCreateInfo = {
+                .sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                .flags = 0u,
+                .imageType = VK_IMAGE_TYPE_2D,
+                .format = format,
+                .extent = {
+                        .width = width,
+                        .height = height,
+                        .depth = 1,
+                },
+                .mipLevels = 1,
+                .arrayLayers = 1,
+                .samples = VK_SAMPLE_COUNT_1_BIT,
+                .tiling = tiling,
+                .usage = usage,
+                .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
+                .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED
+        };
+
+        VkImage image = nullptr;
+        VK_CHECK(vkCreateImage(device, &imageCreateInfo, nullptr, &image));
+
+        // allocate memory
+        VkMemoryRequirements memoryRequirements;
+        vkGetImageMemoryRequirements(device, image, &memoryRequirements);
+        VkMemoryAllocateInfo allocateInfo = {
+                .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+                .allocationSize = memoryRequirements.size,
+                .memoryTypeIndex = utils::findMemoryType(physicalDevice, memoryRequirements.memoryTypeBits, properties)
+        };
+
+        VkDeviceMemory deviceMemory = nullptr;
+        VK_CHECK(vkAllocateMemory(device, &allocateInfo, nullptr, &deviceMemory));
+
+        // bind image to memory
+        VK_CHECK(vkBindImageMemory(device, image, deviceMemory, 0));
+
+        return std::make_pair(image, deviceMemory);
     }
 
     VkDescriptorPool createDescriptorPool(VkDevice device, uint32_t imageCount,

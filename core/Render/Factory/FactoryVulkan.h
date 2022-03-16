@@ -33,6 +33,10 @@ namespace Factory {
    std::pair<VkBuffer, VkDeviceMemory> createBuffer(VkDevice device, VkPhysicalDevice physicalDevice,
        VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
 
+   std::pair<VkImage, VkDeviceMemory> createImage(VkDevice device, VkPhysicalDevice physicalDevice,
+                                                  uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling
+                                                  VkImageUsageFlags usage, VkMemoryPropertyFlags properties);
+
    /// descriptors
    VkDescriptorPool createDescriptorPool(VkDevice device, uint32_t imageCount,
                                                           uint32_t uniformBufferCount,

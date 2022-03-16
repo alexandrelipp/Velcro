@@ -9,6 +9,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/glm"
         "${CMAKE_CURRENT_LIST_DIR}/spdlog/include"
         "${CMAKE_CURRENT_LIST_DIR}/Vulkan/Include"
+        "${CMAKE_CURRENT_LIST_DIR}/Vulkan/Include"
+        "${CMAKE_CURRENT_LIST_DIR}/stbi"
     )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
