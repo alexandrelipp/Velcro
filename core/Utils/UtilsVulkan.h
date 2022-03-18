@@ -25,7 +25,9 @@ namespace utils {
     VkPresentModeKHR pickSurfacePresentMode(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
     VkExtent2D pickSwapchainExtent(const VkSurfaceCapabilitiesKHR& surfaceCapabilites, int frameBufferW, int frameBufferH);
 
-    VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+    // images
+    bool transitionImageLayout(VkDevice device, VkQueue queue, VkCommandPool pool,
+                               VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout);
 
     // Memory
     uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);

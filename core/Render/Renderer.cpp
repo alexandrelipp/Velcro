@@ -23,6 +23,8 @@ Renderer::~Renderer() {
     _vertices.destroy(_device);
     _indices.destroy(_device);
 
+    _texture.destroy(_device);
+
     // destroy descriptors
     vkDestroyDescriptorSetLayout(_device, _descriptorSetLayout, nullptr);
     vkDestroyDescriptorPool(_device, _descriptorPool, nullptr);
@@ -92,7 +94,7 @@ bool Renderer::init() {
     // create image views from the fetched images
     VkImageAspectFlags flags = VK_IMAGE_ASPECT_COLOR_BIT;
     for (int i = 0; i < FB_COUNT; ++i) {
-        _swapchainImageViews[i] = utils::createImageView(_device, _swapchainImages[i], surfaceFormat.format, flags);
+        _swapchainImageViews[i] = Factory::createImageView(_device, _swapchainImages[i], surfaceFormat.format, flags);
     }
 
     // create command pool
@@ -120,6 +122,7 @@ bool Renderer::init() {
     for (auto& buffer : _mvpUniformBuffers)
         buffer.init(_device, _physicalDevice, sizeof(mvp));
 
+    // init the vertices ssbo
     glm::vec2 vertices[] = {
             glm::vec2(0.0, -0.9),
             glm::vec2(0.5, 0.5),
@@ -128,12 +131,15 @@ bool Renderer::init() {
     _vertices.init(_device, _physicalDevice, sizeof(vertices));
     VK_ASSERT(_vertices.setData(_device, _physicalDevice, _graphicsQueue, _commandPool, vertices, sizeof(vertices)), "set data failed");
 
+    // init the indices ssbo
     uint32_t indices[] = {
             0, 1, 2
     };
-
     _indices.init(_device, _physicalDevice, sizeof(vertices));
     VK_ASSERT(_indices.setData(_device, _physicalDevice, _graphicsQueue, _commandPool, indices, sizeof(indices)), "set data failed");
+
+    // init the statue texture
+    _texture.init("../../../core/Assets/Textures/statue.jpg", _device, _physicalDevice, _graphicsQueue, _commandPool);
 
     createPipelineLayout();
     createDescriptorSets();

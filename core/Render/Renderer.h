@@ -6,6 +6,7 @@
 
 #include "Objects/UniformBuffer.h"
 #include "Objects/ShaderStorageBuffer.h"
+#include "Objects/Texture.h"
 
 #include <vulkan/vulkan.h>
 
@@ -79,6 +80,9 @@ private:
     VkDescriptorPool _descriptorPool = nullptr;
     VkDescriptorSetLayout _descriptorSetLayout = nullptr;
     std::array<VkDescriptorSet, FB_COUNT> _descriptorSets{nullptr};
+
+    // Textures
+    Texture _texture{};
 
     /// ONLY PRESENT IN DEBUG ///
 #ifdef VELCRO_DEBUG

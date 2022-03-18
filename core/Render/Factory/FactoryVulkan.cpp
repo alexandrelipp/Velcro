@@ -420,6 +420,34 @@ namespace Factory {
         return std::make_pair(image, deviceMemory);
     }
 
+    VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags) {
+        VkImageView imageView = nullptr;
+        const VkImageViewCreateInfo viewInfo = {
+                .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                .pNext = nullptr,
+                .flags = 0,
+                .image = image,
+                .viewType = VK_IMAGE_VIEW_TYPE_2D,
+                .format = format,
+                .components = {
+                        .r = VK_COMPONENT_SWIZZLE_IDENTITY, // component used when swizzling : vec.rrr Identity means no change. Allows remapping
+                        .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                        .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                        .a = VK_COMPONENT_SWIZZLE_IDENTITY,
+                },
+                .subresourceRange = {
+                        .aspectMask = aspectFlags,
+                        .baseMipLevel = 0,
+                        .levelCount = 1,
+                        .baseArrayLayer = 0,
+                        .layerCount = 1
+                }
+        };
+
+        VK_CHECK(vkCreateImageView(device, &viewInfo, nullptr, &imageView));
+        return imageView;
+    }
+
     VkDescriptorPool createDescriptorPool(VkDevice device, uint32_t imageCount,
                                                            uint32_t uniformBufferCount,
                                                            uint32_t storageBufferCount,
