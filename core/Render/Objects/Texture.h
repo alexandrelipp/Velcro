@@ -16,11 +16,14 @@ public:
 
     void destroy(VkDevice device);
 
+    VkSampler getSampler();
+    VkImageView getImageView();
+
 private:
     VkImage _image = nullptr;
     VkImageView _imageView = nullptr;
     VkDeviceMemory _imageMemory = nullptr;
-
+    VkSampler _sampler = nullptr; // TODO : do we need one sampler per texture?
 };
 
 

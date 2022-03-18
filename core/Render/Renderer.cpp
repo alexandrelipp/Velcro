@@ -124,16 +124,17 @@ bool Renderer::init() {
 
     // init the vertices ssbo
     glm::vec2 vertices[] = {
-            glm::vec2(0.0, -0.9),
-            glm::vec2(0.5, 0.5),
-            glm::vec2(-0.5, 0.5)
+            glm::vec2(-0.5, -0.5), glm::vec2(0.f, 0.f), // top left
+            glm::vec2(0.5, -0.5),  glm::vec2(1.f, 0.f), // top right
+            glm::vec2(0.5, 0.5),   glm::vec2(1.f, 1.f), // bottom right
+            glm::vec2(-0.5, 0.5),  glm::vec2(0.f, 1.f), // bottom left
     };
     _vertices.init(_device, _physicalDevice, sizeof(vertices));
     VK_ASSERT(_vertices.setData(_device, _physicalDevice, _graphicsQueue, _commandPool, vertices, sizeof(vertices)), "set data failed");
 
     // init the indices ssbo
     uint32_t indices[] = {
-            0, 1, 2
+            0, 1, 2, 2, 3, 0
     };
     _indices.init(_device, _physicalDevice, sizeof(vertices));
     VK_ASSERT(_indices.setData(_device, _physicalDevice, _graphicsQueue, _commandPool, indices, sizeof(indices)), "set data failed");
@@ -182,7 +183,7 @@ void Renderer::draw() {
     //VK_CHECK(vkResetFences(_device, 1, &_inFlightFence));
 
     static float angle = 0.f;
-    angle += 0.0001f;
+    //angle += 0.0001f;
 
     mvp = glm::rotate(glm::mat4(1.f), angle, {0.f, 0.f, 1.f});
 
@@ -380,7 +381,7 @@ void Renderer::createRenderPass(VkFormat swapchainFormat){
 }
 
 void Renderer::createPipelineLayout(){
-    std::array<VkDescriptorSetLayoutBinding, 3> layoutBindings = {
+    std::array<VkDescriptorSetLayoutBinding, 4> layoutBindings = {
             VkDescriptorSetLayoutBinding{
                 .binding = 0,
                 .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
@@ -398,6 +399,12 @@ void Renderer::createPipelineLayout(){
                 .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                 .descriptorCount = 1,
                 .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
+            },
+            VkDescriptorSetLayoutBinding{
+                .binding = 3,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .descriptorCount = 1,
+                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
             }
     };
 
@@ -422,7 +429,13 @@ void Renderer::createPipelineLayout(){
 }
 
 void Renderer::createDescriptorSets() {
-    // TODO : why is it still working if not allocating shader storage buffer???
+    // Inadequate descriptor pools are a good example of a problem that the validation layers will not catch:
+    // As of Vulkan 1.1, vkAllocateDescriptorSets may fail with the error code VK_ERROR_POOL_OUT_OF_MEMORY
+    // if the pool is not sufficiently large, but the driver may also try to solve the problem internally.
+    // This means that sometimes (depending on hardware, pool size and allocation size) the driver will let
+    // us get away with an allocation that exceeds the limits of our descriptor pool.
+    // Other times, vkAllocateDescriptorSets will fail and return VK_ERROR_POOL_OUT_OF_MEMORY.
+    // This can be particularly frustrating if the allocation succeeds on some machines, but fails on others.
     _descriptorPool = Factory::createDescriptorPool(_device, FB_COUNT, 1, 2, 0);
 
     std::array<VkDescriptorSetLayout, FB_COUNT> layouts = {_descriptorSetLayout, _descriptorSetLayout, _descriptorSetLayout};
@@ -487,6 +500,22 @@ void Renderer::createDescriptorSets() {
                 .pBufferInfo = &indicesInfo
         });
 
+        VkDescriptorImageInfo imageInfo = {
+                .sampler = _texture.getSampler(),
+                .imageView = _texture.getImageView(),
+                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        };
+
+        writeDescriptorSets.push_back({
+            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            .dstSet = _descriptorSets[i],
+            .dstBinding = 3,
+            .dstArrayElement = 0,
+            .descriptorCount = 1,
+            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            .pImageInfo = &imageInfo
+        });
+
         vkUpdateDescriptorSets(_device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
     }
 }
@@ -528,7 +557,7 @@ void Renderer::recordCommandBuffer(uint32_t index){
     vkCmdBindDescriptorSets(_commandBuffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout,
                             0, 1, &_descriptorSets[index], 0, nullptr);
 
-    vkCmdDraw(_commandBuffers[index], 3, 1, 0, 0);
+    vkCmdDraw(_commandBuffers[index], 6, 1, 0, 0);
 
     // end the render pass
     vkCmdEndRenderPass(_commandBuffers[index]);

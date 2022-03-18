@@ -139,6 +139,7 @@ namespace Factory {
         // gpu feature to be enabled (all disabled by default)
         VkPhysicalDeviceFeatures features{};
         features.geometryShader = VK_TRUE;
+        features.samplerAnisotropy = VK_TRUE;
 
         const std::vector<const char*> extensions = {
                 VK_KHR_SWAPCHAIN_EXTENSION_NAME
@@ -469,7 +470,7 @@ namespace Factory {
 
         if (samplerCount){
             poolSizes.push_back(VkDescriptorPoolSize{
-                    .type = VK_DESCRIPTOR_TYPE_SAMPLER,
+                    .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                     .descriptorCount = storageBufferCount * imageCount
             });
         }
