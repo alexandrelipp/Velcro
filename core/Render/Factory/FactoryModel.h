@@ -6,13 +6,15 @@
 
 #include <glm/glm.hpp>
 
-struct DuckVertex{
+struct TexVertex{
     glm::vec3 position;
     glm::vec2 uv;
 };
 
 namespace FactoryModel {
-    bool createDuckModel(std::vector<DuckVertex>& vertices, std::vector<uint32_t>& indices);
+    bool createDuckModel(std::vector<TexVertex>& vertices, std::vector<uint32_t>& indices);
+
+    bool createTexturedSquare(std::vector<TexVertex>& vertices, std::vector<uint32_t>& indices);
 };
 
 

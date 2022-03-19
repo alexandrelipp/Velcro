@@ -64,7 +64,6 @@ private:
     std::array<VkCommandBuffer, FB_COUNT> _commandBuffers = {nullptr};
     glm::vec4 _clearValue = { 0.3f, 0.5f, 0.5f, 1.f };
 
-
     // sync
     //VkFence _inFlightFence = nullptr;
     VkSemaphore _imageAvailSemaphore = nullptr;
@@ -75,6 +74,7 @@ private:
     glm::mat4 mvp = glm::mat4(1.f);
     ShaderStorageBuffer _vertices{};
     ShaderStorageBuffer _indices{};
+    uint32_t _indexCount = 0;
 
     // Descriptors
     VkDescriptorPool _descriptorPool = nullptr;

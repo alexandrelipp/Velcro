@@ -9,6 +9,7 @@ layout(binding = 0) uniform UniformBuffer{
 struct Vertex{
     float x;
     float y;
+    float z;
     float u;
     float v;
 };
@@ -21,16 +22,9 @@ layout(binding = 2) readonly buffer Indices{
     uint indices[];
 };
 
-vec3 colors[] = {
-    vec3(1.0, 0.0, 0.0),
-    vec3(0.0, 1.0, 0.0),
-    vec3(0.0, 0.0, 1.0),
-    vec3(0.0, 0.0, 1.0)
-};
-
 void main() {
     uint idx = indices[gl_VertexIndex];
     Vertex vertex = vertices[idx];
-    gl_Position = ubo.mvp * vec4(vertex.x, vertex.y, 0.0, 1.0);
+    gl_Position = ubo.mvp * vec4(vertex.x, vertex.y, vertex.z, 1.0);
     uv = vec2(vertex.u, vertex.v);
 }

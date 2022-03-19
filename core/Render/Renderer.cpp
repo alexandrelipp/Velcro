@@ -8,6 +8,7 @@
 #include "../Utils/UtilsVulkan.h"
 #include "../Utils/UtilsFile.h"
 #include "Factory/FactoryVulkan.h"
+#include "Factory/FactoryModel.h"
 
 
 Renderer::Renderer() {
@@ -140,25 +141,24 @@ bool Renderer::init() {
     for (auto& buffer : _mvpUniformBuffers)
         buffer.init(_device, _physicalDevice, sizeof(mvp));
 
+    // create duck model
+    std::vector<TexVertex> vertices;
+    std::vector<uint32_t> indices;
+    VK_ASSERT(FactoryModel::createDuckModel(vertices, indices), "Failed to create mesh");
+    _indexCount = indices.size();
+
     // init the vertices ssbo
-    glm::vec2 vertices[] = {
-            glm::vec2(-0.5, -0.5), glm::vec2(0.f, 0.f), // top left
-            glm::vec2(0.5, -0.5),  glm::vec2(1.f, 0.f), // top right
-            glm::vec2(0.5, 0.5),   glm::vec2(1.f, 1.f), // bottom right
-            glm::vec2(-0.5, 0.5),  glm::vec2(0.f, 1.f), // bottom left
-    };
-    _vertices.init(_device, _physicalDevice, sizeof(vertices));
-    VK_ASSERT(_vertices.setData(_device, _physicalDevice, _graphicsQueue, _commandPool, vertices, sizeof(vertices)), "set data failed");
+    _vertices.init(_device, _physicalDevice, vertices.size() * sizeof(vertices[0]));
+    VK_ASSERT(_vertices.setData(_device, _physicalDevice, _graphicsQueue, _commandPool,
+                                vertices.data(), vertices.size() * sizeof(vertices[0])), "set data failed");
 
     // init the indices ssbo
-    uint32_t indices[] = {
-            0, 1, 2, 2, 3, 0
-    };
-    _indices.init(_device, _physicalDevice, sizeof(vertices));
-    VK_ASSERT(_indices.setData(_device, _physicalDevice, _graphicsQueue, _commandPool, indices, sizeof(indices)), "set data failed");
+    _indices.init(_device, _physicalDevice, sizeof(indices[0]) * indices.size());
+    VK_ASSERT(_indices.setData(_device, _physicalDevice, _graphicsQueue, _commandPool,
+                               indices.data(), indices.size() * sizeof(indices[0])), "set data failed");
 
     // init the statue texture
-    _texture.init("../../../core/Assets/Textures/statue.jpg", _device, _physicalDevice, _graphicsQueue, _commandPool);
+    _texture.init("../../../core/Assets/Models/duck/textures/Duck_baseColor.png", _device, _physicalDevice, _graphicsQueue, _commandPool);
 
     createPipelineLayout();
     createDescriptorSets();
@@ -204,7 +204,17 @@ void Renderer::draw() {
     static float angle = 0.f;
     //angle += 0.0001f;
 
-    mvp = glm::rotate(glm::mat4(1.f), angle, {0.f, 0.f, 1.f});
+    float aspectRatio = _swapchainExtent.width/(float)_swapchainExtent.height;
+    glm::mat4 v = glm::lookAt(glm::vec3(0.f, 0.f, 3.f), glm::vec3(0.f), glm::vec3(0.f, 1.f, 0.f));
+    glm::mat4 p = glm::perspective(45.f, aspectRatio, 0.1f, 1000.f);
+    glm::mat4 m = glm::rotate(
+            glm::translate(glm::mat4(1.0f), glm::vec3(0.f, 0.5f, -1.5f)) * glm::rotate(glm::mat4(1.f), glm::pi<float>(),
+                                                                             glm::vec3(1, 0, 0)),
+            (float)glfwGetTime(),
+            glm::vec3(0.0f, 1.0f, 0.0f)
+    );
+
+     mvp = p  * v * m;
 
     uint32_t imageIndex;
     VK_CHECK(vkAcquireNextImageKHR(_device, _swapchain, UINT64_MAX, _imageAvailSemaphore, nullptr, &imageIndex));
@@ -602,7 +612,7 @@ void Renderer::recordCommandBuffer(uint32_t index){
     vkCmdBindDescriptorSets(_commandBuffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout,
                             0, 1, &_descriptorSets[index], 0, nullptr);
 
-    vkCmdDraw(_commandBuffers[index], 6, 1, 0, 0);
+    vkCmdDraw(_commandBuffers[index], _indexCount, 1, 0, 0);
 
     // end the render pass
     vkCmdEndRenderPass(_commandBuffers[index]);
