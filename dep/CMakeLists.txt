@@ -3,6 +3,7 @@ cmake_minimum_required(VERSION 3.20)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/glfw")
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/glm")
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/spdlog")
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/assimp")
 
 target_include_directories(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/glfw/include"
@@ -11,11 +12,13 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/Vulkan/Include"
         "${CMAKE_CURRENT_LIST_DIR}/Vulkan/Include"
         "${CMAKE_CURRENT_LIST_DIR}/stbi"
+        "${CMAKE_CURRENT_LIST_DIR}/assimp/include"
     )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
         glfw
         spdlog
+        assimp
     )
 
 # we could also use the findVulkan cmake command

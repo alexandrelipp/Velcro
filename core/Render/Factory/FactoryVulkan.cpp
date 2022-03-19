@@ -492,7 +492,7 @@ namespace Factory {
                 .pPoolSizes = poolSizes.empty() ? nullptr : poolSizes.data()
         };
         VkDescriptorPool output = nullptr;
-        vkCreateDescriptorPool(device, &createInfo, nullptr, &output);
+        VK_CHECK(vkCreateDescriptorPool(device, &createInfo, nullptr, &output));
         return output;
     }
 }
