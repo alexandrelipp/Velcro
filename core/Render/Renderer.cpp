@@ -45,6 +45,12 @@ Renderer::~Renderer() {
     for (auto view : _swapchainImageViews) {
         vkDestroyImageView(_device, view, nullptr);
     }
+
+    // free depth buffer
+    vkDestroyImageView(_device, _depthBuffer.imageView, nullptr);
+    vkDestroyImage(_device, _depthBuffer.image, nullptr);
+    vkFreeMemory(_device, _depthBuffer.deviceMemory, nullptr);
+
     vkDestroySwapchainKHR(_device, _swapchain, nullptr);
     vkDestroySurfaceKHR(_instance, _surface, nullptr);
     vkDestroyDevice(_device, nullptr);
@@ -96,6 +102,18 @@ bool Renderer::init() {
     for (int i = 0; i < FB_COUNT; ++i) {
         _swapchainImageViews[i] = Factory::createImageView(_device, _swapchainImages[i], surfaceFormat.format, flags);
     }
+
+    _depthBuffer.format = utils::findSupportedFormat( _physicalDevice,
+               {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
+               VK_IMAGE_TILING_OPTIMAL,
+               VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    auto depth = Factory::createImage(_device, _physicalDevice, _swapchainExtent.width, _swapchainExtent.height,
+                                      _depthBuffer.format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                                      VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    _depthBuffer.image = depth.first;
+    _depthBuffer.deviceMemory = depth.second;
+
+    _depthBuffer.imageView = Factory::createImageView(_device, depth.first, _depthBuffer.format, VK_IMAGE_ASPECT_DEPTH_BIT);
 
     // create command pool
     VkCommandPoolCreateInfo commandPoolCreateInfo = {
@@ -154,12 +172,13 @@ bool Renderer::init() {
 
     // create framebuffers
     for (int i = 0; i < FB_COUNT; ++i) {
+        std::array<VkImageView, 2> attachments = {_swapchainImageViews[i], _depthBuffer.imageView};
         VkFramebufferCreateInfo framebufferCI = {
         .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
         .flags = 0u,
         .renderPass = _renderPass,
-        .attachmentCount = 1,
-        .pAttachments = &_swapchainImageViews[i],
+        .attachmentCount = attachments.size(),
+        .pAttachments = attachments.data(),
         .width = _swapchainExtent.width,
         .height = _swapchainExtent.height,
         .layers = 1,
@@ -323,7 +342,8 @@ void Renderer::createSwapchain(const VkSurfaceFormatKHR& surfaceFormat){
 }
 
 void Renderer::createRenderPass(VkFormat swapchainFormat){
-    VkAttachmentDescription colorAttachment = {
+    std::array<VkAttachmentDescription, 2> attachments{};
+    attachments[0] = {
       .flags = 0u,
       .format = swapchainFormat,
       .samples = VK_SAMPLE_COUNT_1_BIT, // not using multisampling
@@ -342,6 +362,23 @@ void Renderer::createRenderPass(VkFormat swapchainFormat){
         .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
     };
 
+    attachments[1] = {
+        .flags = 0u,
+        .format = _depthBuffer.format,
+        .samples = VK_SAMPLE_COUNT_1_BIT,
+        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
+        .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+    };
+
+    VkAttachmentReference depthRef = {
+            .attachment = 1,
+            .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+    };
+
     // a render pass can consist of multiple subpasses. In our case we only use 1
     VkSubpassDescription subpassDescription = {
         .flags = 0u,
@@ -351,6 +388,7 @@ void Renderer::createRenderPass(VkFormat swapchainFormat){
         .colorAttachmentCount = 1,
         .pColorAttachments = &colorRef,  // The index of the attachment in this array is directly referenced from 
                                          //the fragment shader with the layout(location = 0) out vec4 outColor directive!
+        .pDepthStencilAttachment = &depthRef
     };
 
     std::vector<VkSubpassDependency> dependencies = {
@@ -369,8 +407,8 @@ void Renderer::createRenderPass(VkFormat swapchainFormat){
     VkRenderPassCreateInfo renderPassCI = {
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
         .flags = 0u,
-        .attachmentCount = 1,
-        .pAttachments = &colorAttachment,
+        .attachmentCount = attachments.size(),
+        .pAttachments = attachments.data(),
         .subpassCount = 1,
         .pSubpasses = &subpassDescription,
         .dependencyCount = (uint32_t)dependencies.size(),
@@ -541,14 +579,21 @@ void Renderer::recordCommandBuffer(uint32_t index){
     };
 
     // TODO : is there a way to type pun this?
-    VkClearValue clearValue = { .color = { _clearValue.r, _clearValue.g, _clearValue.b, _clearValue.a} };
+    VkClearValue clearValues[] = {
+            {
+                .color = {_clearValue.r, _clearValue.g, _clearValue.b, _clearValue.a}
+            },
+            {
+                .depthStencil = {.depth = 1.f}
+            }
+    };
     VkRenderPassBeginInfo beginCI = {
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
         .renderPass = _renderPass,
         .framebuffer = _frameBuffers[index],
         .renderArea = renderArea,
-        .clearValueCount = 1,
-        .pClearValues = &clearValue,
+        .clearValueCount = sizeof(clearValues)/sizeof(VkClearValue),
+        .pClearValues = clearValues,
     };
     vkCmdBeginRenderPass(_commandBuffers[index], &beginCI, VK_SUBPASS_CONTENTS_INLINE);
 

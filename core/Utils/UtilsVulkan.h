@@ -31,4 +31,11 @@ namespace utils {
 
     // Memory
     uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);
+
+    // format
+    /// from the given candidates, returns the first supporting the given tiling and formatFeatures
+    VkFormat findSupportedFormat(VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& candidates,
+                                 VkImageTiling tiling, VkFormatFeatureFlags features);
+    //VkFormat findDepthFormat(VkPhysicalDevice physicalDevice);
+    bool hasStencilComponent(VkFormat format);
 }

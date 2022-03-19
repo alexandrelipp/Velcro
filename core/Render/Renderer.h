@@ -84,6 +84,14 @@ private:
     // Textures
     Texture _texture{};
 
+    // DepthBuffer
+    struct DepthBuffer{
+        VkImage image = nullptr;
+        VkImageView imageView = nullptr;
+        VkDeviceMemory deviceMemory = nullptr;
+        VkFormat format;
+    } _depthBuffer;
+
     /// ONLY PRESENT IN DEBUG ///
 #ifdef VELCRO_DEBUG
     VkDebugUtilsMessengerEXT _messenger = nullptr;

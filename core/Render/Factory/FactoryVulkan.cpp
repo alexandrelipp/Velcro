@@ -189,7 +189,7 @@ namespace Factory {
 
     VkShaderModule createShaderModule(VkDevice device, const std::string& filename) {
         VkShaderModule shaderModule = nullptr;
-        std::filesystem::path path("..\\..\\..\\core\\Assets\\Shaders\\bin");
+        std::filesystem::path path(R"(..\..\..\core\Assets\Shaders\bin)");
         path /= filename;
         VK_ASSERT(utils::fileExists(path), "Shader file does not exist");
 
@@ -297,6 +297,15 @@ namespace Factory {
                 .sampleShadingEnable = VK_FALSE,
         };
 
+        VkPipelineDepthStencilStateCreateInfo depthStencilCI = {
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+                .depthTestEnable = VK_TRUE,
+                .depthWriteEnable = VK_TRUE,
+                .depthCompareOp = VK_COMPARE_OP_LESS,
+                .depthBoundsTestEnable = VK_FALSE,      // if enabled, depth test will only pass when inside the given bounds
+                .stencilTestEnable = VK_FALSE,
+        };
+
         // set up color blending (disabled for now)
         VkPipelineColorBlendAttachmentState colorBlendAttachment = {
                 .blendEnable = VK_FALSE,
@@ -325,6 +334,7 @@ namespace Factory {
                 .pViewportState = &viewPortCI,
                 .pRasterizationState = &rastCI,
                 .pMultisampleState = &multisampleCI,
+                .pDepthStencilState = &depthStencilCI,
                 .pColorBlendState = &colorBlendCI,
                 .pDynamicState = nullptr, // not used for now
                 .layout = pipelineLayout,
