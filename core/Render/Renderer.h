@@ -4,9 +4,11 @@
 
 #pragma once
 
+#include "VulkanRenderDevice.hpp"
 #include "Objects/UniformBuffer.h"
 #include "Objects/ShaderStorageBuffer.h"
 #include "Objects/Texture.h"
+#include "Layers/RenderLayer.h"
 
 #include <vulkan/vulkan.h>
 
@@ -17,16 +19,16 @@ public:
     ~Renderer();
     bool init();
 
-    void draw();
+    VulkanRenderDevice* getRenderDevice();
+    VkExtent2D getSwapchainExtent();
 
+    void draw();
 private:
 
     // creation
     void createInstance();
     void createSwapchain(const VkSurfaceFormatKHR& surfaceFormat);
     void createRenderPass(VkFormat swapchainFormat);
-    void createPipelineLayout();
-    void createDescriptorSets();
 
     // 
     void recordCommandBuffer(uint32_t index);
@@ -37,13 +39,7 @@ private:
 private:
     // context
     VkInstance _instance = nullptr;
-    VkPhysicalDevice _physicalDevice = nullptr;
-    VkDevice _device = nullptr; ///< Logical device
-    uint32_t _graphicsQueueFamilyIndex; ///< index of the graphics family
-
-    VkQueue _graphicsQueue = nullptr;
-
-    VkSurfaceKHR _surface = nullptr;
+    VulkanRenderDevice _vrd{};    ///< vulkan render device, immutable after initialization
 
     // swapchain
     VkSwapchainKHR _swapchain = nullptr;
@@ -51,38 +47,18 @@ private:
     std::array<VkImageView, FB_COUNT> _swapchainImageViews = {nullptr};
     VkExtent2D _swapchainExtent = {0, 0};
 
-
-    // pipeline
-    VkPipeline _graphicsPipeline = nullptr;
+    // other
     VkRenderPass _renderPass = nullptr;
-    VkPipelineLayout _pipelineLayout = nullptr;
-
+    VkSurfaceKHR _surface = nullptr;
     std::array<VkFramebuffer, FB_COUNT> _frameBuffers = {nullptr};
 
     // commands
-    VkCommandPool _commandPool = nullptr;
-    std::array<VkCommandBuffer, FB_COUNT> _commandBuffers = {nullptr};
     glm::vec4 _clearValue = { 0.3f, 0.5f, 0.5f, 1.f };
 
     // sync
     //VkFence _inFlightFence = nullptr;
     VkSemaphore _imageAvailSemaphore = nullptr;
     VkSemaphore _renderFinishedSemaphore = nullptr;
-
-    // Buffers
-    std::array<UniformBuffer, FB_COUNT> _mvpUniformBuffers{};
-    glm::mat4 mvp = glm::mat4(1.f);
-    ShaderStorageBuffer _vertices{};
-    ShaderStorageBuffer _indices{};
-    uint32_t _indexCount = 0;
-
-    // Descriptors
-    VkDescriptorPool _descriptorPool = nullptr;
-    VkDescriptorSetLayout _descriptorSetLayout = nullptr;
-    std::array<VkDescriptorSet, FB_COUNT> _descriptorSets{nullptr};
-
-    // Textures
-    Texture _texture{};
 
     // DepthBuffer
     struct DepthBuffer{
@@ -91,6 +67,9 @@ private:
         VkDeviceMemory deviceMemory = nullptr;
         VkFormat format;
     } _depthBuffer;
+
+    // Render layers
+    std::vector<std::shared_ptr<RenderLayer>> _renderLayers;
 
     /// ONLY PRESENT IN DEBUG ///
 #ifdef VELCRO_DEBUG

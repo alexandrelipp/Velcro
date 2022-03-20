@@ -9,6 +9,7 @@
 #include "../Utils/UtilsFile.h"
 #include "Factory/FactoryVulkan.h"
 #include "Factory/FactoryModel.h"
+#include "Layers/ModelLayer.h"
 
 
 Renderer::Renderer() {
@@ -16,45 +17,34 @@ Renderer::Renderer() {
 }
 
 Renderer::~Renderer() {
-    VK_CHECK(vkDeviceWaitIdle(_device));
-
-    // destroy the buffers
-    for (auto& buffer : _mvpUniformBuffers)
-        buffer.destroy(_device);
-    _vertices.destroy(_device);
-    _indices.destroy(_device);
-
-    _texture.destroy(_device);
-
-    // destroy descriptors
-    vkDestroyDescriptorSetLayout(_device, _descriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(_device, _descriptorPool, nullptr);
+    VK_CHECK(vkDeviceWaitIdle(_vrd.device));
 
     // destroy sync objects
-    //vkDestroyFence(_device, _inFlightFence, nullptr);
-    vkDestroySemaphore(_device, _imageAvailSemaphore, nullptr);
-    vkDestroySemaphore(_device, _renderFinishedSemaphore, nullptr);
+    //vkDestroyFence(_vrd.device, _inFlightFence, nullptr);
+    vkDestroySemaphore(_vrd.device, _imageAvailSemaphore, nullptr);
+    vkDestroySemaphore(_vrd.device, _renderFinishedSemaphore, nullptr);
 
     for (auto fb : _frameBuffers)
-        vkDestroyFramebuffer(_device, fb, nullptr);
-    vkDestroyRenderPass(_device, _renderPass, nullptr);
-    vkDestroyPipelineLayout(_device, _pipelineLayout, nullptr);
-    vkDestroyPipeline(_device, _graphicsPipeline, nullptr);
+        vkDestroyFramebuffer(_vrd.device, fb, nullptr);
+    vkDestroyRenderPass(_vrd.device, _renderPass, nullptr);
 
-    vkFreeCommandBuffers(_device, _commandPool, FB_COUNT, _commandBuffers.data());
-    vkDestroyCommandPool(_device, _commandPool, nullptr);
+    // clear render layer vector to trigger destructors (they should not be referenced elswhere)
+    _renderLayers.clear();
+
+    vkFreeCommandBuffers(_vrd.device, _vrd.commandPool, FB_COUNT, _vrd.commandBuffers.data());
+    vkDestroyCommandPool(_vrd.device, _vrd.commandPool, nullptr);
     for (auto view : _swapchainImageViews) {
-        vkDestroyImageView(_device, view, nullptr);
+        vkDestroyImageView(_vrd.device, view, nullptr);
     }
 
     // free depth buffer
-    vkDestroyImageView(_device, _depthBuffer.imageView, nullptr);
-    vkDestroyImage(_device, _depthBuffer.image, nullptr);
-    vkFreeMemory(_device, _depthBuffer.deviceMemory, nullptr);
+    vkDestroyImageView(_vrd.device, _depthBuffer.imageView, nullptr);
+    vkDestroyImage(_vrd.device, _depthBuffer.image, nullptr);
+    vkFreeMemory(_vrd.device, _depthBuffer.deviceMemory, nullptr);
 
-    vkDestroySwapchainKHR(_device, _swapchain, nullptr);
+    vkDestroySwapchainKHR(_vrd.device, _swapchain, nullptr);
     vkDestroySurfaceKHR(_instance, _surface, nullptr);
-    vkDestroyDevice(_device, nullptr);
+    vkDestroyDevice(_vrd.device, nullptr);
 #ifdef VELCRO_DEBUG
     Factory::freeDebugCallbacks(_instance, _messenger, _reportCallback);
 #endif
@@ -66,27 +56,27 @@ bool Renderer::init() {
     createInstance();
 
     // pick a physical device (gpu)
-    _physicalDevice = utils::pickPhysicalDevice(_instance);
-    utils::printPhysicalDeviceProps(_physicalDevice);
+    _vrd.physicalDevice = utils::pickPhysicalDevice(_instance);
+    utils::printPhysicalDeviceProps(_vrd.physicalDevice);
 
     // create a logical device (interface to gpu)
-    utils::printQueueFamiliesInfo(_physicalDevice);
-    _graphicsQueueFamilyIndex = utils::getQueueFamilyIndex(_physicalDevice, VK_QUEUE_GRAPHICS_BIT);
-    _device = Factory::createDevice(_physicalDevice, _graphicsQueueFamilyIndex);
+    utils::printQueueFamiliesInfo(_vrd.physicalDevice);
+    _vrd.graphicsQueueFamilyIndex = utils::getQueueFamilyIndex(_vrd.physicalDevice, VK_QUEUE_GRAPHICS_BIT);
+    _vrd.device = Factory::createDevice(_vrd.physicalDevice, _vrd.graphicsQueueFamilyIndex);
 
     // create surface
     VK_CHECK(glfwCreateWindowSurface(_instance, Application::getApp()->getWindow(), nullptr, &_surface));
 
     // make sure the graphics queue supports presentation
     VkBool32 presentationSupport;
-    VK_CHECK(vkGetPhysicalDeviceSurfaceSupportKHR(_physicalDevice, _graphicsQueueFamilyIndex, _surface, &presentationSupport));
+    VK_CHECK(vkGetPhysicalDeviceSurfaceSupportKHR(_vrd.physicalDevice, _vrd.graphicsQueueFamilyIndex, _surface, &presentationSupport));
     VK_ASSERT(presentationSupport == VK_TRUE, "Graphics queue does not support presentation");
 
     // retreive queue handle
-    vkGetDeviceQueue(_device, _graphicsQueueFamilyIndex, 0, &_graphicsQueue);
+    vkGetDeviceQueue(_vrd.device, _vrd.graphicsQueueFamilyIndex, 0, &_vrd.graphicsQueue);
 
     // pick a format and a present mode for the surface
-    VkSurfaceFormatKHR surfaceFormat = utils::pickSurfaceFormat(_physicalDevice, _surface);
+    VkSurfaceFormatKHR surfaceFormat = utils::pickSurfaceFormat(_vrd.physicalDevice, _surface);
 
     // create the swapchain
     createSwapchain(surfaceFormat);
@@ -94,81 +84,50 @@ bool Renderer::init() {
 
     // retreive images from the swapchain after making sure the count is correct. Note : images are freed automatically when the SP is destroyed
     uint32_t count;
-    VK_CHECK(vkGetSwapchainImagesKHR(_device, _swapchain, &count, nullptr));
+    VK_CHECK(vkGetSwapchainImagesKHR(_vrd.device, _swapchain, &count, nullptr));
     VK_ASSERT(count == FB_COUNT, "images count in swapchain does not match FB count");
-    VK_CHECK(vkGetSwapchainImagesKHR(_device, _swapchain, &count, _swapchainImages.data()));
+    VK_CHECK(vkGetSwapchainImagesKHR(_vrd.device, _swapchain, &count, _swapchainImages.data()));
 
     // create image views from the fetched images
     VkImageAspectFlags flags = VK_IMAGE_ASPECT_COLOR_BIT;
     for (int i = 0; i < FB_COUNT; ++i) {
-        _swapchainImageViews[i] = Factory::createImageView(_device, _swapchainImages[i], surfaceFormat.format, flags);
+        _swapchainImageViews[i] = Factory::createImageView(_vrd.device, _swapchainImages[i], surfaceFormat.format, flags);
     }
 
-    _depthBuffer.format = utils::findSupportedFormat( _physicalDevice,
-               {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
-               VK_IMAGE_TILING_OPTIMAL,
-               VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-    auto depth = Factory::createImage(_device, _physicalDevice, _swapchainExtent.width, _swapchainExtent.height,
+    _depthBuffer.format = utils::findSupportedFormat(_vrd.physicalDevice,
+                                                     {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
+                                                     VK_IMAGE_TILING_OPTIMAL,
+                                                     VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    auto depth = Factory::createImage(_vrd.device, _vrd.physicalDevice, _swapchainExtent.width, _swapchainExtent.height,
                                       _depthBuffer.format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                                       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     _depthBuffer.image = depth.first;
     _depthBuffer.deviceMemory = depth.second;
 
-    _depthBuffer.imageView = Factory::createImageView(_device, depth.first, _depthBuffer.format, VK_IMAGE_ASPECT_DEPTH_BIT);
+    _depthBuffer.imageView = Factory::createImageView(_vrd.device, depth.first, _depthBuffer.format, VK_IMAGE_ASPECT_DEPTH_BIT);
 
     // create command pool
     VkCommandPoolCreateInfo commandPoolCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .pNext = nullptr,
         .flags = 0,
-        .queueFamilyIndex = _graphicsQueueFamilyIndex
+        .queueFamilyIndex = _vrd.graphicsQueueFamilyIndex
     };
-    VK_CHECK(vkCreateCommandPool(_device, &commandPoolCreateInfo, nullptr, &_commandPool));
+    VK_CHECK(vkCreateCommandPool(_vrd.device, &commandPoolCreateInfo, nullptr, &_vrd.commandPool));
 
     // allocate command buffers from created command pool
     VkCommandBufferAllocateInfo allocateInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         .pNext = nullptr,
-        .commandPool = _commandPool,
+        .commandPool = _vrd.commandPool,
         .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
         .commandBufferCount = FB_COUNT,
     };
-    VK_CHECK(vkAllocateCommandBuffers(_device, &allocateInfo, _commandBuffers.data()));
+    VK_CHECK(vkAllocateCommandBuffers(_vrd.device, &allocateInfo, _vrd.commandBuffers.data()));
    
     createRenderPass(surfaceFormat.format);
 
-    // init the uniform buffers
-    for (auto& buffer : _mvpUniformBuffers)
-        buffer.init(_device, _physicalDevice, sizeof(mvp));
-
-    // create duck model
-    std::vector<TexVertex> vertices;
-    std::vector<uint32_t> indices;
-    VK_ASSERT(FactoryModel::createDuckModel(vertices, indices), "Failed to create mesh");
-    _indexCount = indices.size();
-
-    // init the vertices ssbo
-    _vertices.init(_device, _physicalDevice, vertices.size() * sizeof(vertices[0]));
-    VK_ASSERT(_vertices.setData(_device, _physicalDevice, _graphicsQueue, _commandPool,
-                                vertices.data(), vertices.size() * sizeof(vertices[0])), "set data failed");
-
-    // init the indices ssbo
-    _indices.init(_device, _physicalDevice, sizeof(indices[0]) * indices.size());
-    VK_ASSERT(_indices.setData(_device, _physicalDevice, _graphicsQueue, _commandPool,
-                               indices.data(), indices.size() * sizeof(indices[0])), "set data failed");
-
-    // init the statue texture
-    _texture.init("../../../core/Assets/Models/duck/textures/Duck_baseColor.png", _device, _physicalDevice, _graphicsQueue, _commandPool);
-
-    createPipelineLayout();
-    createDescriptorSets();
-
-    ShaderFiles files = {
-       .vertex = "vert.spv",
-       .fragment = "frag.spv"
-    };
-
-    _graphicsPipeline = Factory::createGraphicsPipeline(_device, _swapchainExtent, _renderPass, _pipelineLayout, files);
+    _renderLayers.push_back(std::make_shared<ModelLayer>(_renderPass));
 
     // create framebuffers
     for (int i = 0; i < FB_COUNT; ++i) {
@@ -183,46 +142,43 @@ bool Renderer::init() {
         .height = _swapchainExtent.height,
         .layers = 1,
         };
-        VK_CHECK(vkCreateFramebuffer(_device, &framebufferCI, nullptr, &_frameBuffers[i]));
+        VK_CHECK(vkCreateFramebuffer(_vrd.device, &framebufferCI, nullptr, &_frameBuffers[i]));
     }
 
     // create sync objects
-    //_inFlightFence = Factory::createFence(_device, true); // starts signaled
-    _imageAvailSemaphore = Factory::createSemaphore(_device);
-    _renderFinishedSemaphore = Factory::createSemaphore(_device);
+    //_inFlightFence = Factory::createFence(_vrd.device, true); // starts signaled
+    _imageAvailSemaphore = Factory::createSemaphore(_vrd.device);
+    _renderFinishedSemaphore = Factory::createSemaphore(_vrd.device);
   
     return true;
 }
 
+VulkanRenderDevice* Renderer::getRenderDevice() {
+    return &_vrd;
+}
+
+VkExtent2D Renderer::getSwapchainExtent() {
+    return _swapchainExtent;
+}
+
+
 void Renderer::draw() {
     // wait until the fence is signaled (ready to use)
-    //VK_CHECK(vkWaitForFences(_device, 1, &_inFlightFence, VK_TRUE, UINT64_MAX));
+    //VK_CHECK(vkWaitForFences(_vrd.device, 1, &_inFlightFence, VK_TRUE, UINT64_MAX));
 
     // then unsignal the fence for next use
-    //VK_CHECK(vkResetFences(_device, 1, &_inFlightFence));
+    //VK_CHECK(vkResetFences(_vrd.device, 1, &_inFlightFence));
 
-    static float angle = 0.f;
-    //angle += 0.0001f;
-
-    float aspectRatio = _swapchainExtent.width/(float)_swapchainExtent.height;
-    glm::mat4 v = glm::lookAt(glm::vec3(0.f, 0.f, 3.f), glm::vec3(0.f), glm::vec3(0.f, 1.f, 0.f));
-    glm::mat4 p = glm::perspective(45.f, aspectRatio, 0.1f, 1000.f);
-    glm::mat4 m = glm::rotate(
-            glm::translate(glm::mat4(1.0f), glm::vec3(0.f, 0.5f, -1.5f)) * glm::rotate(glm::mat4(1.f), glm::pi<float>(),
-                                                                             glm::vec3(1, 0, 0)),
-            (float)glfwGetTime(),
-            glm::vec3(0.0f, 1.0f, 0.0f)
-    );
-
-     mvp = p  * v * m;
 
     uint32_t imageIndex;
-    VK_CHECK(vkAcquireNextImageKHR(_device, _swapchain, UINT64_MAX, _imageAvailSemaphore, nullptr, &imageIndex));
+    VK_CHECK(vkAcquireNextImageKHR(_vrd.device, _swapchain, UINT64_MAX, _imageAvailSemaphore, nullptr, &imageIndex));
 
-    VK_ASSERT(_mvpUniformBuffers[imageIndex].setData(_device, glm::value_ptr(mvp), sizeof(mvp)), "Failed to update");
-    //VK_CHECK(vkResetCommandBuffer(_commandBuffers[imageIndex], 0));
+    for (auto layer : _renderLayers)
+        layer->update(0.001f, imageIndex);
+
+    //VK_CHECK(vkResetCommandBuffer(_vrd.commandBuffers[imageIndex], 0));
     // reset the command pool, probably not optimal but good enough for now
-    VK_CHECK(vkResetCommandPool(_device, _commandPool, 0));
+    VK_CHECK(vkResetCommandPool(_vrd.device, _vrd.commandPool, 0));
     recordCommandBuffer(imageIndex);
 
     // semaphore check to occur before writing to the color attachment
@@ -234,11 +190,11 @@ void Renderer::draw() {
         .pWaitSemaphores = &_imageAvailSemaphore, // wait until signaled before starting
         .pWaitDstStageMask = waitStages,
         .commandBufferCount = 1,
-        .pCommandBuffers = &_commandBuffers[imageIndex],
+        .pCommandBuffers = &_vrd.commandBuffers[imageIndex],
         .signalSemaphoreCount = 1,
         .pSignalSemaphores = &_renderFinishedSemaphore // signaled when command buffer is done executing
     };
-    VK_CHECK(vkQueueSubmit(_graphicsQueue, 1, &submitInfo, nullptr));
+    VK_CHECK(vkQueueSubmit(_vrd.graphicsQueue, 1, &submitInfo, nullptr));
 
 
     VkPresentInfoKHR presentInfo = {
@@ -250,10 +206,10 @@ void Renderer::draw() {
         .pImageIndices = &imageIndex,
         .pResults = nullptr,
     };
-    VK_CHECK(vkQueuePresentKHR(_graphicsQueue, &presentInfo));
+    VK_CHECK(vkQueuePresentKHR(_vrd.graphicsQueue, &presentInfo));
 
     // wait for completion of all operation on graphics queue (not optimal, but good enough for now)
-    VK_CHECK(vkDeviceWaitIdle(_device));
+    VK_CHECK(vkDeviceWaitIdle(_vrd.device));
 }
 
 void Renderer::createInstance() {
@@ -314,7 +270,7 @@ void Renderer::createInstance() {
 
 void Renderer::createSwapchain(const VkSurfaceFormatKHR& surfaceFormat){
     VkSurfaceCapabilitiesKHR capabilites;
-    VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_physicalDevice, _surface, &capabilites));
+    VK_CHECK(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_vrd.physicalDevice, _surface, &capabilites));
 
     // get the swap chain extent. The FB size is required if surface capabilites does not contain valid value (unlikely)
     int FBwidth, FBheight;
@@ -325,7 +281,7 @@ void Renderer::createSwapchain(const VkSurfaceFormatKHR& surfaceFormat){
     SPDLOG_INFO("Min image count with current GPU and surface {}", capabilites.minImageCount);
     VK_ASSERT(capabilites.minImageCount < FB_COUNT, "Number wrong");
 
-    VkPresentModeKHR presentMode = utils::pickSurfacePresentMode(_physicalDevice, _surface);
+    VkPresentModeKHR presentMode = utils::pickSurfacePresentMode(_vrd.physicalDevice, _surface);
 
     VkSwapchainCreateInfoKHR createInfo = {
             .sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
@@ -348,7 +304,7 @@ void Renderer::createSwapchain(const VkSurfaceFormatKHR& surfaceFormat){
             .clipped = VK_TRUE,
             .oldSwapchain = nullptr,
     };
-    VK_CHECK(vkCreateSwapchainKHR(_device, &createInfo, nullptr, &_swapchain));
+    VK_CHECK(vkCreateSwapchainKHR(_vrd.device, &createInfo, nullptr, &_swapchain));
 }
 
 void Renderer::createRenderPass(VkFormat swapchainFormat){
@@ -425,149 +381,8 @@ void Renderer::createRenderPass(VkFormat swapchainFormat){
         .pDependencies = dependencies.data()
     };
 
-    VK_CHECK(vkCreateRenderPass(_device, &renderPassCI, nullptr, &_renderPass));
+    VK_CHECK(vkCreateRenderPass(_vrd.device, &renderPassCI, nullptr, &_renderPass));
 }
-
-void Renderer::createPipelineLayout(){
-    std::array<VkDescriptorSetLayoutBinding, 4> layoutBindings = {
-            VkDescriptorSetLayoutBinding{
-                .binding = 0,
-                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .descriptorCount = 1,
-                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
-            },
-            VkDescriptorSetLayoutBinding{
-                .binding = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                .descriptorCount = 1,
-                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
-            },
-            VkDescriptorSetLayoutBinding{
-                .binding = 2,
-                .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                .descriptorCount = 1,
-                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
-            },
-            VkDescriptorSetLayoutBinding{
-                .binding = 3,
-                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                .descriptorCount = 1,
-                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
-            }
-    };
-
-    VkDescriptorSetLayoutCreateInfo descriptorLayoutCI = {
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        .bindingCount = layoutBindings.size(),
-        .pBindings = layoutBindings.data()
-    };
-
-    VK_CHECK(vkCreateDescriptorSetLayout(_device, &descriptorLayoutCI, nullptr, &_descriptorSetLayout));
-   
-
-    // create pipeline layout (used for uniform and push constants)
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &_descriptorSetLayout;
-    pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
-    pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
-
-    VK_CHECK(vkCreatePipelineLayout(_device, &pipelineLayoutInfo, nullptr, &_pipelineLayout));
-}
-
-void Renderer::createDescriptorSets() {
-    // Inadequate descriptor pools are a good example of a problem that the validation layers will not catch:
-    // As of Vulkan 1.1, vkAllocateDescriptorSets may fail with the error code VK_ERROR_POOL_OUT_OF_MEMORY
-    // if the pool is not sufficiently large, but the driver may also try to solve the problem internally.
-    // This means that sometimes (depending on hardware, pool size and allocation size) the driver will let
-    // us get away with an allocation that exceeds the limits of our descriptor pool.
-    // Other times, vkAllocateDescriptorSets will fail and return VK_ERROR_POOL_OUT_OF_MEMORY.
-    // This can be particularly frustrating if the allocation succeeds on some machines, but fails on others.
-    _descriptorPool = Factory::createDescriptorPool(_device, FB_COUNT, 1, 2, 0);
-
-    std::array<VkDescriptorSetLayout, FB_COUNT> layouts = {_descriptorSetLayout, _descriptorSetLayout, _descriptorSetLayout};
-
-    VkDescriptorSetAllocateInfo descriptorSetAI = {
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            .descriptorPool = _descriptorPool,
-            .descriptorSetCount = (uint32_t)layouts.size(),
-            .pSetLayouts = layouts.data()
-    };
-
-    VK_CHECK(vkAllocateDescriptorSets(_device, &descriptorSetAI, _descriptorSets.data()));
-
-    for (size_t i = 0; i < _descriptorSets.size(); ++i){
-        VkDescriptorBufferInfo bufferInfo = {
-                .buffer = _mvpUniformBuffers[i].getBuffer(),
-                .offset = 0,
-                .range = _mvpUniformBuffers[i].getSize()
-        };
-
-        std::vector<VkWriteDescriptorSet> writeDescriptorSets;
-
-        writeDescriptorSets.push_back({
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet = _descriptorSets[i],
-                .dstBinding = 0,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .pBufferInfo = &bufferInfo
-        });
-
-        VkDescriptorBufferInfo verticesInfo = {
-                .buffer = _vertices.getBuffer(),
-                .offset = 0,
-                .range = _vertices.getSize()
-        };
-
-        writeDescriptorSets.push_back({
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet = _descriptorSets[i],
-                .dstBinding = 1,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                .pBufferInfo = &verticesInfo
-        });
-
-        VkDescriptorBufferInfo indicesInfo = {
-                .buffer = _indices.getBuffer(),
-                .offset = 0,
-                .range = _indices.getSize()
-        };
-
-        writeDescriptorSets.push_back({
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet = _descriptorSets[i],
-                .dstBinding = 2,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                .pBufferInfo = &indicesInfo
-        });
-
-        VkDescriptorImageInfo imageInfo = {
-                .sampler = _texture.getSampler(),
-                .imageView = _texture.getImageView(),
-                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        };
-
-        writeDescriptorSets.push_back({
-            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet = _descriptorSets[i],
-            .dstBinding = 3,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .pImageInfo = &imageInfo
-        });
-
-        vkUpdateDescriptorSets(_device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
-    }
-}
-
 
 void Renderer::recordCommandBuffer(uint32_t index){
     
@@ -577,7 +392,7 @@ void Renderer::recordCommandBuffer(uint32_t index){
         .flags = 0,
         .pInheritanceInfo = nullptr,
     };
-    VK_CHECK(vkBeginCommandBuffer(_commandBuffers[index], &commandBufferCI));
+    VK_CHECK(vkBeginCommandBuffer(_vrd.commandBuffers[index], &commandBufferCI));
 
     // being render pass
     VkRect2D renderArea = {
@@ -605,18 +420,15 @@ void Renderer::recordCommandBuffer(uint32_t index){
         .clearValueCount = sizeof(clearValues)/sizeof(VkClearValue),
         .pClearValues = clearValues,
     };
-    vkCmdBeginRenderPass(_commandBuffers[index], &beginCI, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(_vrd.commandBuffers[index], &beginCI, VK_SUBPASS_CONTENTS_INLINE);
 
-    // bind pipeline and render 
-    vkCmdBindPipeline(_commandBuffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
-    vkCmdBindDescriptorSets(_commandBuffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout,
-                            0, 1, &_descriptorSets[index], 0, nullptr);
-
-    vkCmdDraw(_commandBuffers[index], _indexCount, 1, 0, 0);
+    // record render commands from all the layers
+    for (auto layer : _renderLayers)
+        layer->fillCommandBuffer(_vrd.commandBuffers[index], index);
 
     // end the render pass
-    vkCmdEndRenderPass(_commandBuffers[index]);
+    vkCmdEndRenderPass(_vrd.commandBuffers[index]);
 
     // stop recording commands
-    VK_CHECK(vkEndCommandBuffer(_commandBuffers[index]));
+    VK_CHECK(vkEndCommandBuffer(_vrd.commandBuffers[index]));
 }
