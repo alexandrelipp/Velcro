@@ -28,6 +28,7 @@ Renderer::~Renderer() {
         vkDestroyFramebuffer(_vrd.device, fb, nullptr);
     vkDestroyRenderPass(_vrd.device, _renderPass, nullptr);
 
+    // clear render layer vector to trigger destructors (they should not be referenced elswhere)
     _renderLayers.clear();
 
     vkFreeCommandBuffers(_vrd.device, _vrd.commandPool, FB_COUNT, _vrd.commandBuffers.data());
