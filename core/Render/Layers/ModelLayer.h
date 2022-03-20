@@ -12,10 +12,11 @@
 
 class ModelLayer : public RenderLayer{
 public:
-    ModelLayer(VkPhysicalDevice physicalDevice, VkRenderPass renderPass);
+    ModelLayer(VkRenderPass renderPass);
     virtual ~ModelLayer();
 
     virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage) override;
+    virtual void update(float dt, uint32_t currentImage) override;
 
 private:
     void createPipelineLayout();
@@ -24,12 +25,10 @@ private:
 private:
     // Buffers
     std::array<UniformBuffer, FB_COUNT> _mvpUniformBuffers{};
-    glm::mat4 mvp = glm::mat4(1.f);
     ShaderStorageBuffer _vertices{};
     ShaderStorageBuffer _indices{};
     Texture _texture{};
     uint32_t _indexCount = 0;
-
 };
 
 

@@ -13,7 +13,10 @@ class RenderLayer {
 public:
 
     virtual ~RenderLayer();
+
+    virtual void update(float dt, uint32_t currentImage) = 0;
     virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage) = 0;
+
 
 protected:
     explicit RenderLayer();

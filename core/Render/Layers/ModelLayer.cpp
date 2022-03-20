@@ -6,11 +6,10 @@
 #include "../Factory/FactoryVulkan.h"
 #include "../Factory/FactoryModel.h"
 
-ModelLayer::ModelLayer(VkPhysicalDevice physicalDevice, VkRenderPass renderPass) : RenderLayer() {
-#if 0
+ModelLayer::ModelLayer(VkRenderPass renderPass) : RenderLayer() {
     // init the uniform buffers
     for (auto& buffer : _mvpUniformBuffers)
-        buffer.init(_vrddevice, _vrdphysicalDevice, sizeof(mvp));
+        buffer.init(_vrd->device, _vrd->physicalDevice, sizeof(mvp));
 
     // create duck model
     std::vector<TexVertex> vertices;
@@ -19,34 +18,59 @@ ModelLayer::ModelLayer(VkPhysicalDevice physicalDevice, VkRenderPass renderPass)
     _indexCount = indices.size();
 
     // init the vertices ssbo
-    _vertices.init(_vrddevice, _vrdphysicalDevice, vertices.size() * sizeof(vertices[0]));
-    VK_ASSERT(_vertices.setData(_vrddevice, _vrdphysicalDevice, _graphicsQueue, _commandPool,
+    _vertices.init(_vrd->device, _vrd->physicalDevice, vertices.size() * sizeof(vertices[0]));
+    VK_ASSERT(_vertices.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool,
                                 vertices.data(), vertices.size() * sizeof(vertices[0])), "set data failed");
 
     // init the indices ssbo
-    _indices.init(_vrddevice, _vrdphysicalDevice, sizeof(indices[0]) * indices.size());
-    VK_ASSERT(_indices.setData(_vrddevice, _vrdphysicalDevice, _graphicsQueue, _commandPool,
+    _indices.init(_vrd->device, _vrd->physicalDevice, sizeof(indices[0]) * indices.size());
+    VK_ASSERT(_indices.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool,
                                indices.data(), indices.size() * sizeof(indices[0])), "set data failed");
 
     // init the statue texture
-    _texture.init("../../../core/Assets/Models/duck/textures/Duck_baseColor.png", _vrddevice, _vrdphysicalDevice, _graphicsQueue, _commandPool);
+    _texture.init("../../../core/Assets/Models/duck/textures/Duck_baseColor.png", _vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool);
     createPipelineLayout();
     createDescriptorSets();
-#endif
     ShaderFiles files = {
             .vertex = "vert.spv",
             .fragment = "frag.spv"
     };
-    _graphicsPipeline = Factory::createGraphicsPipeline(_device, _swapchainExtent, renderPass, _pipelineLayout, files);
+    _graphicsPipeline = Factory::createGraphicsPipeline(_vrd->device, _swapchainExtent, renderPass, _pipelineLayout, files);
 }
 
 ModelLayer::~ModelLayer() {
 
 }
 
-void ModelLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage) {
+void ModelLayer::update(float dt, uint32_t currentImage) {
+    static float time = 0.f;
+    time += dt;
+    float aspectRatio = _swapchainExtent.width/(float)_swapchainExtent.height;
+    glm::mat4 v = glm::lookAt(glm::vec3(0.f, 0.f, 3.f), glm::vec3(0.f), glm::vec3(0.f, 1.f, 0.f));
+    glm::mat4 p = glm::perspective(45.f, aspectRatio, 0.1f, 1000.f);
+    glm::mat4 m = glm::rotate(
+            glm::translate(glm::mat4(1.0f), glm::vec3(0.f, 0.5f, -1.5f)) * glm::rotate(glm::mat4(1.f), glm::pi<float>(),
+                                                                                       glm::vec3(1, 0, 0)),
+            time,
+            glm::vec3(0.0f, 1.0f, 0.0f)
+    );
 
+    glm::mat4 mvp = p  * v * m;
+    VK_ASSERT(_mvpUniformBuffers[currentImage].setData(_vrd->device, glm::value_ptr(mvp), sizeof(mvp)), "Failed to dat");
 }
+
+
+void ModelLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage) {
+    // bind pipeline and render
+    vkCmdBindPipeline(_vrd->commandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
+    vkCmdBindDescriptorSets(_vrd->commandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout,
+                            0, 1, &_descriptorSets[currentImage], 0, nullptr);
+
+    vkCmdDraw(_vrd->commandBuffers[currentImage], _indexCount, 1, 0, 0);
+}
+
+
+//////////////// PRIVATE METHODS /////////////////////////
 
 void ModelLayer::createPipelineLayout() {
     // create the pipeline layout
@@ -83,7 +107,7 @@ void ModelLayer::createPipelineLayout() {
             .pBindings = layoutBindings.data()
     };
 
-    VK_CHECK(vkCreateDescriptorSetLayout(_device, &descriptorLayoutCI, nullptr, &_descriptorSetLayout));
+    VK_CHECK(vkCreateDescriptorSetLayout(_vrd->device, &descriptorLayoutCI, nullptr, &_descriptorSetLayout));
 
 
     // create pipeline layout (used for uniform and push constants)
@@ -94,7 +118,7 @@ void ModelLayer::createPipelineLayout() {
     pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
     pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
 
-    VK_CHECK(vkCreatePipelineLayout(_device, &pipelineLayoutInfo, nullptr, &_pipelineLayout));
+    VK_CHECK(vkCreatePipelineLayout(_vrd->device, &pipelineLayoutInfo, nullptr, &_pipelineLayout));
 }
 
 void ModelLayer::createDescriptorSets() {
@@ -105,7 +129,7 @@ void ModelLayer::createDescriptorSets() {
     // us get away with an allocation that exceeds the limits of our descriptor pool.
     // Other times, vkAllocateDescriptorSets will fail and return VK_ERROR_POOL_OUT_OF_MEMORY.
     // This can be particularly frustrating if the allocation succeeds on some machines, but fails on others.
-    _descriptorPool = Factory::createDescriptorPool(_device, FB_COUNT, 1, 2, 0);
+    _descriptorPool = Factory::createDescriptorPool(_vrd->device, FB_COUNT, 1, 2, 0);
 
     std::array<VkDescriptorSetLayout, FB_COUNT> layouts = {_descriptorSetLayout, _descriptorSetLayout, _descriptorSetLayout};
 
@@ -116,7 +140,7 @@ void ModelLayer::createDescriptorSets() {
             .pSetLayouts = layouts.data()
     };
 
-    VK_CHECK(vkAllocateDescriptorSets(_device, &descriptorSetAI, _descriptorSets.data()));
+    VK_CHECK(vkAllocateDescriptorSets(_vrd->device, &descriptorSetAI, _descriptorSets.data()));
 
     for (size_t i = 0; i < _descriptorSets.size(); ++i) {
         VkDescriptorBufferInfo bufferInfo = {
@@ -185,7 +209,7 @@ void ModelLayer::createDescriptorSets() {
                                               .pImageInfo = &imageInfo
                                       });
 
-        vkUpdateDescriptorSets(_device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
+        vkUpdateDescriptorSets(_vrd->device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
     }
 
 }
