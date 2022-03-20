@@ -192,8 +192,8 @@ void Application::onEvent(Event &e) {
     }
 }
 
-constexpr Renderer* Application::getRenderer() const {
-    return (Renderer*)&_renderer;
+Renderer* Application::getRenderer() {
+    return &_renderer;
 }
 
 

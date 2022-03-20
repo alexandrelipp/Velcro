@@ -4,13 +4,12 @@
 
 #pragma once
 
-#define GLFW_INCLUDE_VULKAN
-#include <GLFW/glfw3.h>
-
 #include "core/events/Event.h"
 #include "core/Codes.h"
 #include "core/Render/Renderer.h"
-//#include "core/Render/Renderer.h"
+
+#define GLFW_INCLUDE_VULKAN
+#include <GLFW/glfw3.h>
 
 #include <spdlog/spdlog.h>
 #include <glm/glm.hpp>
@@ -31,7 +30,7 @@ public:
     glm::vec2 getMousePos();
     void onEvent(Event& e);
 
-    constexpr Renderer* getRenderer() const;
+    Renderer* getRenderer();
 
 
     void run();

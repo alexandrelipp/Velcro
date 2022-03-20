@@ -6,10 +6,14 @@
 
 #include "../../Application.h"
 
-RenderLayer::~RenderLayer() {
-    if (_device == nullptr){
+RenderLayer::RenderLayer() {
+    if (_vrd == nullptr || _vrd->device == nullptr){
         Renderer* renderer = Application::getApp()->getRenderer();
-        _device = renderer->getDevice();
+        _vrd = renderer->getRenderDevice();
         _swapchainExtent = renderer->getSwapchainExtent();
     }
+}
+
+RenderLayer::~RenderLayer() {
+
 }

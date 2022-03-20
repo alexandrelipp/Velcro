@@ -4,6 +4,7 @@
 
 #pragma once
 
+#include "VulkanRenderDevice.hpp"
 #include "Objects/UniformBuffer.h"
 #include "Objects/ShaderStorageBuffer.h"
 #include "Objects/Texture.h"
@@ -17,7 +18,7 @@ public:
     ~Renderer();
     bool init();
 
-    VkDevice getDevice();
+    VulkanRenderDevice* getRenderDevice();
     VkExtent2D getSwapchainExtent();
 
     void draw();
@@ -39,11 +40,7 @@ private:
 private:
     // context
     VkInstance _instance = nullptr;
-    VkPhysicalDevice _physicalDevice = nullptr;
-    VkDevice _device = nullptr; ///< Logical device
-    uint32_t _graphicsQueueFamilyIndex; ///< index of the graphics family
-
-    VkQueue _graphicsQueue = nullptr;
+    VulkanRenderDevice _vrd{};    ///< vulkan render device, immutable after initialization
 
     VkSurfaceKHR _surface = nullptr;
 
@@ -62,8 +59,6 @@ private:
     std::array<VkFramebuffer, FB_COUNT> _frameBuffers = {nullptr};
 
     // commands
-    VkCommandPool _commandPool = nullptr;
-    std::array<VkCommandBuffer, FB_COUNT> _commandBuffers = {nullptr};
     glm::vec4 _clearValue = { 0.3f, 0.5f, 0.5f, 1.f };
 
     // sync
