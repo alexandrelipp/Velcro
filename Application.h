@@ -31,6 +31,8 @@ public:
     glm::vec2 getMousePos();
     void onEvent(Event& e);
 
+    constexpr Renderer* getRenderer() const;
+
 
     void run();
     void close();

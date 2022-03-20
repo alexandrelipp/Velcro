@@ -17,8 +17,10 @@ public:
     ~Renderer();
     bool init();
 
-    void draw();
+    VkDevice getDevice();
+    VkExtent2D getSwapchainExtent();
 
+    void draw();
 private:
 
     // creation

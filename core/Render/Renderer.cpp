@@ -194,6 +194,15 @@ bool Renderer::init() {
     return true;
 }
 
+VkDevice Renderer::getDevice() {
+    return _device;
+}
+
+VkExtent2D Renderer::getSwapchainExtent() {
+    return _swapchainExtent;
+}
+
+
 void Renderer::draw() {
     // wait until the fence is signaled (ready to use)
     //VK_CHECK(vkWaitForFences(_device, 1, &_inFlightFence, VK_TRUE, UINT64_MAX));

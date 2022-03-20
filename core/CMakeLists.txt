@@ -18,4 +18,8 @@ target_sources(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/Render/Objects/ShaderStorageBuffer.h"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Objects/Texture.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Objects/Texture.h"
+        "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/RenderLayer.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/RenderLayer.h"
+        "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/ModelLayer.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/ModelLayer.h"
         )
