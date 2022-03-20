@@ -22,4 +22,6 @@ target_sources(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/RenderLayer.h"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/ModelLayer.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/ModelLayer.h"
+        "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/LineLayer.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/LineLayer.h"
         )
