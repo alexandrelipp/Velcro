@@ -196,7 +196,6 @@ Renderer* Application::getRenderer() {
     return &_renderer;
 }
 
-
 uint32_t Application::getWindowWidth(){
     return _windowData.width;
 }

@@ -7,6 +7,7 @@
 #include "../../Application.h"
 
 RenderLayer::RenderLayer() {
+    // init static members if not already done
     if (_vrd == nullptr || _vrd->device == nullptr){
         Renderer* renderer = Application::getApp()->getRenderer();
         _vrd = renderer->getRenderDevice();

@@ -29,10 +29,12 @@ public:
     //static inline DepthTexture;
 
 
+    // descriptors
     VkDescriptorSetLayout _descriptorSetLayout = nullptr;
     VkDescriptorPool _descriptorPool = nullptr;
     std::array<VkDescriptorSet, FB_COUNT> _descriptorSets = {nullptr};
 
+    // graphics pipeline
     VkPipelineLayout _pipelineLayout = nullptr;
     VkPipeline _graphicsPipeline = nullptr;
 };

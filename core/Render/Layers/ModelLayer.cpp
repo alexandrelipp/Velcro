@@ -149,72 +149,74 @@ void ModelLayer::createDescriptorSets() {
     VK_CHECK(vkAllocateDescriptorSets(_vrd->device, &descriptorSetAI, _descriptorSets.data()));
 
     for (size_t i = 0; i < _descriptorSets.size(); ++i) {
+        // create write descriptor set for each descriptor set
+        std::vector<VkWriteDescriptorSet> writeDescriptorSets;
+
+        // push back descriptor write for UBO (1 buffer/image)
         VkDescriptorBufferInfo bufferInfo = {
                 .buffer = _mvpUniformBuffers[i].getBuffer(),
                 .offset = 0,
                 .range = _mvpUniformBuffers[i].getSize()
         };
-
-        std::vector<VkWriteDescriptorSet> writeDescriptorSets;
-
         writeDescriptorSets.push_back({
-                                              .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                              .dstSet = _descriptorSets[i],
-                                              .dstBinding = 0,
-                                              .dstArrayElement = 0,
-                                              .descriptorCount = 1,
-                                              .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                              .pBufferInfo = &bufferInfo
+                                  .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                  .dstSet = _descriptorSets[i],
+                                  .dstBinding = 0,
+                                  .dstArrayElement = 0,
+                                  .descriptorCount = 1,
+                                  .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                                  .pBufferInfo = &bufferInfo
                                       });
 
+        // push back descriptor write for vertices SSBO (1 buffer)
         VkDescriptorBufferInfo verticesInfo = {
                 .buffer = _vertices.getBuffer(),
                 .offset = 0,
                 .range = _vertices.getSize()
         };
-
         writeDescriptorSets.push_back({
-                                              .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                              .dstSet = _descriptorSets[i],
-                                              .dstBinding = 1,
-                                              .dstArrayElement = 0,
-                                              .descriptorCount = 1,
-                                              .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                              .pBufferInfo = &verticesInfo
+                                  .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                  .dstSet = _descriptorSets[i],
+                                  .dstBinding = 1,
+                                  .dstArrayElement = 0,
+                                  .descriptorCount = 1,
+                                  .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                  .pBufferInfo = &verticesInfo
                                       });
 
+        // push back descriptor write for indices SSBO (1 buffer)
         VkDescriptorBufferInfo indicesInfo = {
                 .buffer = _indices.getBuffer(),
                 .offset = 0,
                 .range = _indices.getSize()
         };
-
         writeDescriptorSets.push_back({
-                                              .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                              .dstSet = _descriptorSets[i],
-                                              .dstBinding = 2,
-                                              .dstArrayElement = 0,
-                                              .descriptorCount = 1,
-                                              .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                              .pBufferInfo = &indicesInfo
+                                  .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                  .dstSet = _descriptorSets[i],
+                                  .dstBinding = 2,
+                                  .dstArrayElement = 0,
+                                  .descriptorCount = 1,
+                                  .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                  .pBufferInfo = &indicesInfo
                                       });
 
+        // push back descriptor write for image/sampler
         VkDescriptorImageInfo imageInfo = {
                 .sampler = _texture.getSampler(),
                 .imageView = _texture.getImageView(),
                 .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
         };
-
         writeDescriptorSets.push_back({
-                                              .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                              .dstSet = _descriptorSets[i],
-                                              .dstBinding = 3,
-                                              .dstArrayElement = 0,
-                                              .descriptorCount = 1,
-                                              .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                                              .pImageInfo = &imageInfo
+                                  .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                  .dstSet = _descriptorSets[i],
+                                  .dstBinding = 3,
+                                  .dstArrayElement = 0,
+                                  .descriptorCount = 1,
+                                  .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                  .pImageInfo = &imageInfo
                                       });
 
+        // update the descriptor sets with the created decriptor writes
         vkUpdateDescriptorSets(_vrd->device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
     }
 

@@ -27,8 +27,9 @@ private:
     std::array<UniformBuffer, FB_COUNT> _mvpUniformBuffers{};
     ShaderStorageBuffer _vertices{};
     ShaderStorageBuffer _indices{};
-    Texture _texture{};
     uint32_t _indexCount = 0;
+
+    Texture _texture{};
 };
 
 
