@@ -9,6 +9,7 @@
 #include "../Utils/UtilsFile.h"
 #include "Factory/FactoryVulkan.h"
 #include "Factory/FactoryModel.h"
+#include "Layers/ModelLayer.h"
 
 
 Renderer::Renderer() {
@@ -18,18 +19,6 @@ Renderer::Renderer() {
 Renderer::~Renderer() {
     VK_CHECK(vkDeviceWaitIdle(_vrd.device));
 
-    // destroy the buffers
-    for (auto& buffer : _mvpUniformBuffers)
-        buffer.destroy(_vrd.device);
-    _vertices.destroy(_vrd.device);
-    _indices.destroy(_vrd.device);
-
-    _texture.destroy(_vrd.device);
-
-    // destroy descriptors
-    vkDestroyDescriptorSetLayout(_vrd.device, _descriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(_vrd.device, _descriptorPool, nullptr);
-
     // destroy sync objects
     //vkDestroyFence(_vrd.device, _inFlightFence, nullptr);
     vkDestroySemaphore(_vrd.device, _imageAvailSemaphore, nullptr);
@@ -38,8 +27,8 @@ Renderer::~Renderer() {
     for (auto fb : _frameBuffers)
         vkDestroyFramebuffer(_vrd.device, fb, nullptr);
     vkDestroyRenderPass(_vrd.device, _renderPass, nullptr);
-    vkDestroyPipelineLayout(_vrd.device, _pipelineLayout, nullptr);
-    vkDestroyPipeline(_vrd.device, _graphicsPipeline, nullptr);
+
+    _renderLayers.clear();
 
     vkFreeCommandBuffers(_vrd.device, _vrd.commandPool, FB_COUNT, _vrd.commandBuffers.data());
     vkDestroyCommandPool(_vrd.device, _vrd.commandPool, nullptr);
@@ -137,38 +126,7 @@ bool Renderer::init() {
    
     createRenderPass(surfaceFormat.format);
 
-    // init the uniform buffers
-    for (auto& buffer : _mvpUniformBuffers)
-        buffer.init(_vrd.device, _vrd.physicalDevice, sizeof(mvp));
-
-    // create duck model
-    std::vector<TexVertex> vertices;
-    std::vector<uint32_t> indices;
-    VK_ASSERT(FactoryModel::createDuckModel(vertices, indices), "Failed to create mesh");
-    _indexCount = indices.size();
-
-    // init the vertices ssbo
-    _vertices.init(_vrd.device, _vrd.physicalDevice, vertices.size() * sizeof(vertices[0]));
-    VK_ASSERT(_vertices.setData(_vrd.device, _vrd.physicalDevice, _vrd.graphicsQueue, _vrd.commandPool,
-                                vertices.data(), vertices.size() * sizeof(vertices[0])), "set data failed");
-
-    // init the indices ssbo
-    _indices.init(_vrd.device, _vrd.physicalDevice, sizeof(indices[0]) * indices.size());
-    VK_ASSERT(_indices.setData(_vrd.device, _vrd.physicalDevice, _vrd.graphicsQueue, _vrd.commandPool,
-                               indices.data(), indices.size() * sizeof(indices[0])), "set data failed");
-
-    // init the statue texture
-    _texture.init("../../../core/Assets/Models/duck/textures/Duck_baseColor.png", _vrd.device, _vrd.physicalDevice, _vrd.graphicsQueue, _vrd.commandPool);
-
-    createPipelineLayout();
-    createDescriptorSets();
-
-    ShaderFiles files = {
-       .vertex = "vert.spv",
-       .fragment = "frag.spv"
-    };
-
-    _graphicsPipeline = Factory::createGraphicsPipeline(_vrd.device, _swapchainExtent, _renderPass, _pipelineLayout, files);
+    _renderLayers.push_back(std::make_shared<ModelLayer>(_renderPass));
 
     // create framebuffers
     for (int i = 0; i < FB_COUNT; ++i) {
@@ -210,25 +168,13 @@ void Renderer::draw() {
     // then unsignal the fence for next use
     //VK_CHECK(vkResetFences(_vrd.device, 1, &_inFlightFence));
 
-    static float angle = 0.f;
-    //angle += 0.0001f;
-
-    float aspectRatio = _swapchainExtent.width/(float)_swapchainExtent.height;
-    glm::mat4 v = glm::lookAt(glm::vec3(0.f, 0.f, 3.f), glm::vec3(0.f), glm::vec3(0.f, 1.f, 0.f));
-    glm::mat4 p = glm::perspective(45.f, aspectRatio, 0.1f, 1000.f);
-    glm::mat4 m = glm::rotate(
-            glm::translate(glm::mat4(1.0f), glm::vec3(0.f, 0.5f, -1.5f)) * glm::rotate(glm::mat4(1.f), glm::pi<float>(),
-                                                                             glm::vec3(1, 0, 0)),
-            (float)glfwGetTime(),
-            glm::vec3(0.0f, 1.0f, 0.0f)
-    );
-
-     mvp = p  * v * m;
 
     uint32_t imageIndex;
     VK_CHECK(vkAcquireNextImageKHR(_vrd.device, _swapchain, UINT64_MAX, _imageAvailSemaphore, nullptr, &imageIndex));
 
-    VK_ASSERT(_mvpUniformBuffers[imageIndex].setData(_vrd.device, glm::value_ptr(mvp), sizeof(mvp)), "Failed to update");
+    for (auto layer : _renderLayers)
+        layer->update(0.001f, imageIndex);
+
     //VK_CHECK(vkResetCommandBuffer(_vrd.commandBuffers[imageIndex], 0));
     // reset the command pool, probably not optimal but good enough for now
     VK_CHECK(vkResetCommandPool(_vrd.device, _vrd.commandPool, 0));
@@ -437,147 +383,6 @@ void Renderer::createRenderPass(VkFormat swapchainFormat){
     VK_CHECK(vkCreateRenderPass(_vrd.device, &renderPassCI, nullptr, &_renderPass));
 }
 
-void Renderer::createPipelineLayout(){
-    std::array<VkDescriptorSetLayoutBinding, 4> layoutBindings = {
-            VkDescriptorSetLayoutBinding{
-                .binding = 0,
-                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .descriptorCount = 1,
-                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
-            },
-            VkDescriptorSetLayoutBinding{
-                .binding = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                .descriptorCount = 1,
-                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
-            },
-            VkDescriptorSetLayoutBinding{
-                .binding = 2,
-                .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                .descriptorCount = 1,
-                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
-            },
-            VkDescriptorSetLayoutBinding{
-                .binding = 3,
-                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                .descriptorCount = 1,
-                .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
-            }
-    };
-
-    VkDescriptorSetLayoutCreateInfo descriptorLayoutCI = {
-        .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        .bindingCount = layoutBindings.size(),
-        .pBindings = layoutBindings.data()
-    };
-
-    VK_CHECK(vkCreateDescriptorSetLayout(_vrd.device, &descriptorLayoutCI, nullptr, &_descriptorSetLayout));
-   
-
-    // create pipeline layout (used for uniform and push constants)
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &_descriptorSetLayout;
-    pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
-    pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
-
-    VK_CHECK(vkCreatePipelineLayout(_vrd.device, &pipelineLayoutInfo, nullptr, &_pipelineLayout));
-}
-
-void Renderer::createDescriptorSets() {
-    // Inadequate descriptor pools are a good example of a problem that the validation layers will not catch:
-    // As of Vulkan 1.1, vkAllocateDescriptorSets may fail with the error code VK_ERROR_POOL_OUT_OF_MEMORY
-    // if the pool is not sufficiently large, but the driver may also try to solve the problem internally.
-    // This means that sometimes (depending on hardware, pool size and allocation size) the driver will let
-    // us get away with an allocation that exceeds the limits of our descriptor pool.
-    // Other times, vkAllocateDescriptorSets will fail and return VK_ERROR_POOL_OUT_OF_MEMORY.
-    // This can be particularly frustrating if the allocation succeeds on some machines, but fails on others.
-    _descriptorPool = Factory::createDescriptorPool(_vrd.device, FB_COUNT, 1, 2, 0);
-
-    std::array<VkDescriptorSetLayout, FB_COUNT> layouts = {_descriptorSetLayout, _descriptorSetLayout, _descriptorSetLayout};
-
-    VkDescriptorSetAllocateInfo descriptorSetAI = {
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            .descriptorPool = _descriptorPool,
-            .descriptorSetCount = (uint32_t)layouts.size(),
-            .pSetLayouts = layouts.data()
-    };
-
-    VK_CHECK(vkAllocateDescriptorSets(_vrd.device, &descriptorSetAI, _descriptorSets.data()));
-
-    for (size_t i = 0; i < _descriptorSets.size(); ++i){
-        VkDescriptorBufferInfo bufferInfo = {
-                .buffer = _mvpUniformBuffers[i].getBuffer(),
-                .offset = 0,
-                .range = _mvpUniformBuffers[i].getSize()
-        };
-
-        std::vector<VkWriteDescriptorSet> writeDescriptorSets;
-
-        writeDescriptorSets.push_back({
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet = _descriptorSets[i],
-                .dstBinding = 0,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .pBufferInfo = &bufferInfo
-        });
-
-        VkDescriptorBufferInfo verticesInfo = {
-                .buffer = _vertices.getBuffer(),
-                .offset = 0,
-                .range = _vertices.getSize()
-        };
-
-        writeDescriptorSets.push_back({
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet = _descriptorSets[i],
-                .dstBinding = 1,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                .pBufferInfo = &verticesInfo
-        });
-
-        VkDescriptorBufferInfo indicesInfo = {
-                .buffer = _indices.getBuffer(),
-                .offset = 0,
-                .range = _indices.getSize()
-        };
-
-        writeDescriptorSets.push_back({
-                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                .dstSet = _descriptorSets[i],
-                .dstBinding = 2,
-                .dstArrayElement = 0,
-                .descriptorCount = 1,
-                .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                .pBufferInfo = &indicesInfo
-        });
-
-        VkDescriptorImageInfo imageInfo = {
-                .sampler = _texture.getSampler(),
-                .imageView = _texture.getImageView(),
-                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-        };
-
-        writeDescriptorSets.push_back({
-            .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            .dstSet = _descriptorSets[i],
-            .dstBinding = 3,
-            .dstArrayElement = 0,
-            .descriptorCount = 1,
-            .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            .pImageInfo = &imageInfo
-        });
-
-        vkUpdateDescriptorSets(_vrd.device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
-    }
-}
-
-
 void Renderer::recordCommandBuffer(uint32_t index){
     
     // begin recording command
@@ -616,12 +421,9 @@ void Renderer::recordCommandBuffer(uint32_t index){
     };
     vkCmdBeginRenderPass(_vrd.commandBuffers[index], &beginCI, VK_SUBPASS_CONTENTS_INLINE);
 
-    // bind pipeline and render 
-    vkCmdBindPipeline(_vrd.commandBuffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
-    vkCmdBindDescriptorSets(_vrd.commandBuffers[index], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout,
-                            0, 1, &_descriptorSets[index], 0, nullptr);
-
-    vkCmdDraw(_vrd.commandBuffers[index], _indexCount, 1, 0, 0);
+    // record render commands from all the layers
+    for (auto layer : _renderLayers)
+        layer->fillCommandBuffer(_vrd.commandBuffers[index], index);
 
     // end the render pass
     vkCmdEndRenderPass(_vrd.commandBuffers[index]);

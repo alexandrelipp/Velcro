@@ -15,5 +15,15 @@ RenderLayer::RenderLayer() {
 }
 
 RenderLayer::~RenderLayer() {
+    // destroy descriptors
+    if (_descriptorSetLayout != nullptr)
+        vkDestroyDescriptorSetLayout(_vrd->device, _descriptorSetLayout, nullptr);
+    if (_descriptorPool != nullptr)
+        vkDestroyDescriptorPool(_vrd->device, _descriptorPool, nullptr);
 
+    // destroy pipeline
+    if (_pipelineLayout != nullptr)
+        vkDestroyPipelineLayout(_vrd->device, _pipelineLayout, nullptr);
+    if (_graphicsPipeline != nullptr)
+        vkDestroyPipeline(_vrd->device, _graphicsPipeline, nullptr);
 }

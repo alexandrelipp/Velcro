@@ -9,7 +9,7 @@
 ModelLayer::ModelLayer(VkRenderPass renderPass) : RenderLayer() {
     // init the uniform buffers
     for (auto& buffer : _mvpUniformBuffers)
-        buffer.init(_vrd->device, _vrd->physicalDevice, sizeof(mvp));
+        buffer.init(_vrd->device, _vrd->physicalDevice, sizeof(glm::mat4));
 
     // create duck model
     std::vector<TexVertex> vertices;
@@ -39,7 +39,13 @@ ModelLayer::ModelLayer(VkRenderPass renderPass) : RenderLayer() {
 }
 
 ModelLayer::~ModelLayer() {
+    // destroy the buffers
+    for (auto& buffer : _mvpUniformBuffers)
+        buffer.destroy(_vrd->device);
+    _vertices.destroy(_vrd->device);
+    _indices.destroy(_vrd->device);
 
+    _texture.destroy(_vrd->device);
 }
 
 void ModelLayer::update(float dt, uint32_t currentImage) {

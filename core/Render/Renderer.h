@@ -8,6 +8,7 @@
 #include "Objects/UniformBuffer.h"
 #include "Objects/ShaderStorageBuffer.h"
 #include "Objects/Texture.h"
+#include "Layers/RenderLayer.h"
 
 #include <vulkan/vulkan.h>
 
@@ -28,8 +29,6 @@ private:
     void createInstance();
     void createSwapchain(const VkSurfaceFormatKHR& surfaceFormat);
     void createRenderPass(VkFormat swapchainFormat);
-    void createPipelineLayout();
-    void createDescriptorSets();
 
     // 
     void recordCommandBuffer(uint32_t index);
@@ -42,20 +41,15 @@ private:
     VkInstance _instance = nullptr;
     VulkanRenderDevice _vrd{};    ///< vulkan render device, immutable after initialization
 
-    VkSurfaceKHR _surface = nullptr;
-
     // swapchain
     VkSwapchainKHR _swapchain = nullptr;
     std::array<VkImage, FB_COUNT> _swapchainImages = {nullptr};
     std::array<VkImageView, FB_COUNT> _swapchainImageViews = {nullptr};
     VkExtent2D _swapchainExtent = {0, 0};
 
-
-    // pipeline
-    VkPipeline _graphicsPipeline = nullptr;
+    // other
     VkRenderPass _renderPass = nullptr;
-    VkPipelineLayout _pipelineLayout = nullptr;
-
+    VkSurfaceKHR _surface = nullptr;
     std::array<VkFramebuffer, FB_COUNT> _frameBuffers = {nullptr};
 
     // commands
@@ -66,21 +60,6 @@ private:
     VkSemaphore _imageAvailSemaphore = nullptr;
     VkSemaphore _renderFinishedSemaphore = nullptr;
 
-    // Buffers
-    std::array<UniformBuffer, FB_COUNT> _mvpUniformBuffers{};
-    glm::mat4 mvp = glm::mat4(1.f);
-    ShaderStorageBuffer _vertices{};
-    ShaderStorageBuffer _indices{};
-    uint32_t _indexCount = 0;
-
-    // Descriptors
-    VkDescriptorPool _descriptorPool = nullptr;
-    VkDescriptorSetLayout _descriptorSetLayout = nullptr;
-    std::array<VkDescriptorSet, FB_COUNT> _descriptorSets{nullptr};
-
-    // Textures
-    Texture _texture{};
-
     // DepthBuffer
     struct DepthBuffer{
         VkImage image = nullptr;
@@ -88,6 +67,9 @@ private:
         VkDeviceMemory deviceMemory = nullptr;
         VkFormat format;
     } _depthBuffer;
+
+    // Render layers
+    std::vector<std::shared_ptr<RenderLayer>> _renderLayers;
 
     /// ONLY PRESENT IN DEBUG ///
 #ifdef VELCRO_DEBUG
