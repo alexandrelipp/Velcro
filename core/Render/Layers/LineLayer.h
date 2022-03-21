@@ -19,6 +19,20 @@ public:
     virtual void update(float dt, uint32_t currentImage) override;
 
 private:
-}
+    static constexpr uint32_t MAX_LINE_COUNT = 65000;
 
+    void createPipelineLayout();
+    void createDescriptorSets();
 
+    struct VertexData {
+        glm::vec3 position = glm::vec3(0.f);
+        glm::vec4 color = glm::vec4(1.f);
+    };
+
+private:
+    // points
+    ShaderStorageBuffer _pointsSSBO{}; // TODO : probably want dynamic buffer
+    std::vector<VertexData> _points{};
+
+    std::array<UniformBuffer, FB_COUNT> _mvpUniformBuffers{};
+};

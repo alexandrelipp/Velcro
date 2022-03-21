@@ -31,11 +31,13 @@ ModelLayer::ModelLayer(VkRenderPass renderPass) : RenderLayer() {
     _texture.init("../../../core/Assets/Models/duck/textures/Duck_baseColor.png", _vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool);
     createPipelineLayout();
     createDescriptorSets();
-    ShaderFiles files = {
-            .vertex = "vert.spv",
-            .fragment = "frag.spv"
+    Factory::GraphicsPipelineProps props = {
+            .shaders =  {
+                    .vertex = "vert.spv",
+                    .fragment = "frag.spv"
+            }
     };
-    _graphicsPipeline = Factory::createGraphicsPipeline(_vrd->device, _swapchainExtent, renderPass, _pipelineLayout, files);
+    _graphicsPipeline = Factory::createGraphicsPipeline(_vrd->device, _swapchainExtent, renderPass, _pipelineLayout, props);
 }
 
 ModelLayer::~ModelLayer() {
@@ -135,7 +137,7 @@ void ModelLayer::createDescriptorSets() {
     // us get away with an allocation that exceeds the limits of our descriptor pool.
     // Other times, vkAllocateDescriptorSets will fail and return VK_ERROR_POOL_OUT_OF_MEMORY.
     // This can be particularly frustrating if the allocation succeeds on some machines, but fails on others.
-    _descriptorPool = Factory::createDescriptorPool(_vrd->device, FB_COUNT, 1, 2, 0);
+    _descriptorPool = Factory::createDescriptorPool(_vrd->device, FB_COUNT, 1, 2, 1);
 
     std::array<VkDescriptorSetLayout, FB_COUNT> layouts = {_descriptorSetLayout, _descriptorSetLayout, _descriptorSetLayout};
 

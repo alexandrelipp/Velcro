@@ -207,12 +207,12 @@ namespace Factory {
     }
 
     VkPipeline createGraphicsPipeline(VkDevice device, VkExtent2D& extent, VkRenderPass renderPass,
-                                      VkPipelineLayout pipelineLayout, const ShaderFiles& shaders) {
-        VK_ASSERT(!shaders.geometry.has_value(), "Geo shader not supported yet");
+                                      VkPipelineLayout pipelineLayout, const GraphicsPipelineProps& props) {
+        VK_ASSERT(!props.shaders.geometry.has_value(), "Geo shader not supported yet");
 
-        VK_ASSERT(shaders.fragment.has_value() && shaders.vertex.has_value(), "Filenames are empty");
-        VkShaderModule vertModule = Factory::createShaderModule(device, shaders.vertex.value());
-        VkShaderModule fragModule = Factory::createShaderModule(device, shaders.fragment.value());
+        VK_ASSERT(props.shaders.fragment.has_value() && props.shaders.vertex.has_value(), "Filenames are empty");
+        VkShaderModule vertModule = Factory::createShaderModule(device, props.shaders.vertex.value());
+        VkShaderModule fragModule = Factory::createShaderModule(device, props.shaders.fragment.value());
 
         std::array<VkPipelineShaderStageCreateInfo, 2> shadersCI{};
 
@@ -248,7 +248,7 @@ namespace Factory {
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
                 .pNext = nullptr,
                 .flags = 0u,
-                .topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+                .topology = props.primitiveTopology,
                 .primitiveRestartEnable = VK_FALSE, // if enabled a special index value (0xFFFFFFFF) restarts the assembly if drawing indexed
         };
 
