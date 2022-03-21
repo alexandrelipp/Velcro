@@ -51,7 +51,7 @@ void LineLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t curren
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0,
                             1, &_descriptorSets[currentImage], 0, nullptr);
 
-    vkCmdDraw()
+    vkCmdDraw(commandBuffer, _points.size(), 1, 0, 0);
 }
 
 void LineLayer::update(float dt, uint32_t currentImage) {
