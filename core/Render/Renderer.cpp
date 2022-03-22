@@ -10,6 +10,7 @@
 #include "Factory/FactoryVulkan.h"
 #include "Factory/FactoryModel.h"
 #include "Layers/ModelLayer.h"
+#include "Layers/LineLayer.h"
 
 
 Renderer::Renderer() {
@@ -128,6 +129,7 @@ bool Renderer::init() {
     createRenderPass(surfaceFormat.format);
 
     _renderLayers.push_back(std::make_shared<ModelLayer>(_renderPass));
+    _renderLayers.push_back(std::make_shared<LineLayer>(_renderPass));
 
     // create framebuffers
     for (int i = 0; i < FB_COUNT; ++i) {
