@@ -38,7 +38,6 @@ private:
 
 private:
     // context
-    VkInstance _instance = nullptr;
     VulkanRenderDevice _vrd{};    ///< vulkan render device, immutable after initialization
 
     // swapchain

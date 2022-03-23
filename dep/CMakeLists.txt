@@ -1,5 +1,22 @@
 cmake_minimum_required(VERSION 3.20)
 
+target_sources(${PROJECT_NAME} PUBLIC
+        "${CMAKE_CURRENT_LIST_DIR}/imgui/imgui.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/imgui/imgui.h"
+        "${CMAKE_CURRENT_LIST_DIR}/imgui/imgui_demo.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/imgui/imgui_draw.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/imgui/imgui_internal.h"
+        "${CMAKE_CURRENT_LIST_DIR}/imgui/imgui_tables.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/imgui/imgui_widgets.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/imgui/imstb_rectpack.h"
+        "${CMAKE_CURRENT_LIST_DIR}/imgui/imstb_textedit.h"
+        "${CMAKE_CURRENT_LIST_DIR}/imgui/imstb_truetype.h"
+
+        # imgui with vulkan
+        "${CMAKE_CURRENT_LIST_DIR}/imgui/backends/imgui_impl_vulkan.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/imgui/backends/imgui_impl_vulkan.h"
+)
+
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/glfw")
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/glm")
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/spdlog")
@@ -13,6 +30,8 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/Vulkan/Include"
         "${CMAKE_CURRENT_LIST_DIR}/stbi"
         "${CMAKE_CURRENT_LIST_DIR}/assimp/include"
+        "${CMAKE_CURRENT_LIST_DIR}"
+        "${CMAKE_CURRENT_LIST_DIR}/imgui"
     )
 
 target_link_libraries(${PROJECT_NAME} PUBLIC

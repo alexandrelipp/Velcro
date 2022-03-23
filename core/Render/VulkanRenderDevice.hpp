@@ -8,6 +8,7 @@ static constexpr uint32_t FB_COUNT = 3; ///< triple buffering is used
 /// All members in this struct are immutable after creation
 struct VulkanRenderDevice final{
     // context
+    VkInstance instance = nullptr;
     VkDevice device = nullptr;
     VkPhysicalDevice physicalDevice = nullptr;
 

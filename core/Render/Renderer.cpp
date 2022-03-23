@@ -44,12 +44,12 @@ Renderer::~Renderer() {
     vkFreeMemory(_vrd.device, _depthBuffer.deviceMemory, nullptr);
 
     vkDestroySwapchainKHR(_vrd.device, _swapchain, nullptr);
-    vkDestroySurfaceKHR(_instance, _surface, nullptr);
+    vkDestroySurfaceKHR(_vrd.instance, _surface, nullptr);
     vkDestroyDevice(_vrd.device, nullptr);
 #ifdef VELCRO_DEBUG
-    Factory::freeDebugCallbacks(_instance, _messenger, _reportCallback);
+    Factory::freeDebugCallbacks(_vrd.instance, _messenger, _reportCallback);
 #endif
-    vkDestroyInstance(_instance, nullptr);
+    vkDestroyInstance(_vrd.instance, nullptr);
 }
 
 bool Renderer::init() {
@@ -57,7 +57,7 @@ bool Renderer::init() {
     createInstance();
 
     // pick a physical device (gpu)
-    _vrd.physicalDevice = utils::pickPhysicalDevice(_instance);
+    _vrd.physicalDevice = utils::pickPhysicalDevice(_vrd.instance);
     utils::printPhysicalDeviceProps(_vrd.physicalDevice);
 
     // create a logical device (interface to gpu)
@@ -66,7 +66,7 @@ bool Renderer::init() {
     _vrd.device = Factory::createDevice(_vrd.physicalDevice, _vrd.graphicsQueueFamilyIndex);
 
     // create surface
-    VK_CHECK(glfwCreateWindowSurface(_instance, Application::getApp()->getWindow(), nullptr, &_surface));
+    VK_CHECK(glfwCreateWindowSurface(_vrd.instance, Application::getApp()->getWindow(), nullptr, &_surface));
 
     // make sure the graphics queue supports presentation
     VkBool32 presentationSupport;
@@ -263,10 +263,10 @@ void Renderer::createInstance() {
             .enabledExtensionCount = (uint32_t)extensions.size(),
             .ppEnabledExtensionNames = extensions.data(),
     };
-    VK_CHECK(vkCreateInstance(&createInfo, nullptr, &_instance));
+    VK_CHECK(vkCreateInstance(&createInfo, nullptr, &_vrd.instance));
 
 #ifdef VELCRO_DEBUG
-    Factory::setupDebugCallbacks(_instance, &_messenger, &_reportCallback);
+    Factory::setupDebugCallbacks(_vrd.instance, &_messenger, &_reportCallback);
 #endif
 }
 
