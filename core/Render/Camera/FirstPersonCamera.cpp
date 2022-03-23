@@ -19,7 +19,6 @@ glm::vec3 FirstPersonCamera::getPosition() const {
     return _cameraPosition;
 }
 
-
 void FirstPersonCamera::update(float dt) {
     glm::vec2 mousePos = Application::getApp()->getMousePos();
     if (Application::getApp()->isMouseButtonPressed(MouseCode::ButtonLeft))
