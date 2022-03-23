@@ -23,6 +23,7 @@ public:
     static Application* getApp();
 
     Application();
+    ~Application();
 
     // input polling / events
     bool isKeyPressed(KeyCode code);
@@ -35,7 +36,6 @@ public:
 
     void run();
     void close();
-    void clean();
 
     // window
     GLFWwindow* getWindow();

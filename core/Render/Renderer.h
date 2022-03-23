@@ -34,6 +34,8 @@ private:
     // 
     void recordCommandBuffer(uint32_t index);
 
+    void onImGuiRender();
+
 private:
     static constexpr uint32_t FB_COUNT = 3; ///< triple buffering is used
 

@@ -25,6 +25,17 @@ Application::Application() {
     //_layerStack.addLayer(_editorLayer);
 }
 
+
+Application::~Application() {
+    //_layerStack.shutDown();
+    glfwDestroyWindow(_window);
+    _window = nullptr;
+
+    // This should be called here, see main to see why it's not
+    //glfwTerminate();
+}
+
+
 Application* Application::getApp(){
     return _instance;
 }
@@ -208,15 +219,6 @@ uint32_t Application::getWindowHeight(){
 float Application::getAspectRatio() {
     return _windowData.width/(float)_windowData.height;
 }
-
-void Application::clean(){
-    //_layerStack.shutDown();
-    glfwDestroyWindow(_window);
-    _window = nullptr;
-
-    glfwTerminate();
-}
-
 //void Application::setVSync(bool enable) {
 //    glfwSwapInterval(enable ? 1 : 0);
 //    _windowData.VSync = enable;

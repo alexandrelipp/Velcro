@@ -4,12 +4,16 @@
 
 #include "ImGuiLayer.h"
 #include "../Factory/FactoryVulkan.h"
+#include "../../Utils/UtilsVulkan.h"
+#include "../../Application.h"
 
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_vulkan.h>
+#include <imgui/backends/imgui_impl_glfw.h>
 
 ImGuiLayer::ImGuiLayer(VkRenderPass renderPass) {
     ImGui::CreateContext();
+    VK_ASSERT(ImGui_ImplGlfw_InitForVulkan(Application::getApp()->getWindow(), true), "Failed to init glfw");
 
     // Create Descriptor Pool. Taken from imgui vulkan exmaple. The number of descriptor might be extremely excessive
     {
@@ -49,14 +53,23 @@ ImGuiLayer::ImGuiLayer(VkRenderPass renderPass) {
             .MSAASamples = VK_SAMPLE_COUNT_1_BIT,
             .Allocator = nullptr
     };
-    //ImGui
+
+    // init
     VK_ASSERT(ImGui_ImplVulkan_Init(&initInfo, renderPass), "Failed to init imgui for vulkan");
 
-    ImGui_ImplGlfw_InitForVulkan
+    //execute a gpu command to upload imgui font textures
+    utils::executeOnQueueSync(_vrd->graphicsQueue, _vrd->device, _vrd->commandPool, [&](VkCommandBuffer cmd) {
+        ImGui_ImplVulkan_CreateFontsTexture(cmd);
+    });
+
+    //clear font textures from cpu data
+    ImGui_ImplVulkan_DestroyFontUploadObjects();
 }
 
 ImGuiLayer::~ImGuiLayer() {
-
+    ImGui_ImplVulkan_Shutdown();
+    ImGui_ImplGlfw_Shutdown();
+    ImGui::DestroyContext();
 }
 
 void ImGuiLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage) {
@@ -69,14 +82,15 @@ void ImGuiLayer::update(float dt, uint32_t currentImage) {
 
 
 void ImGuiLayer::onImGuiRender() {
-
+    bool show = false;
+    //ImGui::ShowDemoWindow(&show);
 }
 
 
 void ImGuiLayer::begin() {
     // Start the Dear ImGui frame
     ImGui_ImplVulkan_NewFrame();
-    //ImGui_ImplGlfw_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
 }
 

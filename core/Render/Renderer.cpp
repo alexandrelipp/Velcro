@@ -12,6 +12,8 @@
 #include "Layers/ModelLayer.h"
 #include "Layers/LineLayer.h"
 
+#include <imgui/imgui.h>
+
 
 Renderer::Renderer() {
 
@@ -182,6 +184,7 @@ void Renderer::draw() {
         layer->update(0.001f, imageIndex);
 
     _imGuiLayer->begin();
+    onImGuiRender();
     for (auto layer : _renderLayers)
         layer->onImGuiRender();
     _imGuiLayer->end();
@@ -441,4 +444,10 @@ void Renderer::recordCommandBuffer(uint32_t index){
 
     // stop recording commands
     VK_CHECK(vkEndCommandBuffer(_vrd.commandBuffers[index]));
+}
+
+void Renderer::onImGuiRender() {
+    ImGui::Begin("Hello from Renderer");
+    ImGui::Text("FPS");
+    ImGui::End();
 }

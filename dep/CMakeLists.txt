@@ -12,9 +12,11 @@ target_sources(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/imgui/imstb_textedit.h"
         "${CMAKE_CURRENT_LIST_DIR}/imgui/imstb_truetype.h"
 
-        # imgui with vulkan
+        # imgui with vulkan + glfw
         "${CMAKE_CURRENT_LIST_DIR}/imgui/backends/imgui_impl_vulkan.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/imgui/backends/imgui_impl_vulkan.h"
+        "${CMAKE_CURRENT_LIST_DIR}/imgui/backends/imgui_impl_glfw.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/imgui/backends/imgui_impl_glfw.h"
 )
 
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/glfw")

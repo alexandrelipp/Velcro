@@ -34,4 +34,9 @@ target_sources(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/LineLayer.h"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/ImGuiLayer.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/ImGuiLayer.h"
+
+        #CAMERA
+        "${CMAKE_CURRENT_LIST_DIR}/Render/Camera/InterfaceCamera.h"
+        "${CMAKE_CURRENT_LIST_DIR}/Render/Camera/FirstPersonCamera.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/Render/Camera/FirstPersonCamera.h"
         )
