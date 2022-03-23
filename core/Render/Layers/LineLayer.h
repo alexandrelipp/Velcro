@@ -17,6 +17,7 @@ public:
 
     virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage) override;
     virtual void update(float dt, uint32_t currentImage) override;
+    virtual void onImGuiRender() override;
 
     void line(const glm::vec3& p1, const glm::vec3& p2, const glm::vec4& c);
     void plane3d(const glm::vec3& orig, const glm::vec3& v1, const glm::vec3& v2,

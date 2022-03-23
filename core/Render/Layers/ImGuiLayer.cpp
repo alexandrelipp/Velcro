@@ -51,6 +51,8 @@ ImGuiLayer::ImGuiLayer(VkRenderPass renderPass) {
     };
     //ImGui
     VK_ASSERT(ImGui_ImplVulkan_Init(&initInfo, renderPass), "Failed to init imgui for vulkan");
+
+    ImGui_ImplGlfw_InitForVulkan
 }
 
 ImGuiLayer::~ImGuiLayer() {
@@ -64,6 +66,12 @@ void ImGuiLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t curre
 void ImGuiLayer::update(float dt, uint32_t currentImage) {
 
 }
+
+
+void ImGuiLayer::onImGuiRender() {
+
+}
+
 
 void ImGuiLayer::begin() {
     // Start the Dear ImGui frame

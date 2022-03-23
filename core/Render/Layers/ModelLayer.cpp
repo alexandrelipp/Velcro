@@ -77,6 +77,11 @@ void ModelLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t curre
     vkCmdDraw(_vrd->commandBuffers[currentImage], _indexCount, 1, 0, 0);
 }
 
+void ModelLayer::onImGuiRender() {
+
+}
+
+
 
 //////////////// PRIVATE METHODS /////////////////////////
 

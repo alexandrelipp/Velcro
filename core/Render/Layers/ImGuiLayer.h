@@ -11,14 +11,16 @@ class ImGuiLayer : public RenderLayer {
 public:
     ImGuiLayer(VkRenderPass renderPass);
 
-    void begin();
-    void end();
-
     virtual ~ImGuiLayer();
 
     virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage) override;
-
     virtual void update(float dt, uint32_t currentImage) override;
+    virtual void onImGuiRender() override;
+
+    void begin();
+    void end();
+
+
 
 
 };

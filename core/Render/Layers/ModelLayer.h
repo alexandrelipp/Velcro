@@ -17,6 +17,7 @@ public:
 
     virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage) override;
     virtual void update(float dt, uint32_t currentImage) override;
+    virtual void onImGuiRender() override;
 
 private:
     void createPipelineLayout();

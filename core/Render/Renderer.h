@@ -9,6 +9,7 @@
 #include "Objects/ShaderStorageBuffer.h"
 #include "Objects/Texture.h"
 #include "Layers/RenderLayer.h"
+#include "Layers/ImGuiLayer.h"
 
 #include <vulkan/vulkan.h>
 
@@ -69,6 +70,7 @@ private:
 
     // Render layers
     std::vector<std::shared_ptr<RenderLayer>> _renderLayers;
+    std::shared_ptr<ImGuiLayer> _imGuiLayer = nullptr;
 
     /// ONLY PRESENT IN DEBUG ///
 #ifdef VELCRO_DEBUG

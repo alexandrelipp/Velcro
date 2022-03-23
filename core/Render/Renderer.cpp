@@ -31,6 +31,7 @@ Renderer::~Renderer() {
 
     // clear render layer vector to trigger destructors (they should not be referenced elswhere)
     _renderLayers.clear();
+    _imGuiLayer = nullptr;
 
     vkFreeCommandBuffers(_vrd.device, _vrd.commandPool, FB_COUNT, _vrd.commandBuffers.data());
     vkDestroyCommandPool(_vrd.device, _vrd.commandPool, nullptr);
@@ -130,6 +131,8 @@ bool Renderer::init() {
 
     _renderLayers.push_back(std::make_shared<ModelLayer>(_renderPass));
     _renderLayers.push_back(std::make_shared<LineLayer>(_renderPass));
+    _imGuiLayer = std::make_shared<ImGuiLayer>(_renderPass);
+    _renderLayers.push_back(_imGuiLayer);
 
     // create framebuffers
     for (int i = 0; i < FB_COUNT; ++i) {
@@ -177,6 +180,11 @@ void Renderer::draw() {
 
     for (auto layer : _renderLayers)
         layer->update(0.001f, imageIndex);
+
+    _imGuiLayer->begin();
+    for (auto layer : _renderLayers)
+        layer->onImGuiRender();
+    _imGuiLayer->end();
 
     //VK_CHECK(vkResetCommandBuffer(_vrd.commandBuffers[imageIndex], 0));
     // reset the command pool, probably not optimal but good enough for now

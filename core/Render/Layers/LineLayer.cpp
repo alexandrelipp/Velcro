@@ -56,6 +56,10 @@ void LineLayer::update(float dt, uint32_t currentImage) {
 }
 
 
+void LineLayer::onImGuiRender() {
+
+}
+
 void LineLayer::line(const glm::vec3& p1, const glm::vec3& p2, const glm::vec4& c) {
     _lines.push_back( { .position = p1, .color = c } );
     _lines.push_back( { .position = p2, .color = c } );
