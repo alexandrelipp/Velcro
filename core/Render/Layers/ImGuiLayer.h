@@ -14,7 +14,7 @@ public:
     virtual ~ImGuiLayer();
 
     virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage) override;
-    virtual void update(float dt, uint32_t currentImage) override;
+    virtual void update(float dt, uint32_t currentImage, const glm::mat4& pv) override;
     virtual void onImGuiRender() override;
 
     void begin();

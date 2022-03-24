@@ -15,9 +15,8 @@
 #include <imgui/imgui.h>
 
 
-Renderer::Renderer() : _firstPersonCamera(glm::vec3{0.f, 0.f, 3.f}, glm::vec3(0.f), {0.f, 1.f, 0.f}){
-
-}
+Renderer::Renderer() : _camera(1.f),
+                       _fpsCounter(0.5f){}
 
 Renderer::~Renderer() {
     VK_CHECK(vkDeviceWaitIdle(_vrd.device));
@@ -34,9 +33,6 @@ Renderer::~Renderer() {
     // clear render layer vector to trigger destructors (they should not be referenced elswhere)
     _renderLayers.clear();
     _imGuiLayer = nullptr;
-
-    for (auto& buffer : _viewProjUniformBuffers)
-        buffer.destroy(_vrd.device);
 
     vkFreeCommandBuffers(_vrd.device, _vrd.commandPool, FB_COUNT, _vrd.commandBuffers.data());
     vkDestroyCommandPool(_vrd.device, _vrd.commandPool, nullptr);
@@ -134,9 +130,6 @@ bool Renderer::init() {
    
     createRenderPass(surfaceFormat.format);
 
-    for (auto& buffer : _viewProjUniformBuffers)
-        buffer.init(_vrd.device, _vrd.physicalDevice, sizeof(glm::mat4));
-
     _renderLayers.push_back(std::make_shared<ModelLayer>(_renderPass));
     _renderLayers.push_back(std::make_shared<LineLayer>(_renderPass));
     _imGuiLayer = std::make_shared<ImGuiLayer>(_renderPass);
@@ -162,6 +155,8 @@ bool Renderer::init() {
     //_inFlightFence = Factory::createFence(_vrd.device, true); // starts signaled
     _imageAvailSemaphore = Factory::createSemaphore(_vrd.device);
     _renderFinishedSemaphore = Factory::createSemaphore(_vrd.device);
+
+    //_camera->set
   
     return true;
 }
@@ -174,17 +169,14 @@ VkExtent2D Renderer::getSwapchainExtent() {
     return _swapchainExtent;
 }
 
-std::array<UniformBuffer, FB_COUNT>* Renderer::getViewProjUBOs() {
-    return &_viewProjUniformBuffers;
-}
-
 void Renderer::onEvent(Event& e) {
-    _firstPersonCamera.onEvent(e);
+    _camera.onEvent(e);
 }
 
 
 void Renderer::update(float dt) {
-    _firstPersonCamera.update(dt);
+    _camera.update(dt);
+    _fpsCounter.tick(dt, true); // TODO : remove hard coded true!
 }
 
 
@@ -199,13 +191,9 @@ void Renderer::draw() {
     uint32_t imageIndex;
     VK_CHECK(vkAcquireNextImageKHR(_vrd.device, _swapchain, UINT64_MAX, _imageAvailSemaphore, nullptr, &imageIndex));
 
-    // TODO : no reson to compute perspectiveView matrix every frame
-    float aspectRatio = _swapchainExtent.width/(float)_swapchainExtent.height;
-    glm::mat4 pv = glm::perspective(45.f, aspectRatio, 0.1f, 1000.f) * _firstPersonCamera.getViewMatrix();
-    _viewProjUniformBuffers[imageIndex].setData(_vrd.device, glm::value_ptr(pv), sizeof(pv));
-
+    glm::mat4 pv = *_camera.getPVMatrix();
     for (auto layer : _renderLayers)
-        layer->update(0.001f, imageIndex);
+        layer->update(0.001f, imageIndex, pv);
 
     _imGuiLayer->begin();
     onImGuiRender();
@@ -472,6 +460,6 @@ void Renderer::recordCommandBuffer(uint32_t index){
 
 void Renderer::onImGuiRender() {
     ImGui::Begin("Hello from Renderer");
-    ImGui::Text("FPS");
+    ImGui::Text("FPS %.2f", _fpsCounter.getFPS());
     ImGui::End();
 }

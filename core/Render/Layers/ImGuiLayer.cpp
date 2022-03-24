@@ -76,9 +76,7 @@ void ImGuiLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t curre
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 }
 
-void ImGuiLayer::update(float dt, uint32_t currentImage) {
-
-}
+void ImGuiLayer::update(float dt, uint32_t currentImage, const glm::mat4& pv) {}
 
 
 void ImGuiLayer::onImGuiRender() {

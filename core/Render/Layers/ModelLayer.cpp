@@ -10,8 +10,8 @@
 
 ModelLayer::ModelLayer(VkRenderPass renderPass) : RenderLayer() {
     // init the uniform buffers
-//    for (auto& buffer : _mvpUniformBuffers)
-//        buffer.init(_vrd->device, _vrd->physicalDevice, sizeof(glm::mat4));
+    for (auto& buffer : _mvpUniformBuffers)
+        buffer.init(_vrd->device, _vrd->physicalDevice, sizeof(glm::mat4));
 
     // create duck model
     std::vector<TexVertex> vertices;
@@ -44,29 +44,26 @@ ModelLayer::ModelLayer(VkRenderPass renderPass) : RenderLayer() {
 
 ModelLayer::~ModelLayer() {
     // destroy the buffers
-//    for (auto& buffer : _mvpUniformBuffers)
-//        buffer.destroy(_vrd->device);
+    for (auto& buffer : _mvpUniformBuffers)
+        buffer.destroy(_vrd->device);
     _vertices.destroy(_vrd->device);
     _indices.destroy(_vrd->device);
 
     _texture.destroy(_vrd->device);
 }
 
-void ModelLayer::update(float dt, uint32_t currentImage) {
-//    static float time = 0.f;
-//    time += dt;
-//    float aspectRatio = _swapchainExtent.width/(float)_swapchainExtent.height;
-//    glm::mat4 v = glm::lookAt(glm::vec3(0.f, 0.f, 3.f), glm::vec3(0.f), glm::vec3(0.f, 1.f, 0.f));
-//    glm::mat4 p = glm::perspective(45.f, aspectRatio, 0.1f, 1000.f);
-//    glm::mat4 m = glm::rotate(
-//            glm::translate(glm::mat4(1.0f), glm::vec3(0.f, 0.5f, -1.5f)) * glm::rotate(glm::mat4(1.f), glm::pi<float>(),
-//                                                                                       glm::vec3(1, 0, 0)),
-//            time,
-//            glm::vec3(0.0f, 1.0f, 0.0f)
-//    );
-//
-//    glm::mat4 mvp = p  * v * m;
-//    VK_ASSERT(_mvpUniformBuffers[currentImage].setData(_vrd->device, glm::value_ptr(mvp), sizeof(mvp)), "Failed to dat");
+void ModelLayer::update(float dt, uint32_t currentImage, const glm::mat4& pv) {
+    static float time = 0.f;
+    time += dt;
+    glm::mat4 m = glm::rotate(
+            glm::translate(glm::mat4(1.0f), glm::vec3(0.f, 0.5f, -1.5f)) * glm::rotate(glm::mat4(1.f), glm::pi<float>(),
+                                                                                       glm::vec3(1, 0, 0)),
+            time,
+            glm::vec3(0.0f, 1.0f, 0.0f)
+    );
+
+    glm::mat4 mvp = pv * m;
+    VK_ASSERT(_mvpUniformBuffers[currentImage].setData(_vrd->device, glm::value_ptr(mvp), sizeof(mvp)), "Failed to dat");
 }
 
 
@@ -157,17 +154,15 @@ void ModelLayer::createDescriptorSets() {
 
     VK_CHECK(vkAllocateDescriptorSets(_vrd->device, &descriptorSetAI, _descriptorSets.data()));
 
-    auto vpBuffers = Application::getApp()->getRenderer()->getViewProjUBOs();
-
     for (size_t i = 0; i < _descriptorSets.size(); ++i) {
         // create write descriptor set for each descriptor set
         std::vector<VkWriteDescriptorSet> writeDescriptorSets;
 
         // push back descriptor write for UBO (1 buffer/image)
         VkDescriptorBufferInfo bufferInfo = {
-                .buffer = (*vpBuffers)[i].getBuffer(),
+                .buffer = _mvpUniformBuffers[i].getBuffer(),
                 .offset = 0,
-                .range = (*vpBuffers)[i].getSize()
+                .range = _mvpUniformBuffers[i].getSize()
         };
         writeDescriptorSets.push_back({
                                   .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,

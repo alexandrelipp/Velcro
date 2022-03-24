@@ -168,10 +168,11 @@ namespace utils {
         VK_CHECK(vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &count, presentModes.data()));
 
         // use mailbox if possible ; default to fifo if not present
-        for (auto mode: presentModes) {
-            if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
-                return mode;
-        }
+        // TODO is it possible to MAILBOX with vsync??
+//        for (auto mode: presentModes) {
+//            if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
+//                return mode;
+//        }
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 

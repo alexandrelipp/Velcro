@@ -11,7 +11,8 @@
 #include "Layers/RenderLayer.h"
 #include "Layers/ImGuiLayer.h"
 #include "../events/Event.h"
-#include "Camera/FirstPersonCamera.h"
+#include "Camera/Camera.h"
+#include "FPSCounter.hpp"
 
 #include <vulkan/vulkan.h>
 
@@ -24,7 +25,6 @@ public:
 
     VulkanRenderDevice* getRenderDevice();
     VkExtent2D getSwapchainExtent();
-    std::array<UniformBuffer, FB_COUNT>* getViewProjUBOs();
 
     void update(float dt);
     void draw();
@@ -79,9 +79,10 @@ private:
     std::vector<std::shared_ptr<RenderLayer>> _renderLayers;
     std::shared_ptr<ImGuiLayer> _imGuiLayer = nullptr;
 
-    // camera + vp matrices
-    FirstPersonCamera _firstPersonCamera;
-    std::array<UniformBuffer, FB_COUNT> _viewProjUniformBuffers{};
+    // camera
+    Camera _camera;
+
+    FPSCounter _fpsCounter;
 
     /// ONLY PRESENT IN DEBUG ///
 #ifdef VELCRO_DEBUG

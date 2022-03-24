@@ -6,18 +6,13 @@
 #include "../Factory/FactoryVulkan.h"
 
 LineLayer::LineLayer(VkRenderPass renderPass) : RenderLayer() {
-    float aspectRatio = _swapchainExtent.width/(float)_swapchainExtent.height;
-    glm::mat4 v = glm::lookAt(glm::vec3(0.f, 0.f, 3.f), glm::vec3(0.f), glm::vec3(0.f, 1.f, 0.f));
-    glm::mat4 p = glm::perspective(45.f, aspectRatio, 0.1f, 1000.f);
-    glm::mat4 mvp = p * v;
 
     // init the uniform buffers
     for (auto& buffer : _mvpUniformBuffers) {
         buffer.init(_vrd->device, _vrd->physicalDevice, sizeof(glm::mat4));
-        buffer.setData(_vrd->device, glm::value_ptr(mvp), sizeof(mvp));
     }
 
-    plane3d(glm::vec3(0.f, 0.f, -1.f), {1.f, 0.f, 0.f}, {0.f, 1.f, 0.f}, 10, 10, 3.f, 3.f, glm::vec4(0.7f), glm::vec4(1.f));
+    plane3d(glm::vec3(0.f, 0.f, -1.f), {1.f, 0.f, 0.f}, {0.f, 0.f, 1.f}, 10, 10, 3.f, 3.f, glm::vec4(0.7f), glm::vec4(1.f));
 
     auto size = _lines.size() * sizeof(VertexData);
     _pointsSSBO.init(_vrd->device, _vrd->physicalDevice, size);
@@ -51,8 +46,9 @@ void LineLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t curren
     vkCmdDraw(commandBuffer, _lines.size(), 1, 0, 0);
 }
 
-void LineLayer::update(float dt, uint32_t currentImage) {
-
+void LineLayer::update(float dt, uint32_t currentImage, const glm::mat4& pv) {
+    glm::mat4 mvp = pv;
+    _mvpUniformBuffers[currentImage].setData(_vrd->device, glm::value_ptr(mvp), sizeof(mvp));
 }
 
 

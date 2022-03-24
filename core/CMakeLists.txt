@@ -37,6 +37,8 @@ target_sources(${PROJECT_NAME} PUBLIC
 
         #CAMERA
         "${CMAKE_CURRENT_LIST_DIR}/Render/Camera/InterfaceCamera.h"
-        "${CMAKE_CURRENT_LIST_DIR}/Render/Camera/FirstPersonCamera.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/Render/Camera/FirstPersonCamera.h"
+        #"${CMAKE_CURRENT_LIST_DIR}/Render/Camera/FirstPersonCamera.cpp"
+        #"${CMAKE_CURRENT_LIST_DIR}/Render/Camera/FirstPersonCamera.h"
+        "${CMAKE_CURRENT_LIST_DIR}/Render/Camera/Camera.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/Render/Camera/Camera.h"
         )

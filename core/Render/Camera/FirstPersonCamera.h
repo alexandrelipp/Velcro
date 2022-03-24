@@ -48,7 +48,7 @@ private:
     glm::vec3 _cameraPosition = glm::vec3(0.0f, 10.0f, 10.0f);
     glm::quat _cameraOrientation = glm::quat(glm::vec3(0));
     glm::vec3 _moveSpeed = glm::vec3(0.0f);
-    glm::vec3 _up = glm::vec3(0.0f, 0.0f, 1.0f); // TODO : what is that up vector??
+    glm::vec3 _up = glm::vec3(0.0f, 1.0f, 0.0f); // TODO : what is that up vector??
 };
 
 

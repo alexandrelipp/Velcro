@@ -14,7 +14,7 @@ public:
 
     virtual ~RenderLayer();
 
-    virtual void update(float dt, uint32_t currentImage) = 0;
+    virtual void update(float dt, uint32_t currentImage, const glm::mat4& pv) = 0;
     virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage) = 0;
     virtual void onImGuiRender() = 0;
 
