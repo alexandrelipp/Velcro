@@ -169,16 +169,11 @@ void Application::run() {
     double currentFrame = 0, lastFrame = 0;
     while (!glfwWindowShouldClose(_window))
     {
-        // update layer stack with delta time
-//        currentFrame = glfwGetTime();
-//        _layerStack.onUpdate(currentFrame - lastFrame);
-//        lastFrame = currentFrame;
-//
-//        if constexpr (Application::GRAPHICS_API == GraphicsAPI::OPEN_GL){
-//            _imGuiLayer->begin();
-//            _layerStack.onImGuiRender();
-//            _imGuiLayer->end();
-//        }
+         //update layer stack with delta time
+        currentFrame = glfwGetTime();
+        _renderer.update(currentFrame - lastFrame);
+        lastFrame = currentFrame;
+
         _renderer.draw();
         glfwPollEvents();
     }
@@ -189,18 +184,18 @@ void Application::close() {
 }
 
 void Application::onEvent(Event &e) {
-    //SPDLOG_INFO("event {}", e.toString());
     //_layerStack.onEvent(e);
     switch (e.getType()) {
         case Event::Type::KEY_PRESSED:{
             KeyPressedEvent keyPressedEvent = *(KeyPressedEvent*)&e;
             if (keyPressedEvent.getKeyCode() == KeyCode::Escape)
                 close();
+            break;
         }
-            return;
         default:
-            return;
+            break;
     }
+    _renderer.onEvent(e);
 }
 
 Renderer* Application::getRenderer() {

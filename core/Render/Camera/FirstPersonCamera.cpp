@@ -5,6 +5,7 @@
 #include "FirstPersonCamera.h"
 
 #include "../../Application.h"
+#include "../../core/events/KeyEvent.h"
 
 FirstPersonCamera::FirstPersonCamera(const glm::vec3& pos, const glm::vec3& target, const glm::vec3& up):
         _cameraPosition(pos), _cameraOrientation(glm::lookAt(pos, target, up)), _up(up) {}
@@ -29,7 +30,7 @@ void FirstPersonCamera::update(float dt) {
         _cameraOrientation = glm::normalize(_cameraOrientation);
         setUpVector(_up);
     }
-    mousePos = mousePos;
+    _mousePos = mousePos;
 
     const glm::mat4 v = glm::mat4_cast(_cameraOrientation);
 
@@ -59,12 +60,49 @@ void FirstPersonCamera::update(float dt) {
     {
         // acceleration
         _moveSpeed += accel * acceleration * static_cast<float>(dt);
-        const float maxSpeed = _movement.fastSpeed ? maxSpeed * fastCoef : maxSpeed;
+        const float maxSpeed = _movement.fastSpeed ? _maxSpeed * fastCoef : _maxSpeed;
         if (glm::length(_moveSpeed) > maxSpeed) _moveSpeed = glm::normalize(_moveSpeed) * maxSpeed;
     }
 
     _cameraPosition += _moveSpeed * static_cast<float>(dt);
 }
+
+void FirstPersonCamera::onEvent(Event& e) {
+    //if (e.getType())
+    switch (e.getType()) {
+        case Event::Type::KEY_PRESSED:
+        case Event::Type::KEY_RELEASED:{
+            SPDLOG_INFO("Event {}", e.toString());
+            bool pressed =  e.getType() != Event::Type::KEY_RELEASED;
+            KeyEvent* keyEvent = (KeyEvent*)&e;
+            switch (keyEvent->getKeyCode()) {
+                case KeyCode::W:
+                    _movement.forward = pressed;
+                    break;
+                case KeyCode::S:
+                    _movement.backward = pressed;
+                    break;
+                case KeyCode::A:
+                    _movement.left = pressed;
+                    break;
+                case KeyCode::D:
+                    _movement.right = pressed;
+                    break;
+                case KeyCode::LeftShift:
+                    _movement.fastSpeed = pressed;
+                    break;
+                case KeyCode::Space:
+                    setUpVector({0.f, 1.f, 0.f});
+                    break;
+                default:
+                    break;
+            }
+        }
+        default:
+            break;
+    }
+}
+
 
 void FirstPersonCamera::resetMousePosition(const glm::vec2& p) {
     _mousePos = p;

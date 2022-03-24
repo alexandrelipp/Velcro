@@ -15,7 +15,7 @@
 #include <imgui/imgui.h>
 
 
-Renderer::Renderer() {
+Renderer::Renderer() : _firstPersonCamera(glm::vec3{0.f, 0.f, 3.f}, glm::vec3(0.f), {0.f, 1.f, 0.f}){
 
 }
 
@@ -34,6 +34,9 @@ Renderer::~Renderer() {
     // clear render layer vector to trigger destructors (they should not be referenced elswhere)
     _renderLayers.clear();
     _imGuiLayer = nullptr;
+
+    for (auto& buffer : _viewProjUniformBuffers)
+        buffer.destroy(_vrd.device);
 
     vkFreeCommandBuffers(_vrd.device, _vrd.commandPool, FB_COUNT, _vrd.commandBuffers.data());
     vkDestroyCommandPool(_vrd.device, _vrd.commandPool, nullptr);
@@ -131,6 +134,9 @@ bool Renderer::init() {
    
     createRenderPass(surfaceFormat.format);
 
+    for (auto& buffer : _viewProjUniformBuffers)
+        buffer.init(_vrd.device, _vrd.physicalDevice, sizeof(glm::mat4));
+
     _renderLayers.push_back(std::make_shared<ModelLayer>(_renderPass));
     _renderLayers.push_back(std::make_shared<LineLayer>(_renderPass));
     _imGuiLayer = std::make_shared<ImGuiLayer>(_renderPass);
@@ -168,6 +174,19 @@ VkExtent2D Renderer::getSwapchainExtent() {
     return _swapchainExtent;
 }
 
+std::array<UniformBuffer, FB_COUNT>* Renderer::getViewProjUBOs() {
+    return &_viewProjUniformBuffers;
+}
+
+void Renderer::onEvent(Event& e) {
+    _firstPersonCamera.onEvent(e);
+}
+
+
+void Renderer::update(float dt) {
+    _firstPersonCamera.update(dt);
+}
+
 
 void Renderer::draw() {
     // wait until the fence is signaled (ready to use)
@@ -179,6 +198,11 @@ void Renderer::draw() {
 
     uint32_t imageIndex;
     VK_CHECK(vkAcquireNextImageKHR(_vrd.device, _swapchain, UINT64_MAX, _imageAvailSemaphore, nullptr, &imageIndex));
+
+    // TODO : no reson to compute perspectiveView matrix every frame
+    float aspectRatio = _swapchainExtent.width/(float)_swapchainExtent.height;
+    glm::mat4 pv = glm::perspective(45.f, aspectRatio, 0.1f, 1000.f) * _firstPersonCamera.getViewMatrix();
+    _viewProjUniformBuffers[imageIndex].setData(_vrd.device, glm::value_ptr(pv), sizeof(pv));
 
     for (auto layer : _renderLayers)
         layer->update(0.001f, imageIndex);

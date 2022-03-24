@@ -5,6 +5,7 @@
 #pragma once
 
 #include "InterfaceCamera.h"
+#include "../../events/Event.h"
 
 
 class FirstPersonCamera : public InterfaceCamera {
@@ -15,6 +16,7 @@ public:
     virtual glm::vec3 getPosition() const override;
 
     void update(float dt);
+    void onEvent(Event& e);
 
     void setPosition(const glm::vec3& pos);
     void resetMousePosition(const glm::vec2& p);
@@ -27,13 +29,12 @@ public:
     float mouseSpeed = 4.0f;
     float acceleration = 150.0f;
     float damping = 0.2f;
-    float maxSpeed = 10.0f;
+    float _maxSpeed = 10.0f;
     float fastCoef = 10.0f;
 
 private:
 
-    struct Movement
-    {
+    struct Movement{
         bool forward = false;
         bool backward = false;
         bool left = false;
@@ -47,8 +48,7 @@ private:
     glm::vec3 _cameraPosition = glm::vec3(0.0f, 10.0f, 10.0f);
     glm::quat _cameraOrientation = glm::quat(glm::vec3(0));
     glm::vec3 _moveSpeed = glm::vec3(0.0f);
-    glm::vec3 _up = glm::vec3(0.0f, 0.0f, 1.0f);
-
+    glm::vec3 _up = glm::vec3(0.0f, 0.0f, 1.0f); // TODO : what is that up vector??
 };
 
 
