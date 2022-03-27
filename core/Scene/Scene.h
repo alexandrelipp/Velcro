@@ -46,6 +46,9 @@ public:
     /// return pair of index* / size(in bytes)
     std::pair<uint32_t*, uint32_t> getIndicesData();
 
+    /// return pair of transform* / size(in bytes)
+    const std::vector<glm::mat4>& getMeshTransforms();
+
     const std::vector<MeshComponent>& getMeshes();
 
 private:

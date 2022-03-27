@@ -9,11 +9,14 @@
 
 
 void ShaderStorageBuffer::init(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t size,
-                               VkBufferUsageFlags additionalUsage) {
+                               bool hostVisible, VkBufferUsageFlags additionalUsage) {
+    VkMemoryPropertyFlags memFlags = hostVisible ? VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT :
+            VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    _hostVisible = hostVisible;
     _size = size;
     auto [buffer, memory] = Factory::createBuffer(device, physicalDevice, _size,
                           VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | additionalUsage,
-                          VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+                          memFlags);
     _buffer = buffer;
     _bufferMemory = memory;
 }
@@ -39,6 +42,16 @@ bool ShaderStorageBuffer::setData(VkDevice device, VkPhysicalDevice physicalDevi
                              VkQueue queue, VkCommandPool commandPool, void* data, uint32_t size) {
     if (size > _size)
         return false;
+
+    // if the buffer is host visible, simply copy memory (no need for a staging buffer)
+    if (_hostVisible){
+        void* dst = nullptr;
+        VK_CHECK(vkMapMemory(device, _bufferMemory, 0, size, 0, &dst));
+        memcpy(dst, data, size);
+        vkUnmapMemory(device, _bufferMemory);
+        return false;
+    }
+
     auto stagingBuffer = Factory::createBuffer(device, physicalDevice, size,
                                                             VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT );

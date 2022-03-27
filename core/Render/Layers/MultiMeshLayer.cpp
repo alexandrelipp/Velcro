@@ -16,7 +16,7 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
         sizeof(InstanceData::materialIndex) + sizeof(InstanceData::meshIndex));
 
     // init the uniform buffers
-    for (auto& buffer : _mvpUniformBuffers)
+    for (auto& buffer : _vpUniformBuffers)
         buffer.init(_vrd->device, _vrd->physicalDevice, sizeof(glm::mat4));
 
     _scene = std::make_shared<Scene>("NanoWorld");
@@ -61,9 +61,13 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
     VK_ASSERT(_indirectCommandBuffer.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool,
                       indirectCommands.data(), indirectCommands.size() * sizeof(indirectCommands[0])), "set data failed");
 
+    // init the transform buffers
+    for (auto& buffer : _meshTransformBuffers){
+        buffer.init(_vrd->device, _vrd->physicalDevice, meshes.size() * sizeof(glm::mat4), true);
+    }
 
     // init the statue texture
-    _texture.init("../../../core/Assets/Models/duck/textures/Duck_baseColor.png", _vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool);
+    //_texture.init("../../../core/Assets/Models/duck/textures/Duck_baseColor.png", _vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool);
 
     // create our graphics pipeline
     createPipelineLayout();
@@ -79,14 +83,17 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
 
 MultiMeshLayer::~MultiMeshLayer() {
     // destroy the buffers
-    for (auto& buffer : _mvpUniformBuffers)
+    for (auto& buffer : _vpUniformBuffers)
+        buffer.destroy(_vrd->device);
+
+    for (auto& buffer : _meshTransformBuffers)
         buffer.destroy(_vrd->device);
 
     _indirectCommandBuffer.destroy(_vrd->device);
     _vertices.destroy(_vrd->device);
     _indices.destroy(_vrd->device);
 
-    _texture.destroy(_vrd->device);
+    //_texture.destroy(_vrd->device);
 }
 
 void MultiMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage) {
@@ -99,17 +106,12 @@ void MultiMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t c
 }
 
 void MultiMeshLayer::update(float dt, uint32_t currentImage, const glm::mat4& pv) {
-    static float time = 0.f;
-    time += dt;
-    glm::mat4 m = glm::rotate(
-            glm::translate(glm::mat4(1.0f), glm::vec3(0.f, 0.5f, -1.5f)) * glm::rotate(glm::mat4(1.f), glm::pi<float>(),
-                                                                                       glm::vec3(1, 0, 0)),
-            time,
-            glm::vec3(0.0f, 1.0f, 0.0f)
-    );
-
-    glm::mat4 mvp = pv * m;
-    VK_ASSERT(_mvpUniformBuffers[currentImage].setData(_vrd->device, glm::value_ptr(mvp), sizeof(mvp)), "Failed to dat");
+    _scene->propagateTransforms();
+    glm::mat4 nec = pv; // TODO : necessary??
+    VK_ASSERT(_vpUniformBuffers[currentImage].setData(_vrd->device, glm::value_ptr(nec), sizeof(pv)), "Failed to dat");
+    const auto& transforms = _scene->getMeshTransforms();
+    _meshTransformBuffers[currentImage].setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool,
+                                                (void*)transforms.data(), transforms.size() * sizeof(transforms[0]));
 }
 
 void MultiMeshLayer::onImGuiRender() {
@@ -185,9 +187,9 @@ void MultiMeshLayer::createDescriptorSets() {
 
         // push back descriptor write for UBO (1 buffer/image)
         VkDescriptorBufferInfo bufferInfo = {
-                .buffer = _mvpUniformBuffers[i].getBuffer(),
+                .buffer = _vpUniformBuffers[i].getBuffer(),
                 .offset = 0,
-                .range = _mvpUniformBuffers[i].getSize()
+                .range = _vpUniformBuffers[i].getSize()
         };
         writeDescriptorSets.push_back({
                                               .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -231,20 +233,21 @@ void MultiMeshLayer::createDescriptorSets() {
                                               .pBufferInfo = &indicesInfo
                                       });
 
-        // push back descriptor write for image/sampler
-        VkDescriptorImageInfo imageInfo = {
-                .sampler = _texture.getSampler(),
-                .imageView = _texture.getImageView(),
-                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+        // push back descriptor write for transform ssbos (1 buffer/ image)
+        VkDescriptorBufferInfo transformsInfo = {
+                .buffer = _meshTransformBuffers[i].getBuffer(),
+                .offset = 0,
+                .range = _meshTransformBuffers[i].getSize()
         };
+
         writeDescriptorSets.push_back({
                                               .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
                                               .dstSet = _descriptorSets[i],
                                               .dstBinding = 3,
                                               .dstArrayElement = 0,
                                               .descriptorCount = 1,
-                                              .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                                              .pImageInfo = &imageInfo
+                                              .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                              .pImageInfo = &transformsInfo
                                       });
 
         // update the descriptor sets with the created decriptor writes

@@ -11,7 +11,8 @@ class ShaderStorageBuffer {
 public:
     ShaderStorageBuffer() = default;
 
-    void init(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t size, VkBufferUsageFlags additionalUsage = 0);
+    void init(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t size,
+              bool hostVisible = false, VkBufferUsageFlags additionalUsage = 0);
     void destroy(VkDevice device);
 
     uint32_t getSize();
@@ -24,5 +25,6 @@ private:
     VkBuffer _buffer = nullptr;
     VkDeviceMemory _bufferMemory = nullptr;
     uint32_t _size = 0;
+    bool _hostVisible = false;
 
 };

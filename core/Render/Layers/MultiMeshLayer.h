@@ -35,7 +35,8 @@ private:
     };
 
     // Buffers
-    std::array<UniformBuffer, FB_COUNT> _mvpUniformBuffers{};
+    std::array<UniformBuffer, FB_COUNT> _vpUniformBuffers{};
+    std::array<ShaderStorageBuffer, FB_COUNT> _meshTransformBuffers{};
     ShaderStorageBuffer _vertices{};
     ShaderStorageBuffer _indices{};
     ShaderStorageBuffer _indirectCommandBuffer{};
@@ -45,6 +46,6 @@ private:
 
     std::shared_ptr<Scene> _scene = nullptr;
 
-    Texture _texture{};
+    //Texture _texture{};
 };
 
