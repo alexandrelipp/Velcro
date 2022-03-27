@@ -6,6 +6,8 @@
 #include "core/events/MouseEvent.h"
 #include "core/events/KeyEvent.h"
 
+#include <imgui.h>
+
 
 Application::Application() {
     if (_instance != nullptr){
@@ -196,6 +198,9 @@ void Application::onEvent(Event &e) {
         default:
             break;
     }
+
+    if (ImGui::IsAnyItemHovered())
+        return;
     _renderer.onEvent(e);
 }
 

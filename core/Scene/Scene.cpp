@@ -123,7 +123,13 @@ void Scene::propagateTransforms() {
     if (!_changedTransforms[0].empty()){
         int root = _changedTransforms[0][0];
         VK_ASSERT(root == 0, "no bueno amigo");
-        _transforms[root].worldTransform = _transforms[root].localTransform;
+        auto& tc = getTransform(root);
+        // update the local transform if required
+        if (tc.needUpdateModelMatrix){
+            tc.localTransform = utils::calculateModelMatrix(tc.position, tc.scale, tc.rotation);
+            tc.needUpdateModelMatrix = false;
+        }
+        tc.worldTransform = tc.localTransform;
         _changedTransforms[0].clear();
     }
 

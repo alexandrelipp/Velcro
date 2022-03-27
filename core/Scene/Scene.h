@@ -74,11 +74,10 @@ private:
 
     static constexpr uint32_t MAX_LEVELS = 16;
 
-#ifdef ONLY_RECOMPUTE_CHANGED // disabled for now
+
     /// used to only recompute necessary transforms, note : it might be faster/simpler to always recompute all transforms
     /// in certain case. Profile to get an accurate answer
     std::array<std::vector<int>, MAX_LEVELS> _changedTransforms;
-#endif
 
     std::vector<Vertex> _vertices;
     std::vector<uint32_t> _indices;

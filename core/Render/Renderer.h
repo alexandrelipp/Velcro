@@ -78,6 +78,7 @@ private:
     // Render layers
     std::vector<std::shared_ptr<RenderLayer>> _renderLayers;
     std::shared_ptr<ImGuiLayer> _imGuiLayer = nullptr;
+    bool _imguiFocus = false;
 
     // camera
     Camera _camera;

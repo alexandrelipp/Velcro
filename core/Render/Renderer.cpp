@@ -173,6 +173,8 @@ VkExtent2D Renderer::getSwapchainExtent() {
 }
 
 void Renderer::onEvent(Event& e) {
+    if (_imguiFocus)
+        return;
     _camera.onEvent(e);
 }
 
@@ -463,6 +465,9 @@ void Renderer::recordCommandBuffer(uint32_t index){
 }
 
 void Renderer::onImGuiRender() {
+    _imguiFocus = ImGui::IsAnyItemHovered();
+    SPDLOG_INFO("FOCUS {}", _imguiFocus);
+
     ImGui::Begin("Hello from Renderer");
     ImGui::Text("FPS %.2f", _fpsCounter.getFPS());
     ImGui::End();
