@@ -20,7 +20,8 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
         buffer.init(_vrd->device, _vrd->physicalDevice, sizeof(glm::mat4));
 
     _scene = std::make_shared<Scene>("NanoWorld");
-    FactoryModel::importFromFile("../../../core/Assets/Models/Nano/nanosuit.obj", _scene);
+    //FactoryModel::importFromFile("../../../core/Assets/Models/Nano/nanosuit.obj", _scene);
+    FactoryModel::importFromFile("../../../core/Assets/Models/Bell Huey.fbx", _scene);
     //FactoryModel::importFromFile("../../../core/Assets/Models/duck/scene.gltf", _scene);
 
     static_assert(sizeof(Vertex) == sizeof(Vertex::position) + sizeof(Vertex::normal) + sizeof(Vertex::uv));
@@ -117,7 +118,13 @@ void MultiMeshLayer::update(float dt, uint32_t currentImage, const glm::mat4& pv
 }
 
 void MultiMeshLayer::onImGuiRender() {
+    ImGui::Begin("Scene");
     displayHierarchy(0);
+    ImGui::End();
+
+    ImGui::Begin("Selected");
+    auto& tansform = _scene->get
+    ImGui::End();
 }
 
 void MultiMeshLayer::createPipelineLayout() {
@@ -263,8 +270,8 @@ void MultiMeshLayer::displayHierarchy(int entity) {
 
     // default flags and additional flag if selected
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth |ImGuiTreeNodeFlags_DefaultOpen;
-//    if (entity == _selectedEntity)
-//        flags |= ImGuiTreeNodeFlags_Selected | ImGuiTreeNodeFlags_DefaultOpen;
+    if (entity == _selectedEntity)
+        flags |= ImGuiTreeNodeFlags_Selected | ImGuiTreeNodeFlags_DefaultOpen;
 
     // get tag and hierarchy
     HierarchyComponent& hc = _scene->getHierarchy(entity);
@@ -276,8 +283,8 @@ void MultiMeshLayer::displayHierarchy(int entity) {
 
     ImGui::PushID((int)entity);
 
-//    if (ImGui::IsItemClicked())
-//        _selectedEntity = entity;
+    if (ImGui::IsItemClicked())
+        _selectedEntity = entity;
 
     if (opened) {
         for (int e = hc.firstChild; e != -1; e = _scene->getHierarchy(e).nextSibling)
