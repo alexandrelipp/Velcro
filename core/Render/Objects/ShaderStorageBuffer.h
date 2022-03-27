@@ -25,6 +25,7 @@ private:
     VkBuffer _buffer = nullptr;
     VkDeviceMemory _bufferMemory = nullptr;
     uint32_t _size = 0;
-    bool _hostVisible = false;
 
+    // TODO : should be split in two, stupid
+    bool _hostVisible = false;
 };

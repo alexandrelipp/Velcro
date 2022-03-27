@@ -21,6 +21,7 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
 
     _scene = std::make_shared<Scene>("NanoWorld");
     FactoryModel::importFromFile("../../../core/Assets/Models/Nano/nanosuit.obj", _scene);
+    //FactoryModel::importFromFile("../../../core/Assets/Models/duck/scene.gltf", _scene);
 
     static_assert(sizeof(Vertex) == sizeof(Vertex::position) + sizeof(Vertex::normal) + sizeof(Vertex::uv));
 
@@ -57,7 +58,8 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
 //            .firstInstance = 0
 //    };
 
-    _indirectCommandBuffer.init(_vrd->device, _vrd->physicalDevice, indirectCommands.size() * sizeof(indirectCommands[0]), VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
+    _indirectCommandBuffer.init(_vrd->device, _vrd->physicalDevice, indirectCommands.size() * sizeof(indirectCommands[0]),
+                                false, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
     VK_ASSERT(_indirectCommandBuffer.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool,
                       indirectCommands.data(), indirectCommands.size() * sizeof(indirectCommands[0])), "set data failed");
 
@@ -102,7 +104,7 @@ void MultiMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t c
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout,
                             0, 1, &_descriptorSets[currentImage], 0, nullptr);
 
-    vkCmdDrawIndirect(commandBuffer, _indirectCommandBuffer.getBuffer(), 0, 1, sizeof(VkDrawIndirectCommand));
+    vkCmdDrawIndirect(commandBuffer, _indirectCommandBuffer.getBuffer(), 0, _scene->getMeshes().size(), sizeof(VkDrawIndirectCommand));
 }
 
 void MultiMeshLayer::update(float dt, uint32_t currentImage, const glm::mat4& pv) {
@@ -141,9 +143,9 @@ void MultiMeshLayer::createPipelineLayout() {
             },
             VkDescriptorSetLayoutBinding{
                     .binding = 3,
-                    .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                    .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                     .descriptorCount = 1,
-                    .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
+                    .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
             }
     };
 
@@ -247,7 +249,7 @@ void MultiMeshLayer::createDescriptorSets() {
                                               .dstArrayElement = 0,
                                               .descriptorCount = 1,
                                               .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                              .pImageInfo = &transformsInfo
+                                              .pBufferInfo = &transformsInfo
                                       });
 
         // update the descriptor sets with the created decriptor writes

@@ -45,7 +45,7 @@ namespace utils {
             VkPhysicalDeviceProperties props;
             vkGetPhysicalDeviceProperties(device, &props);
             // geo shader must be supported and the gpu must be dedicated (not virtual/integrated/cpu)
-            if (features.samplerAnisotropy && features.geometryShader && props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+            if (features.drawIndirectFirstInstance && features.multiDrawIndirect && features.samplerAnisotropy && features.geometryShader && props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
                 return device;
         }
         VK_ASSERT(false, "Failed to pick a physical device");

@@ -140,6 +140,8 @@ namespace Factory {
         VkPhysicalDeviceFeatures features{};
         features.geometryShader = VK_TRUE;
         features.samplerAnisotropy = VK_TRUE;
+        features.multiDrawIndirect = VK_TRUE;
+        features.drawIndirectFirstInstance = VK_TRUE;
 
         const std::vector<const char*> extensions = {
                 VK_KHR_SWAPCHAIN_EXTENSION_NAME
