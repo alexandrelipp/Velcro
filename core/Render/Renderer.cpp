@@ -11,6 +11,7 @@
 #include "Factory/FactoryModel.h"
 #include "Layers/ModelLayer.h"
 #include "Layers/LineLayer.h"
+#include "Layers/MultiMeshLayer.h"
 
 #include <imgui/imgui.h>
 
@@ -55,6 +56,7 @@ Renderer::~Renderer() {
 }
 
 bool Renderer::init() {
+    OPTICK_EVENT();
     // create the context
     createInstance();
 
@@ -130,8 +132,9 @@ bool Renderer::init() {
    
     createRenderPass(surfaceFormat.format);
 
-    _renderLayers.push_back(std::make_shared<ModelLayer>(_renderPass));
+    //_renderLayers.push_back(std::make_shared<ModelLayer>(_renderPass));
     _renderLayers.push_back(std::make_shared<LineLayer>(_renderPass));
+    _renderLayers.push_back(std::make_shared<MultiMeshLayer>(_renderPass));
     _imGuiLayer = std::make_shared<ImGuiLayer>(_renderPass);
     _renderLayers.push_back(_imGuiLayer);
 
@@ -181,6 +184,7 @@ void Renderer::update(float dt) {
 
 
 void Renderer::draw() {
+    OPTICK_EVENT();
     // wait until the fence is signaled (ready to use)
     //VK_CHECK(vkWaitForFences(_vrd.device, 1, &_inFlightFence, VK_TRUE, UINT64_MAX));
 

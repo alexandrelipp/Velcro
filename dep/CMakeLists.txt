@@ -1,5 +1,46 @@
 cmake_minimum_required(VERSION 3.20)
 
+# set up profiling if requested
+if(PROFILE_VELCRO)
+    message("Profile velcro from dep")
+
+    # we build optick ourself
+    target_sources(${PROJECT_NAME} PUBLIC
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick.config.h"
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick.h"
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick_capi.cpp"
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick_capi.h"
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick_common.h"
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick_core.cpp"
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick_core.freebsd.h"
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick_core.h"
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick_core.linux.h"
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick_core.macos.h"
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick_core.platform.h"
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick_core.win.h"
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick_gpu.cpp"
+            #"${CMAKE_CURRENT_LIST_DIR}/optick/src/optick_gpu.d3d12.cpp"
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick_gpu.h"
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick_gpu.vulkan.cpp"
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick_memory.h"
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick_message.cpp"
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick_message.h"
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick_miniz.cpp"
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick_miniz.h"
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick_serialization.cpp"
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick_serialization.h"
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick_server.cpp"
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src/optick_server.h"
+            )
+
+    target_include_directories(${PROJECT_NAME} PUBLIC
+            "${CMAKE_CURRENT_LIST_DIR}/optick/src")
+
+    # use this to link dynamically (requires the dll)
+    #add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/optick")
+    #target_link_libraries(${PROJECT_NAME} PUBLIC OptickCore)
+endif()
+
 target_sources(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/imgui/imgui.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/imgui/imgui.h"

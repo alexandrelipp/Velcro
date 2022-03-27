@@ -8,12 +8,13 @@
 #include "../Objects/UniformBuffer.h"
 #include "../Objects/ShaderStorageBuffer.h"
 #include "../Objects/Texture.h"
+#include "../../Scene/Scene.h"
 
 
-class ModelLayer : public RenderLayer {
+class MultiMeshLayer : public RenderLayer {
 public:
-    ModelLayer(VkRenderPass renderPass);
-    virtual ~ModelLayer();
+    MultiMeshLayer(VkRenderPass renderPass);
+    virtual ~MultiMeshLayer();
 
     virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage) override;
     virtual void update(float dt, uint32_t currentImage, const glm::mat4& pv) override;
@@ -23,15 +24,27 @@ private:
     void createPipelineLayout();
     void createDescriptorSets();
 
+    void displayHierarchy(int entity);
+
 private:
+    struct InstanceData{
+        glm::mat4 transform;
+        uint32_t meshIndex;
+        uint32_t materialIndex;
+        uint32_t indexOffset;
+    };
+
     // Buffers
     std::array<UniformBuffer, FB_COUNT> _mvpUniformBuffers{};
     ShaderStorageBuffer _vertices{};
     ShaderStorageBuffer _indices{};
-    uint32_t _indexCount = 0;
+    ShaderStorageBuffer _indirectCommandBuffer{};
+    //uint32_t _indexCount = 0;
+
+
+
+    std::shared_ptr<Scene> _scene = nullptr;
 
     Texture _texture{};
 };
-
-
 

@@ -13,3 +13,6 @@
 [submodule "dep/imgui"]
 	path = dep/imgui
 	url = https://github.com/ocornut/imgui.git
+[submodule "dep/optick"]
+	path = dep/optick
+	url = https://github.com/bombomby/optick.git

@@ -10,6 +10,7 @@ target_sources(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/Utils/UtilsVulkan.h"
         "${CMAKE_CURRENT_LIST_DIR}/Utils/UtilsFile.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/Utils/UtilsFile.h"
+        "${CMAKE_CURRENT_LIST_DIR}/Utils/UtilsTemplate.h"
 
         # FACTORY
         "${CMAKE_CURRENT_LIST_DIR}/Render/Factory/FactoryVulkan.cpp"
@@ -28,6 +29,8 @@ target_sources(${PROJECT_NAME} PUBLIC
         # RENDER LAYERS
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/RenderLayer.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/RenderLayer.h"
+        "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/MultiMeshLayer.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/MultiMeshLayer.h"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/ModelLayer.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/ModelLayer.h"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/LineLayer.cpp"
@@ -35,10 +38,14 @@ target_sources(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/ImGuiLayer.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/ImGuiLayer.h"
 
-        #CAMERA
+        # CAMERA
         "${CMAKE_CURRENT_LIST_DIR}/Render/Camera/InterfaceCamera.h"
         #"${CMAKE_CURRENT_LIST_DIR}/Render/Camera/FirstPersonCamera.cpp"
         #"${CMAKE_CURRENT_LIST_DIR}/Render/Camera/FirstPersonCamera.h"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Camera/Camera.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Camera/Camera.h"
+
+        # SCENE
+        "${CMAKE_CURRENT_LIST_DIR}/Scene/Scene.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/Scene/Scene.h"
         )

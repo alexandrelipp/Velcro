@@ -59,7 +59,7 @@ glm::vec2 Application::getMousePos(){
 }
 
 bool Application::init(){
-
+    OPTICK_EVENT();
     if (!glfwInit()){
         SPDLOG_ERROR("Failed to init glfw");
         return false;
@@ -169,6 +169,7 @@ void Application::run() {
     double currentFrame = 0, lastFrame = 0;
     while (!glfwWindowShouldClose(_window))
     {
+        OPTICK_FRAME("MainThread");
          //update layer stack with delta time
         currentFrame = glfwGetTime();
         _renderer.update(currentFrame - lastFrame);

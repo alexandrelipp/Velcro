@@ -73,3 +73,11 @@ SPDLOG_CRITICAL("Check success failed with code {}", magic_enum::enum_name(resul
 #include <functional>
 #include <iostream>
 
+
+#ifdef PROFILE_VELCRO
+#include <optick.h>
+#else
+#define OPTICK_EVENT(...)
+#define OPTICK_FRAME(...)
+#endif
+

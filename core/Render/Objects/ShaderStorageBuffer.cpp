@@ -8,10 +8,11 @@
 #include "../Factory/FactoryVulkan.h"
 
 
-void ShaderStorageBuffer::init(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t size) {
+void ShaderStorageBuffer::init(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t size,
+                               VkBufferUsageFlags additionalUsage) {
     _size = size;
     auto [buffer, memory] = Factory::createBuffer(device, physicalDevice, _size,
-                          VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+                          VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | additionalUsage,
                           VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     _buffer = buffer;
     _bufferMemory = memory;
