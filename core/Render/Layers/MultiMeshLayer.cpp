@@ -123,7 +123,26 @@ void MultiMeshLayer::onImGuiRender() {
     ImGui::End();
 
     ImGui::Begin("Selected");
-    auto& tansform = _scene->get
+    auto& transform = _scene->getTransform(0);
+    bool needUpdate = false;
+    needUpdate |= ImGui::DragFloat3("Position", glm::value_ptr(transform.position), 0.01f);
+    needUpdate |= ImGui::DragFloat3("Rotation", glm::value_ptr(transform.rotation), 0.01f);
+    needUpdate |= ImGui::DragFloat3("Scale", glm::value_ptr(transform.scale), 0.01f, 0.f);
+    ImGui::SameLine();
+    float factor = transform.scale.x;
+
+
+    if (ImGui::DragFloat("##Unifrorm", &factor, 0.01f)){
+        transform.scale += transform.scale * (factor - transform.scale.x);
+        transform.needUpdateModelMatrix = true;
+        _scene->setDirtyTransform(0);
+    }
+
+    if (needUpdate) {
+        transform.needUpdateModelMatrix = true;
+        _scene->setDirtyTransform(0);
+    }
+
     ImGui::End();
 }
 

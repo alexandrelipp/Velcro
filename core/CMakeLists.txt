@@ -10,6 +10,8 @@ target_sources(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/Utils/UtilsVulkan.h"
         "${CMAKE_CURRENT_LIST_DIR}/Utils/UtilsFile.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/Utils/UtilsFile.h"
+        "${CMAKE_CURRENT_LIST_DIR}/Utils/UtilsMath.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/Utils/UtilsMath.h"
         "${CMAKE_CURRENT_LIST_DIR}/Utils/UtilsTemplate.h"
 
         # FACTORY
