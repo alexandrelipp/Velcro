@@ -70,7 +70,7 @@ void FactoryModel::importFromFile(const std::string& path, std::shared_ptr<Scene
         return;
     }
 
-    //SPDLOG_INFO("Num meshes {}", _aiScene->mNumMeshes);
+    SPDLOG_INFO("Num meshes {}", _aiScene->mNumMeshes);
     _filePath = path;
 
     traverseNodeRecursive(_aiScene->mRootNode, -1, 1, scene);

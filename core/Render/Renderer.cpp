@@ -466,7 +466,7 @@ void Renderer::recordCommandBuffer(uint32_t index){
 
 void Renderer::onImGuiRender() {
     _imguiFocus = ImGui::IsAnyItemHovered();
-    SPDLOG_INFO("FOCUS {}", _imguiFocus);
+    //SPDLOG_INFO("FOCUS {}", _imguiFocus);
 
     ImGui::Begin("Hello from Renderer");
     ImGui::Text("FPS %.2f", _fpsCounter.getFPS());
