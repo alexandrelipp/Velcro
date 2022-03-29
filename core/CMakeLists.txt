@@ -1,9 +1,16 @@
 cmake_minimum_required(VERSION 3.20)
 
+# add pch
+target_precompile_headers(${PROJECT_NAME} PUBLIC
+        "${CMAKE_CURRENT_LIST_DIR}/pch/pch.h")
+
 
 target_sources(${PROJECT_NAME} PUBLIC
-        "${CMAKE_CURRENT_LIST_DIR}/Render/Renderer.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/Render/Renderer.h"
+        # PCH + BASE FILES
+        "${CMAKE_CURRENT_LIST_DIR}/pch/pch.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/pch/pch.h"
+        "${CMAKE_CURRENT_LIST_DIR}/Application.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/Application.h"
 
         # UTILS
         "${CMAKE_CURRENT_LIST_DIR}/Utils/UtilsVulkan.cpp"
@@ -21,6 +28,8 @@ target_sources(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/Render/Factory/FactoryModel.h"
 
         # RENDER OBJECTS
+        "${CMAKE_CURRENT_LIST_DIR}/Render/Renderer.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/Render/Renderer.h"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Objects/UniformBuffer.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Objects/UniformBuffer.h"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Objects/ShaderStorageBuffer.cpp"

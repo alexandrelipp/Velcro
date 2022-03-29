@@ -6,6 +6,10 @@
 #include <core/Utils/UtilsTemplate.h>
 
 TEST_CASE( "VectorSizeByte", "[UtilsTemplate]" ) {
-    REQUIRE(true);
+    std::vector<int> ok = {1, 2, 3};
+    REQUIRE(utils::vectorSizeByte(ok) == sizeof(int) * 3);
+
+    ok.clear();
+    REQUIRE(utils::vectorSizeByte(ok) == 0);
 }
 

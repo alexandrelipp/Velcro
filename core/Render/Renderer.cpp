@@ -3,7 +3,7 @@
 //
 
 #include "Renderer.h"
-#include "../../Application.h"
+#include "../Application.h"
 
 #include "../Utils/UtilsVulkan.h"
 #include "../Utils/UtilsFile.h"
@@ -469,8 +469,6 @@ void Renderer::onImGuiRender() {
     ImGuiIO& io = ImGui::GetIO();
 
     _imguiFocus =   io.WantCaptureMouse;
-
-    SPDLOG_INFO("FOCUS {}", _imguiFocus);
 
     ImGui::Begin("Hello from Renderer");
     ImGui::Text("FPS %.2f", _fpsCounter.getFPS());

@@ -3,8 +3,8 @@
 //
 
 #include "Application.h"
-#include "core/events/MouseEvent.h"
-#include "core/events/KeyEvent.h"
+#include "events/MouseEvent.h"
+#include "events/KeyEvent.h"
 
 #include <imgui.h>
 

@@ -5,8 +5,8 @@
 #pragma once
 
 
-#include <spdlog/spdlog.h>
-#include "../dep/magic_enum.hpp"
+#include "spdlog/spdlog.h"
+#include "magic_enum.hpp"
 
 
 // TODO : maybe add a forceDebug flag
@@ -57,12 +57,12 @@ SPDLOG_CRITICAL("Check success failed with code {}", magic_enum::enum_name(resul
 //#define GLM_FORCE_RADIANS
 // perspective matrix ranges from -1 to 1 by default. Vulkan range is 0 to 1
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <glm/glm.hpp>
-#include <glm/gtx/transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
+#include "glm/glm.hpp"
+#include "glm/gtx/transform.hpp"
+#include "glm/gtc/type_ptr.hpp"
 
 #include <stdexcept>
-#include <glm/glm.hpp>
+#include "glm/glm.hpp"
 
 #include <vector>
 #include <array>

@@ -11,15 +11,8 @@ if (PROFILE_VELCRO)
 endif()
 
 add_executable(${PROJECT_NAME}
-        pch/pch.cpp
-        pch/pch.h
-        Application.cpp
-        Application.h
         main.cpp
         )
-
-# add pch
-target_precompile_headers(${PROJECT_NAME} PUBLIC pch/pch.h)
 
 # add other cmakeLists
 include("${CMAKE_CURRENT_LIST_DIR}/dep/CMakeLists.txt")

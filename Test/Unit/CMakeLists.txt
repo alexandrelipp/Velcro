@@ -18,11 +18,6 @@ add_executable(${PROJECT_NAME}
         TestScene.cpp
         )
 
-# add pch
-target_precompile_headers(${PROJECT_NAME} PUBLIC
-        "${CMAKE_CURRENT_LIST_DIR}/../../pch/pch.h" )
-
-
 target_link_libraries(${PROJECT_NAME} PRIVATE Catch2::Catch2WithMain)
 
 include("${CMAKE_CURRENT_LIST_DIR}/../../dep/CmakeLists.txt")

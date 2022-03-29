@@ -4,9 +4,9 @@
 
 #pragma once
 
-#include "core/events/Event.h"
-#include "core/Codes.h"
-#include "core/Render/Renderer.h"
+#include "events/Event.h"
+#include "Codes.h"
+#include "Render/Renderer.h"
 
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>

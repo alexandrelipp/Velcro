@@ -11,4 +11,14 @@ TEST_CASE( "Create", "[Scene]" ) {
     REQUIRE(test != nullptr);
 }
 
+TEST_CASE( "Children", "[Scene]" ){
+    // create a scene and make sure a root get implicitly created
+    Scene scene("test");
+    REQUIRE(!scene.getName(0).empty());
+
+    // add first scene node
+    int newEntity = scene.addSceneNode(0, 0, "bob");
+    REQUIRE(newEntity == 1);
+}
+
 
