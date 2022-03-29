@@ -4,6 +4,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <core/Utils/UtilsTemplate.h>
+#include <core/Utils/UtilsMath.h>
 
 TEST_CASE( "VectorSizeByte", "[UtilsTemplate]" ) {
     std::vector<int> ok = {1, 2, 3};
@@ -11,5 +12,12 @@ TEST_CASE( "VectorSizeByte", "[UtilsTemplate]" ) {
 
     ok.clear();
     REQUIRE(utils::vectorSizeByte(ok) == 0);
+}
+
+TEST_CASE( "Almost Equal", "[UtilsMath]") {
+    float a = 4.01f;
+    float b = 5.03f;
+    REQUIRE(a + b != 9.04f);
+    REQUIRE(utils::almostEqual(a + b, 9.04f));
 }
 

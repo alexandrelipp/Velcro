@@ -20,4 +20,3 @@ namespace utils {
     glm::mat4 calculateModelMatrix(const glm::vec3& position, const glm::vec3& scale, const glm::vec3& rotation);
 }
 
-
