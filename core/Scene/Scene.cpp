@@ -106,14 +106,14 @@ void Scene::setTransform(int entity, const glm::mat4& transform){
 
     traverseRecursive(entity, [this](int entity){
         auto& hie = _hierarchies[entity];
-        _changedTransforms[hie.level].emplace_back(entity);
+        _changedTransforms[hie.level].insert(entity);
     });
 }
 
 void Scene::setDirtyTransform(int entity) {
     traverseRecursive(entity, [this](int entity){
         auto& hie = _hierarchies[entity];
-        _changedTransforms[hie.level].emplace_back(entity);
+        _changedTransforms[hie.level].insert(entity);
     });
 }
 
@@ -121,8 +121,9 @@ void Scene::setDirtyTransform(int entity) {
 void Scene::propagateTransforms() {
     // special logic for root (no parent)
     if (!_changedTransforms[0].empty()){
-        int root = _changedTransforms[0][0];
+        int root = *_changedTransforms[0].begin();
         VK_ASSERT(root == 0, "no bueno amigo");
+
         auto& tc = getTransform(root);
         // update the local transform if required
         if (tc.needUpdateModelMatrix){

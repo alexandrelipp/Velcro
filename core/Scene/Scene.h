@@ -10,6 +10,7 @@
 #include <vector>
 #include <unordered_map>
 #include <functional>
+#include <unordered_set>
 
 // TODO : padding?
 struct Vertex {
@@ -78,7 +79,7 @@ private:
 
     /// used to only recompute necessary transforms, note : it might be faster/simpler to always recompute all transforms
     /// in certain case. Profile to get an accurate answer
-    std::array<std::vector<int>, MAX_LEVELS> _changedTransforms;
+    std::array<std::unordered_set<int>, MAX_LEVELS> _changedTransforms;
 
     std::vector<Vertex> _vertices;
     std::vector<uint32_t> _indices;

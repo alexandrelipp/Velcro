@@ -466,8 +466,8 @@ void Renderer::recordCommandBuffer(uint32_t index){
 }
 
 void Renderer::onImGuiRender() {
+    // check if imgui wants capture (used to block event propagation)
     ImGuiIO& io = ImGui::GetIO();
-
     _imguiFocus =   io.WantCaptureMouse;
 
     ImGui::Begin("Hello from Renderer");
