@@ -1,5 +1,7 @@
 #pragma once
 
+#include <glm/glm.hpp>
+
 
 struct TransformComponent{
     glm::mat4 localTransform = glm::mat4(1.f);

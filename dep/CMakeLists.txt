@@ -60,10 +60,10 @@ target_sources(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/imgui/backends/imgui_impl_glfw.h"
 )
 
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/glfw")
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/glm")
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/spdlog")
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/assimp")
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/glfw" libGLFW)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/glm" libGLM)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/spdlog" libSpdlog)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/assimp" libAssimp)
 
 target_include_directories(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/glfw/include"

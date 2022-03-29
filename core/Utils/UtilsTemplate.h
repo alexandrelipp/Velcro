@@ -4,7 +4,8 @@
 
 namespace utils{
 
-    uint32_t vectorSizeByte(const auto& vec){
+    template<typename T>
+    uint32_t vectorSizeByte(const std::vector<T>& vec){
         if (vec.empty())
             return 0;
         return vec.size() * sizeof(vec[0]);

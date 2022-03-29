@@ -5,6 +5,8 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
+#include <optional>
+#include <string>
 
 struct ShaderFiles {
     std::optional<std::string> vertex = std::nullopt;
