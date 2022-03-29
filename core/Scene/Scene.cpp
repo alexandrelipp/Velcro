@@ -35,9 +35,6 @@ int Scene::addSceneNode(int parent, int level, const std::string& name) {
         level = 1;
     HierarchyComponent& pc = _hierarchies[parent];
 
-    if (name == "Helmet")
-        SPDLOG_INFO("Helmet");
-
     // sanity checks, should never happen
     if (pc.level + 1 != level){
         SPDLOG_INFO("Specified level is not valid with parent's level. Correcting it\n");

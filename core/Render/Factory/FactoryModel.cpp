@@ -151,7 +151,7 @@ std::string FactoryModel::getMeshName(int meshIndex) {
     if (meshIndex >= _aiScene->mNumMeshes)
         throw std::runtime_error("Index out of range");
     aiMesh* mesh = _aiScene->mMeshes[meshIndex];
-    return std::string(mesh->mName.C_Str());
+    return {mesh->mName.C_Str()};
 }
 
 

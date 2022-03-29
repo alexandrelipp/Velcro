@@ -22,8 +22,8 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
     _scene = std::make_shared<Scene>("NanoWorld");
     //FactoryModel::importFromFile("../../../core/Assets/Models/Nano/nanosuit.obj", _scene);
     //FactoryModel::importFromFile("../../../core/Assets/Models/utahTeapot.fbx", _scene);
-    FactoryModel::importFromFile("../../../core/Assets/Models/cube.fbx", _scene);
-    //FactoryModel::importFromFile("../../../core/Assets/Models/Bell Huey.fbx", _scene);
+    //FactoryModel::importFromFile("../../../core/Assets/Models/cube.fbx", _scene);
+    FactoryModel::importFromFile("../../../core/Assets/Models/Bell Huey.fbx", _scene);
     //FactoryModel::importFromFile("../../../core/Assets/Models/duck/scene.gltf", _scene);
 
     static_assert(sizeof(Vertex) == sizeof(Vertex::position) + sizeof(Vertex::normal) + sizeof(Vertex::uv));
@@ -124,8 +124,11 @@ void MultiMeshLayer::onImGuiRender() {
     displayHierarchy(0);
     ImGui::End();
 
+    if (_selectedEntity == -1)
+        return;
+
     ImGui::Begin("Selected");
-    auto& transform = _scene->getTransform(0);
+    auto& transform = _scene->getTransform(_selectedEntity);
     bool needUpdate = false;
     needUpdate |= ImGui::DragFloat3("Position", glm::value_ptr(transform.position), 0.01f);
     needUpdate |= ImGui::DragFloat3("Rotation", glm::value_ptr(transform.rotation), 0.01f);
@@ -137,12 +140,12 @@ void MultiMeshLayer::onImGuiRender() {
     if (ImGui::DragFloat("##Unifrorm", &factor, 0.01f)){
         transform.scale += transform.scale * (factor - transform.scale.x);
         transform.needUpdateModelMatrix = true;
-        _scene->setDirtyTransform(0);
+        _scene->setDirtyTransform(_selectedEntity);
     }
 
     if (needUpdate) {
         transform.needUpdateModelMatrix = true;
-        _scene->setDirtyTransform(0);
+        _scene->setDirtyTransform(_selectedEntity);
     }
 
     ImGui::End();

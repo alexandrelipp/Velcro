@@ -60,8 +60,6 @@ private:
     /// ubiquitous components
     std::vector<HierarchyComponent> _hierarchies;
     std::vector<TransformComponent> _transforms;
-    //std::vector<glm::mat4> _localTransforms;
-    //std::vector<glm::mat4> _worldTransforms;
     std::vector<std::string> _entityNames;
 
     /// map of entity to meshID
