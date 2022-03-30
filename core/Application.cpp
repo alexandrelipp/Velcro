@@ -199,8 +199,6 @@ void Application::onEvent(Event &e) {
             break;
     }
 
-    if (ImGui::IsAnyItemHovered())
-        return;
     _renderer.onEvent(e);
 }
 

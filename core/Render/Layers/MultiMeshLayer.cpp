@@ -107,7 +107,7 @@ void MultiMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t c
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout,
                             0, 1, &_descriptorSets[currentImage], 0, nullptr);
 
-    vkCmdDrawIndirect(commandBuffer, _indirectCommandBuffer.getBuffer(), 0, _scene->getMeshes().size(), sizeof(VkDrawIndirectCommand));
+    vkCmdDrawIndirect(commandBuffer, _indirectCommandBuffer.getBuffer(), 0, 1, sizeof(VkDrawIndirectCommand));
 }
 
 void MultiMeshLayer::update(float dt, uint32_t currentImage, const glm::mat4& pv) {
