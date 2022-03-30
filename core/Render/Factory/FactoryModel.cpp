@@ -74,6 +74,7 @@ void FactoryModel::importFromFile(const std::string& path, std::shared_ptr<Scene
     _filePath = path;
 
     traverseNodeRecursive(_aiScene->mRootNode, -1, 1, scene);
+    scene->setDirtyTransform(0);
 
     // don't forget to reset the cached AiScene
     _aiScene = nullptr;
@@ -153,7 +154,3 @@ std::string FactoryModel::getMeshName(int meshIndex) {
     aiMesh* mesh = _aiScene->mMeshes[meshIndex];
     return {mesh->mName.C_Str()};
 }
-
-
-
-

@@ -174,8 +174,7 @@ VkExtent2D Renderer::getSwapchainExtent() {
 
 void Renderer::onEvent(Event& e) {
     if (!_imguiFocus)
-        return;
-    _camera.onEvent(e);
+        _camera.onEvent(e);
 }
 
 
