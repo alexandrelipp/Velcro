@@ -31,6 +31,8 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
     auto [vertices, vtxSize] = _scene->getVerticesData();
     auto [indices, idxSize] = _scene->getIndicesData();
 
+
+
     // init the vertices ssbo
     _vertices.init(_vrd->device, _vrd->physicalDevice, vtxSize);
     VK_ASSERT(_vertices.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool,

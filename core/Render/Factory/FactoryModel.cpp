@@ -76,6 +76,9 @@ void FactoryModel::importFromFile(const std::string& path, std::shared_ptr<Scene
     traverseNodeRecursive(_aiScene->mRootNode, -1, 1, scene);
     scene->setDirtyTransform(0);
 
+    SPDLOG_INFO("Num vertices {}", scene->_vertices.size());
+    SPDLOG_INFO("Max index {}", *std::max_element(scene->_indices.begin(), scene->_indices.end()));
+
     // don't forget to reset the cached AiScene
     _aiScene = nullptr;
     _filePath.clear();
@@ -108,6 +111,9 @@ bool FactoryModel::createMeshComponent(int aiMeshIndex, MeshComponent& mc, std::
         throw std::runtime_error("Index out of range");
     aiMesh* mesh = _aiScene->mMeshes[aiMeshIndex];
 
+    // store the mesh first index (will be added to all indices since all indices of all meshes are stored continuously)
+    uint32_t meshFirstVertexIndex = scene->_vertices.size();
+
     // get and add all vertices
     for (int i = 0; i < mesh->mNumVertices; ++i){
         auto& aiVertex = mesh->mVertices[i];
@@ -131,7 +137,7 @@ bool FactoryModel::createMeshComponent(int aiMeshIndex, MeshComponent& mc, std::
     for (int i = 0; i < mesh->mNumFaces; ++i) {
         auto& face = mesh->mFaces[i];
         for (int j = 0; j < face.mNumIndices; ++j)
-            scene->_indices.emplace_back(face.mIndices[j]);
+            scene->_indices.emplace_back(meshFirstVertexIndex + face.mIndices[j]);
     }
 
     // the index count is the current index buffer size - the first vertex index
