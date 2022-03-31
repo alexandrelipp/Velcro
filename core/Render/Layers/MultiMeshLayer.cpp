@@ -45,22 +45,16 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
     // add all meshes as indirect commands
     std::vector<VkDrawIndirectCommand> indirectCommands;
     const auto& meshes = _scene->getMeshes();
-    for (const auto& mesh : meshes){
+    for (uint32_t i = 0; i < meshes.size(); ++i){
         indirectCommands.push_back({
-            .vertexCount = mesh.indexCount,
-            .instanceCount = 1,
-            .firstVertex = mesh.firstVertexIndex,
-            .firstInstance = 0
-        });
+               .vertexCount = meshes[i].indexCount,
+               .instanceCount = 1,
+               .firstVertex = meshes[i].firstVertexIndex,
+               .firstInstance = i
+       });
     }
 
-//    VkDrawIndirectCommand indirectCommand = {
-//            .vertexCount = (uint32_t)indices.size(),
-//            .instanceCount = 1,
-//            .firstVertex = 0,
-//            .firstInstance = 0
-//    };
-
+    // set the commands in the command buffer
     _indirectCommandBuffer.init(_vrd->device, _vrd->physicalDevice, indirectCommands.size() * sizeof(indirectCommands[0]),
                                 false, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
     VK_ASSERT(_indirectCommandBuffer.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool,
@@ -107,7 +101,8 @@ void MultiMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t c
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout,
                             0, 1, &_descriptorSets[currentImage], 0, nullptr);
 
-    vkCmdDrawIndirect(commandBuffer, _indirectCommandBuffer.getBuffer(), 0, 1, sizeof(VkDrawIndirectCommand));
+    vkCmdDrawIndirect(commandBuffer, _indirectCommandBuffer.getBuffer(), 0,
+                      _scene->getMeshes().size(), sizeof(VkDrawIndirectCommand));
 }
 
 void MultiMeshLayer::update(float dt, uint32_t currentImage, const glm::mat4& pv) {
