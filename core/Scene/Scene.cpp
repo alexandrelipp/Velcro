@@ -101,6 +101,7 @@ void Scene::setTransform(int entity, const glm::mat4& transform){
     utils::decomposeTransform(transform, tc.position, tc.rotation, tc.scale);
     tc.needUpdateModelMatrix = false;
 
+    // recursively mark this entity and all of his children as dirty
     traverseRecursive(entity, [this](int entity){
         auto& hie = _hierarchies[entity];
         _changedTransforms[hie.level].insert(entity);

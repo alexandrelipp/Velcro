@@ -8,9 +8,9 @@ struct TransformComponent{
     glm::mat4 worldTransform = glm::mat4(1.f); // Absolute transform
 
     // relative pos/rot/scale
-    glm::vec3 position = glm::vec3(0.f, 0.f, -1.f);
+    glm::vec3 position = glm::vec3(0.f);
     glm::vec3 rotation = glm::vec3(0.f);
-    glm::vec3 scale = glm::vec3(1.f);
+    glm::vec3 scale    = glm::vec3(1.f);
     bool needUpdateModelMatrix = true;
 };
 
