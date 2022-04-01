@@ -151,10 +151,16 @@ namespace Factory {
             VK_ASSERT(utils::isDeviceExtensionSupported(physicalDevice, e), "Device extension not supported");
         }
 
+        // TODO : why do we need this to suppress validation warnings?
+        VkPhysicalDeviceVulkan11Features features11 = {
+                .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES,
+                .shaderDrawParameters = VK_TRUE
+        };
+
         // create logical device
         VkDeviceCreateInfo createInfo = {
                 .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-                .pNext = nullptr,
+                .pNext = &features11,
                 .flags = 0u,
                 .queueCreateInfoCount = 1u,
                 .pQueueCreateInfos = &queueCreateInfo,

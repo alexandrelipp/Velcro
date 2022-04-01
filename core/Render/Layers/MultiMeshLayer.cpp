@@ -20,13 +20,18 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
         buffer.init(_vrd->device, _vrd->physicalDevice, sizeof(glm::mat4));
 
     _scene = std::make_shared<Scene>("NanoWorld");
-    FactoryModel::importFromFile("../../../core/Assets/Models/Nano/nanosuit.obj", _scene);
+    //FactoryModel::importFromFile("../../../core/Assets/Models/Nano/nanosuit.obj", _scene);
+    FactoryModel::importFromFile("../../../core/Assets/Models/utahTeapot.fbx", _scene);
+    //FactoryModel::importFromFile("../../../core/Assets/Models/cube.fbx", _scene);
+    //FactoryModel::importFromFile("../../../core/Assets/Models/Bell Huey.fbx", _scene);
     //FactoryModel::importFromFile("../../../core/Assets/Models/duck/scene.gltf", _scene);
 
     static_assert(sizeof(Vertex) == sizeof(Vertex::position) + sizeof(Vertex::normal) + sizeof(Vertex::uv));
 
     auto [vertices, vtxSize] = _scene->getVerticesData();
     auto [indices, idxSize] = _scene->getIndicesData();
+
+
 
     // init the vertices ssbo
     _vertices.init(_vrd->device, _vrd->physicalDevice, vtxSize);
@@ -42,22 +47,16 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
     // add all meshes as indirect commands
     std::vector<VkDrawIndirectCommand> indirectCommands;
     const auto& meshes = _scene->getMeshes();
-    for (const auto& mesh : meshes){
+    for (uint32_t i = 0; i < meshes.size(); ++i){
         indirectCommands.push_back({
-            .vertexCount = mesh.indexCount,
-            .instanceCount = 1,
-            .firstVertex = mesh.firstVertexIndex,
-            .firstInstance = 0
-        });
+               .vertexCount = meshes[i].indexCount,
+               .instanceCount = 1,
+               .firstVertex = meshes[i].firstVertexIndex,
+               .firstInstance = i
+       });
     }
 
-//    VkDrawIndirectCommand indirectCommand = {
-//            .vertexCount = (uint32_t)indices.size(),
-//            .instanceCount = 1,
-//            .firstVertex = 0,
-//            .firstInstance = 0
-//    };
-
+    // set the commands in the command buffer
     _indirectCommandBuffer.init(_vrd->device, _vrd->physicalDevice, indirectCommands.size() * sizeof(indirectCommands[0]),
                                 false, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
     VK_ASSERT(_indirectCommandBuffer.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool,
@@ -104,7 +103,8 @@ void MultiMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t c
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout,
                             0, 1, &_descriptorSets[currentImage], 0, nullptr);
 
-    vkCmdDrawIndirect(commandBuffer, _indirectCommandBuffer.getBuffer(), 0, _scene->getMeshes().size(), sizeof(VkDrawIndirectCommand));
+    vkCmdDrawIndirect(commandBuffer, _indirectCommandBuffer.getBuffer(), 0,
+                      _scene->getMeshes().size(), sizeof(VkDrawIndirectCommand));
 }
 
 void MultiMeshLayer::update(float dt, uint32_t currentImage, const glm::mat4& pv) {
@@ -117,7 +117,35 @@ void MultiMeshLayer::update(float dt, uint32_t currentImage, const glm::mat4& pv
 }
 
 void MultiMeshLayer::onImGuiRender() {
+    ImGui::Begin("Scene");
     displayHierarchy(0);
+    ImGui::End();
+
+    if (_selectedEntity == -1)
+        return;
+
+    ImGui::Begin("Selected");
+    auto& transform = _scene->getTransform(_selectedEntity);
+    bool needUpdate = false;
+    needUpdate |= ImGui::DragFloat3("Position", glm::value_ptr(transform.position), 0.01f);
+    needUpdate |= ImGui::DragFloat3("Rotation", glm::value_ptr(transform.rotation), 0.01f);
+    needUpdate |= ImGui::DragFloat3("Scale", glm::value_ptr(transform.scale), 0.01f, 0.f);
+    ImGui::SameLine();
+    float factor = transform.scale.x;
+
+
+    if (ImGui::DragFloat("##Unifrorm", &factor, 0.01f)){
+        transform.scale += transform.scale * (factor - transform.scale.x);
+        transform.needUpdateModelMatrix = true;
+        _scene->setDirtyTransform(_selectedEntity);
+    }
+
+    if (needUpdate) {
+        transform.needUpdateModelMatrix = true;
+        _scene->setDirtyTransform(_selectedEntity);
+    }
+
+    ImGui::End();
 }
 
 void MultiMeshLayer::createPipelineLayout() {
@@ -263,8 +291,8 @@ void MultiMeshLayer::displayHierarchy(int entity) {
 
     // default flags and additional flag if selected
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth |ImGuiTreeNodeFlags_DefaultOpen;
-//    if (entity == _selectedEntity)
-//        flags |= ImGuiTreeNodeFlags_Selected | ImGuiTreeNodeFlags_DefaultOpen;
+    if (entity == _selectedEntity)
+        flags |= ImGuiTreeNodeFlags_Selected | ImGuiTreeNodeFlags_DefaultOpen;
 
     // get tag and hierarchy
     HierarchyComponent& hc = _scene->getHierarchy(entity);
@@ -276,8 +304,8 @@ void MultiMeshLayer::displayHierarchy(int entity) {
 
     ImGui::PushID((int)entity);
 
-//    if (ImGui::IsItemClicked())
-//        _selectedEntity = entity;
+    if (ImGui::IsItemClicked())
+        _selectedEntity = entity;
 
     if (opened) {
         for (int e = hc.firstChild; e != -1; e = _scene->getHierarchy(e).nextSibling)

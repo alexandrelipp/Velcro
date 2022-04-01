@@ -9,6 +9,8 @@
 #include <array>
 #include <vector>
 #include <unordered_map>
+#include <functional>
+#include <unordered_set>
 
 // TODO : padding?
 struct Vertex {
@@ -28,6 +30,7 @@ public:
     std::string& getName(int entity);
 
     HierarchyComponent& getHierarchy(int entity);
+    TransformComponent& getTransform(int entity);
 
     int addSceneNode(int parent, int level, const std::string& name);
 
@@ -35,6 +38,7 @@ public:
     MeshComponent& createMesh(int entityID);
 
     void setTransform(int entity, const glm::mat4& transform);
+    void setDirtyTransform(int entity);
 
     void propagateTransforms();
 
@@ -55,8 +59,7 @@ private:
 
     /// ubiquitous components
     std::vector<HierarchyComponent> _hierarchies;
-    std::vector<glm::mat4> _localTransforms;
-    std::vector<glm::mat4> _worldTransforms;
+    std::vector<TransformComponent> _transforms;
     std::vector<std::string> _entityNames;
 
     /// map of entity to meshID
@@ -71,9 +74,10 @@ private:
 
     static constexpr uint32_t MAX_LEVELS = 16;
 
+
     /// used to only recompute necessary transforms, note : it might be faster/simpler to always recompute all transforms
     /// in certain case. Profile to get an accurate answer
-    std::array<std::vector<int>, MAX_LEVELS> _changedTransforms;
+    std::array<std::unordered_set<int>, MAX_LEVELS> _changedTransforms;
 
     std::vector<Vertex> _vertices;
     std::vector<uint32_t> _indices;

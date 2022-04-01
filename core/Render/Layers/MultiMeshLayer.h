@@ -42,6 +42,8 @@ private:
     ShaderStorageBuffer _indirectCommandBuffer{};
     //uint32_t _indexCount = 0;
 
+    int _selectedEntity = -1;
+
 
 
     std::shared_ptr<Scene> _scene = nullptr;

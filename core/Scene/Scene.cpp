@@ -4,13 +4,14 @@
 
 #include "Scene.h"
 
+#include "../Utils/UtilsMath.h"
+
 Scene::Scene(std::string name) : _name(std::move(name)){
     HierarchyComponent root = {};
     root.level = 0;
 
     _hierarchies.push_back(root);
-    _localTransforms.emplace_back(1.f);
-    _worldTransforms.emplace_back(1.f);
+    _transforms.emplace_back();
     _entityNames.emplace_back("Root");
 
     SPDLOG_INFO("Vertex Size {}", sizeof(Vertex));
@@ -22,8 +23,7 @@ int Scene::addSceneNode(int parent, int level, const std::string& name) {
         parent = 0;
 
     // add the ubiquitous components (except hie that will be added later)
-    _localTransforms.emplace_back(1.0f);
-    _worldTransforms.emplace_back(1.0f);
+    _transforms.emplace_back();
     _entityNames.push_back(name);
 
     // create new hierarchy component
@@ -34,9 +34,6 @@ int Scene::addSceneNode(int parent, int level, const std::string& name) {
     if (level == 0)
         level = 1;
     HierarchyComponent& pc = _hierarchies[parent];
-
-    if (name == "Helmet")
-        SPDLOG_INFO("Helmet");
 
     // sanity checks, should never happen
     if (pc.level + 1 != level){
@@ -77,6 +74,10 @@ HierarchyComponent& Scene::getHierarchy(int entity) {
     return _hierarchies[entity];
 }
 
+TransformComponent& Scene::getTransform(int entity) {
+    return _transforms[entity];
+}
+
 /// creates a mesh for the given entityID and returns the created mesh
 MeshComponent& Scene::createMesh(int entityID){
     // check if the mesh already exists
@@ -95,20 +96,39 @@ MeshComponent& Scene::createMesh(int entityID){
 void Scene::setTransform(int entity, const glm::mat4& transform){
     if (entity == -1)
         throw std::runtime_error("Invalid entity");
-    _localTransforms[entity] = transform;
+    auto& tc = getTransform(entity);
+    tc.localTransform = transform;
+    utils::decomposeTransform(transform, tc.position, tc.rotation, tc.scale);
+    tc.needUpdateModelMatrix = false;
 
+    // recursively mark this entity and all of his children as dirty
     traverseRecursive(entity, [this](int entity){
         auto& hie = _hierarchies[entity];
-        _changedTransforms[hie.level].emplace_back(entity);
+        _changedTransforms[hie.level].insert(entity);
     });
 }
+
+void Scene::setDirtyTransform(int entity) {
+    traverseRecursive(entity, [this](int entity){
+        auto& hie = _hierarchies[entity];
+        _changedTransforms[hie.level].insert(entity);
+    });
+}
+
 
 void Scene::propagateTransforms() {
     // special logic for root (no parent)
     if (!_changedTransforms[0].empty()){
-        int root = _changedTransforms[0][0];
+        int root = *_changedTransforms[0].begin();
         VK_ASSERT(root == 0, "no bueno amigo");
-        _worldTransforms[root] = _localTransforms[root];
+
+        auto& tc = getTransform(root);
+        // update the local transform if required
+        if (tc.needUpdateModelMatrix){
+            tc.localTransform = utils::calculateModelMatrix(tc.position, tc.scale, tc.rotation);
+            tc.needUpdateModelMatrix = false;
+        }
+        tc.worldTransform = tc.localTransform;
         _changedTransforms[0].clear();
     }
 
@@ -119,11 +139,21 @@ void Scene::propagateTransforms() {
 
         for (auto entity : _changedTransforms[i]){
             auto& hie = _hierarchies[entity];
-            _worldTransforms[entity] = _worldTransforms[hie.parent] * _localTransforms[entity];
+            auto& tc = _transforms[entity];
+
+            // update the local transform if required
+            if (tc.needUpdateModelMatrix){
+                tc.localTransform = utils::calculateModelMatrix(tc.position, tc.scale, tc.rotation);
+                tc.needUpdateModelMatrix = false;
+            }
+
+            // compute world transform using parent
+            tc.worldTransform = _transforms[hie.parent].worldTransform * tc.localTransform;
+
             // update the mesh transform at well if it exists
             auto it = _meshesMap.find(entity);
             if (it != _meshesMap.end()){
-                _meshTransforms[it->second] = _worldTransforms[entity];
+                _meshTransforms[it->second] = tc.worldTransform;
             }
         }
         _changedTransforms[i].clear();

@@ -3,7 +3,7 @@
 //
 
 #include "Renderer.h"
-#include "../../Application.h"
+#include "../Application.h"
 
 #include "../Utils/UtilsVulkan.h"
 #include "../Utils/UtilsFile.h"
@@ -173,13 +173,15 @@ VkExtent2D Renderer::getSwapchainExtent() {
 }
 
 void Renderer::onEvent(Event& e) {
-    _camera.onEvent(e);
+    if (!_imguiFocus)
+        _camera.onEvent(e);
 }
 
 
 void Renderer::update(float dt) {
-    _camera.update(dt);
     _fpsCounter.tick(dt, true); // TODO : remove hard coded true!
+    if (!_imguiFocus)
+        _camera.update(dt);
 }
 
 
@@ -463,6 +465,10 @@ void Renderer::recordCommandBuffer(uint32_t index){
 }
 
 void Renderer::onImGuiRender() {
+    // check if imgui wants capture (used to block event propagation)
+    ImGuiIO& io = ImGui::GetIO();
+    _imguiFocus =   io.WantCaptureMouse;
+
     ImGui::Begin("Hello from Renderer");
     ImGui::Text("FPS %.2f", _fpsCounter.getFPS());
     ImGui::End();

@@ -1,5 +1,19 @@
 #pragma once
 
+#include <glm/glm.hpp>
+
+
+struct TransformComponent{
+    glm::mat4 localTransform = glm::mat4(1.f);
+    glm::mat4 worldTransform = glm::mat4(1.f); // Absolute transform
+
+    // relative pos/rot/scale
+    glm::vec3 position = glm::vec3(0.f);
+    glm::vec3 rotation = glm::vec3(0.f);
+    glm::vec3 scale    = glm::vec3(1.f);
+    bool needUpdateModelMatrix = true;
+};
+
 struct HierarchyComponent {
     int level = -1;
     int parent = -1;

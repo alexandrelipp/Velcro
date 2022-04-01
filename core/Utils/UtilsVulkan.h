@@ -5,6 +5,8 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
+#include <functional>
+#include <vector>
 
 namespace utils {
     bool isInstanceExtensionSupported(const char* extension);
