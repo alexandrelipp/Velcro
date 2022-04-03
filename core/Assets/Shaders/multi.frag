@@ -8,11 +8,12 @@ layout(location = 0) out vec4 outColor;
 
 layout(push_constant) uniform PushPos{
     vec3 cameraWorldPos;
-    float specularS;
+    float specularS; // TODO : remove?
 } push;
 
 //layout(binding = 3) uniform sampler2D texSampler;
 
+// TODO : not be hard coded!
 const vec3 lightPos = vec3(1.0);
 
 void main() {
