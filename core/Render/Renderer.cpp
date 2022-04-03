@@ -205,8 +205,6 @@ void Renderer::draw() {
     // then unsignal the fence for next use
     VK_CHECK(vkResetFences(_vrd.device, 1, &_renderFinishedFence));
 
-
-
     uint32_t imageIndex;
     VK_CHECK(vkAcquireNextImageKHR(_vrd.device, _swapchain, UINT64_MAX, _imageAvailSpres[_indexFiFGPU], nullptr, &imageIndex));
 
