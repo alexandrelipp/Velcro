@@ -60,16 +60,16 @@ bool Renderer::init() {
     // create the context
     createInstance();
 
-    // pick a physical device (gpu)
-    _vrd.physicalDevice = utils::pickPhysicalDevice(_vrd.instance);
-    utils::printPhysicalDeviceProps(_vrd.physicalDevice);
-
     // gpu feature to be enabled (all disabled by default)
     VkPhysicalDeviceFeatures features{};
     features.geometryShader = VK_TRUE;
     features.samplerAnisotropy = VK_TRUE;
     features.multiDrawIndirect = VK_TRUE;
     features.drawIndirectFirstInstance = VK_TRUE;
+
+    // pick a physical device (gpu)
+    _vrd.physicalDevice = utils::pickPhysicalDevice(_vrd.instance, features);
+    utils::printPhysicalDeviceProps(_vrd.physicalDevice);
 
     // create a logical device (interface to gpu)
     utils::printQueueFamiliesInfo(_vrd.physicalDevice);
