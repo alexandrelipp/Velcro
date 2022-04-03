@@ -115,7 +115,7 @@ bool Renderer::init() {
     VkCommandPoolCreateInfo commandPoolCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .pNext = nullptr,
-        .flags = 0,
+        .flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // we want to be able to individually reset a command buffer to its initial state
         .queueFamilyIndex = _vrd.graphicsQueueFamilyIndex
     };
     VK_CHECK(vkCreateCommandPool(_vrd.device, &commandPoolCreateInfo, nullptr, &_vrd.commandPool));
@@ -207,9 +207,12 @@ void Renderer::draw() {
         layer->onImGuiRender();
     _imGuiLayer->end();
 
+    // No need to reset the command buffer, beginCommandBuffer does it implicitally
     //VK_CHECK(vkResetCommandBuffer(_vrd.commandBuffers[imageIndex], 0));
     // reset the command pool, probably not optimal but good enough for now
-    VK_CHECK(vkResetCommandPool(_vrd.device, _vrd.commandPool, 0));
+    //VK_CHECK(vkResetCommandPool(_vrd.device, _vrd.commandPool, 0));
+
+    // record command buffer at image index
     recordCommandBuffer(imageIndex);
 
     // semaphore check to occur before writing to the color attachment
@@ -423,6 +426,8 @@ void Renderer::recordCommandBuffer(uint32_t index){
         .flags = 0,
         .pInheritanceInfo = nullptr,
     };
+
+    // begin command buffer implicitally resets the commands buffer : https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VkCommandPoolCreateFlagBits.html
     VK_CHECK(vkBeginCommandBuffer(_vrd.commandBuffers[index], &commandBufferCI));
 
     // being render pass

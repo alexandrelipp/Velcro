@@ -2,6 +2,7 @@
 
 layout(location = 0) out vec2 uv;
 layout(location = 1) out vec3 normal;
+layout(location = 2) out vec3 worldPos;
 
 layout(binding = 0) uniform UniformBuffer{
     mat4 vp;
@@ -45,5 +46,6 @@ void main() {
 
     // calculate tex coords + vertex pos
     uv = vec2(vertex.u, vertex.v);
+    worldPos = vec3(model * vec4(vertex.x, vertex.y, vertex.z, 1.0));
     gl_Position = ubo.vp * model * vec4(vertex.x, vertex.y, vertex.z, 1.0);
 }
