@@ -20,8 +20,8 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
         buffer.init(_vrd->device, _vrd->physicalDevice, sizeof(glm::mat4));
 
     _scene = std::make_shared<Scene>("NanoWorld");
-    //FactoryModel::importFromFile("../../../core/Assets/Models/Nano/nanosuit.obj", _scene);
-    FactoryModel::importFromFile("../../../core/Assets/Models/utahTeapot.fbx", _scene);
+    FactoryModel::importFromFile("../../../core/Assets/Models/Nano/nanosuit.obj", _scene);
+    //FactoryModel::importFromFile("../../../core/Assets/Models/utahTeapot.fbx", _scene);
     //FactoryModel::importFromFile("../../../core/Assets/Models/cube.fbx", _scene);
     //FactoryModel::importFromFile("../../../core/Assets/Models/Bell Huey.fbx", _scene);
     //FactoryModel::importFromFile("../../../core/Assets/Models/duck/scene.gltf", _scene);
@@ -98,11 +98,17 @@ MultiMeshLayer::~MultiMeshLayer() {
 }
 
 void MultiMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage) {
-    // bind pipeline and render
+    Camera* camera = Application::getApp()->getRenderer()->getCamera();
+    // bind pipeline
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
+
+    glm::vec4 value = glm::vec4(*camera->getPosition(), _specularS);
+    // push the camera pos and bind descriptor sets
+    vkCmdPushConstants(commandBuffer, _pipelineLayout, _cameraPosPC.stageFlags, _cameraPosPC.offset, _cameraPosPC.size, &value);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout,
                             0, 1, &_descriptorSets[currentImage], 0, nullptr);
 
+    // render
     vkCmdDrawIndirect(commandBuffer, _indirectCommandBuffer.getBuffer(), 0,
                       _scene->getMeshes().size(), sizeof(VkDrawIndirectCommand));
 }
@@ -146,6 +152,10 @@ void MultiMeshLayer::onImGuiRender() {
     }
 
     ImGui::End();
+
+    ImGui::Begin("Specular");
+    ImGui::DragFloat("s", &_specularS, 0.1f, 0.f, 10.f);
+    ImGui::End();
 }
 
 void MultiMeshLayer::createPipelineLayout() {
@@ -185,14 +195,20 @@ void MultiMeshLayer::createPipelineLayout() {
 
     VK_CHECK(vkCreateDescriptorSetLayout(_vrd->device, &descriptorLayoutCI, nullptr, &_descriptorSetLayout));
 
+    // create fragment push constant for camera pos
+    _cameraPosPC = {
+            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .offset = 0,               // must be multiple of 4 (offset into push constant block)
+            .size = sizeof(glm::vec3) + sizeof(_specularS), // must be multiple of 4
+    };
 
     // create pipeline layout (used for uniform and push constants)
     VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
     pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
     pipelineLayoutInfo.setLayoutCount = 1;
     pipelineLayoutInfo.pSetLayouts = &_descriptorSetLayout;
-    pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
-    pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
+    pipelineLayoutInfo.pushConstantRangeCount = 1;
+    pipelineLayoutInfo.pPushConstantRanges = &_cameraPosPC;
 
     VK_CHECK(vkCreatePipelineLayout(_vrd->device, &pipelineLayoutInfo, nullptr, &_pipelineLayout));
 }

@@ -40,12 +40,12 @@ private:
     ShaderStorageBuffer _vertices{};
     ShaderStorageBuffer _indices{};
     ShaderStorageBuffer _indirectCommandBuffer{};
-    //uint32_t _indexCount = 0;
 
+    VkPushConstantRange _cameraPosPC;
+    float _specularS = 0.5f;
+
+    // Scene
     int _selectedEntity = -1;
-
-
-
     std::shared_ptr<Scene> _scene = nullptr;
 
     //Texture _texture{};

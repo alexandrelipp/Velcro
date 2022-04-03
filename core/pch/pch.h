@@ -47,6 +47,7 @@ SPDLOG_CRITICAL("Check success failed with code {}", magic_enum::enum_name(resul
 #define handleError handleErrorRelease
 #endif
 
+// only defined when cLion is indexing, seems to help with IDE performance
 #ifndef __CLION_IDE__
 #define VK_ASSERT(result, mes) if (!(result)) \
         throw std::runtime_error(mes)

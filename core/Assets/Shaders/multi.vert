@@ -1,6 +1,8 @@
 #version 460
 
 layout(location = 0) out vec2 uv;
+layout(location = 1) out vec3 normal;
+layout(location = 2) out vec3 worldPos;
 
 layout(binding = 0) uniform UniformBuffer{
     mat4 vp;
@@ -30,8 +32,20 @@ layout(binding = 3) readonly buffer Xforms{
 };
 
 void main() {
+    // get vertex using PVP
     uint idx = indices[gl_VertexIndex];
     Vertex vertex = vertices[idx];
-    gl_Position = ubo.vp * transforms[gl_BaseInstance] * vec4(vertex.x, vertex.y, vertex.z, 1.0);
+
+    // get model transform using baseInstance (defined in VK_DRAW_INDIRECT)
+    mat4 model = transforms[gl_BaseInstance];
+
+    // calculate normal (transpose + inverse for non uniform scale)
+    // mat3 test = inverse(transpose(mat3(model))); // Is this better ??
+    mat3 normalMatrix = mat3(transpose(inverse(model)));
+    normal = normalMatrix * vec3(vertex.nx, vertex.ny, vertex.nz);
+
+    // calculate tex coords + vertex pos
     uv = vec2(vertex.u, vertex.v);
+    worldPos = vec3(model * vec4(vertex.x, vertex.y, vertex.z, 1.0));
+    gl_Position = ubo.vp * model * vec4(vertex.x, vertex.y, vertex.z, 1.0);
 }
