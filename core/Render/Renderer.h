@@ -71,9 +71,9 @@ private:
     glm::vec4 _clearValue = { 0.3f, 0.5f, 0.5f, 1.f };
 
     // sync
-    //VkFence _inFlightFence = nullptr;
-    VkSemaphore _imageAvailSemaphore = nullptr;
-    VkSemaphore _renderFinishedSemaphore = nullptr;
+    VkFence _renderFinishedFence = nullptr; ///< signaled when the GPU is done rendering a frame
+    std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> _imageAvailSemaphores = {nullptr};
+    std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> _renderFinishedSemaphores = {nullptr};
 
     // DepthBuffer
     struct DepthBuffer{
