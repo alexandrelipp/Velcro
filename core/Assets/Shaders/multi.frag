@@ -10,6 +10,7 @@ layout(location = 0) out vec4 outColor;
 const vec3 lightPos = vec3(1.0);
 
 void main() {
+
     //outColor = texture(texSampler, uv);
 
     float ambient = 0.2;
