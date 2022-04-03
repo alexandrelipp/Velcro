@@ -4,6 +4,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 #include <core/Utils/UtilsTemplate.h>
+#include <core/Utils/UtilsVulkan.h>
 #include <core/Utils/UtilsMath.h>
 
 TEST_CASE( "VectorSizeByte", "[UtilsTemplate]" ) {
@@ -21,3 +22,29 @@ TEST_CASE( "Almost Equal", "[UtilsMath]") {
     REQUIRE(utils::almostEqual(a + b, 9.04f));
 }
 
+TEST_CASE( "IsFeaturesSupported", "[UtilsVulkan]") {
+    // test with device + requested features all to false (defaults)
+    VkPhysicalDeviceFeatures deviceFeatures, requestedFeatures;
+    REQUIRE(utils::isFeaturesSupported(deviceFeatures, requestedFeatures));
+
+    // one feature not supported
+    requestedFeatures.drawIndirectFirstInstance = VK_TRUE;
+    REQUIRE_FALSE(utils::isFeaturesSupported(deviceFeatures, requestedFeatures));
+
+    // one feature supported
+    deviceFeatures.drawIndirectFirstInstance = VK_TRUE;
+    REQUIRE(utils::isFeaturesSupported(deviceFeatures, requestedFeatures));
+
+    // last feature not supported
+    requestedFeatures.inheritedQueries = VK_TRUE;
+    REQUIRE_FALSE(utils::isFeaturesSupported(deviceFeatures, requestedFeatures));
+
+    // last feature supported
+    deviceFeatures.inheritedQueries = VK_TRUE;
+    REQUIRE(utils::isFeaturesSupported(deviceFeatures, requestedFeatures));
+
+    // test with r values
+    REQUIRE_FALSE(utils::isFeaturesSupported({VK_TRUE, VK_FALSE, VK_TRUE}, {VK_TRUE, VK_TRUE, VK_TRUE}));
+    REQUIRE(utils::isFeaturesSupported({VK_TRUE, VK_TRUE, VK_TRUE}, {VK_FALSE, VK_FALSE, VK_TRUE, VK_FALSE, VK_FALSE}));
+    REQUIRE(utils::isFeaturesSupported({}, {}));
+}

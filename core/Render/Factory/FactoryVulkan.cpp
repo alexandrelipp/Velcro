@@ -123,7 +123,8 @@ namespace Factory {
         vkDestroyDebugUtilsMessengerEXT(instance, messenger, nullptr);
     }
 
-    VkDevice createDevice(VkPhysicalDevice physicalDevice, uint32_t graphicsQueueFamilyIndex) {
+    VkDevice createDevice(VkPhysicalDevice physicalDevice, uint32_t graphicsQueueFamilyIndex,
+                          const VkPhysicalDeviceFeatures& features) {
         VkDevice device;
         // queue create info for the graphics queue
         float priority = 1.f;
@@ -135,13 +136,6 @@ namespace Factory {
                 .queueCount = 1,
                 .pQueuePriorities = &priority,
         };
-
-        // gpu feature to be enabled (all disabled by default)
-        VkPhysicalDeviceFeatures features{};
-        features.geometryShader = VK_TRUE;
-        features.samplerAnisotropy = VK_TRUE;
-        features.multiDrawIndirect = VK_TRUE;
-        features.drawIndirectFirstInstance = VK_TRUE;
 
         const std::vector<const char*> extensions = {
                 VK_KHR_SWAPCHAIN_EXTENSION_NAME

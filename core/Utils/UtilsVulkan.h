@@ -13,9 +13,11 @@ namespace utils {
     bool isInstanceLayerSupported(const char* layer);
 
     // Device
-    VkPhysicalDevice pickPhysicalDevice(VkInstance instance);
+    VkPhysicalDevice pickPhysicalDevice(VkInstance instance, const VkPhysicalDeviceFeatures& features);
     void printPhysicalDeviceProps(VkPhysicalDevice device);
     bool isDeviceExtensionSupported(VkPhysicalDevice device, const char* extension);
+    bool isFeaturesSupported(const VkPhysicalDeviceFeatures& supportedFeatures,
+                             const VkPhysicalDeviceFeatures& requestedFeatures);
 
     // Queue
     uint32_t getQueueFamilyIndex(VkPhysicalDevice device, VkQueueFlagBits queueFlags);

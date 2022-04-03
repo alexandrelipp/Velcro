@@ -21,7 +21,8 @@ namespace Factory {
    void freeDebugCallbacks(VkInstance instance, VkDebugUtilsMessengerEXT messenger, VkDebugReportCallbackEXT reportCallback);
 
    /// create a logical device
-   VkDevice createDevice(VkPhysicalDevice physicalDevice, uint32_t graphicsQueueFamilyIndex);
+   VkDevice createDevice(VkPhysicalDevice physicalDevice, uint32_t graphicsQueueFamilyIndex,
+                         const VkPhysicalDeviceFeatures& features);
 
    /// sync objects
    VkSemaphore createSemaphore(VkDevice device);
