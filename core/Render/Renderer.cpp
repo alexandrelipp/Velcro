@@ -177,6 +177,9 @@ void Renderer::onEvent(Event& e) {
         _camera.onEvent(e);
 }
 
+Camera* Renderer::getCamera() {
+    return &_camera;
+}
 
 void Renderer::update(float dt) {
     _fpsCounter.tick(dt, true); // TODO : remove hard coded true!

@@ -29,6 +29,8 @@ public:
     void update(float dt);
     void draw();
     void onEvent(Event& e);
+
+    Camera* getCamera();
 private:
 
     // creation
