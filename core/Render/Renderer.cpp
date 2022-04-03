@@ -23,9 +23,11 @@ Renderer::~Renderer() {
     VK_CHECK(vkDeviceWaitIdle(_vrd.device));
 
     // destroy sync objects
-    //vkDestroyFence(_vrd.device, _inFlightFence, nullptr);
-    vkDestroySemaphore(_vrd.device, _imageAvailSemaphore, nullptr);
-    vkDestroySemaphore(_vrd.device, _renderFinishedSemaphore, nullptr);
+    vkDestroyFence(_vrd.device, _renderFinishedFence, nullptr);
+    for (auto& semaphore : _imageAvailSpres)
+        vkDestroySemaphore(_vrd.device, semaphore, nullptr);
+    for (auto& semaphore : _renderFinishedSpres)
+        vkDestroySemaphore(_vrd.device, semaphore, nullptr);
 
     for (auto fb : _frameBuffers)
         vkDestroyFramebuffer(_vrd.device, fb, nullptr);
@@ -162,12 +164,12 @@ bool Renderer::init() {
     }
 
     // create sync objects
-    //_inFlightFence = Factory::createFence(_vrd.device, true); // starts signaled
-    _imageAvailSemaphore = Factory::createSemaphore(_vrd.device);
-    _renderFinishedSemaphore = Factory::createSemaphore(_vrd.device);
+    _renderFinishedFence = Factory::createFence(_vrd.device, true); // starts signaled
+    for (auto& semaphore : _imageAvailSpres)
+        semaphore = Factory::createSemaphore(_vrd.device);
+    for (auto& semaphore : _renderFinishedSpres)
+        semaphore = Factory::createSemaphore(_vrd.device);
 
-    //_camera->set
-  
     return true;
 }
 
@@ -198,15 +200,17 @@ void Renderer::update(float dt) {
 void Renderer::draw() {
     OPTICK_EVENT();
     // wait until the fence is signaled (ready to use)
-    //VK_CHECK(vkWaitForFences(_vrd.device, 1, &_inFlightFence, VK_TRUE, UINT64_MAX));
+    VK_CHECK(vkWaitForFences(_vrd.device, 1, &_renderFinishedFence, VK_TRUE, UINT64_MAX));
 
     // then unsignal the fence for next use
-    //VK_CHECK(vkResetFences(_vrd.device, 1, &_inFlightFence));
+    VK_CHECK(vkResetFences(_vrd.device, 1, &_renderFinishedFence));
+
 
 
     uint32_t imageIndex;
-    VK_CHECK(vkAcquireNextImageKHR(_vrd.device, _swapchain, UINT64_MAX, _imageAvailSemaphore, nullptr, &imageIndex));
+    VK_CHECK(vkAcquireNextImageKHR(_vrd.device, _swapchain, UINT64_MAX, _imageAvailSpres[_indexFiFGPU], nullptr, &imageIndex));
 
+    // TODO : correct DT!!!
     glm::mat4 pv = *_camera.getPVMatrix();
     for (auto layer : _renderLayers)
         layer->update(0.001f, imageIndex, pv);
@@ -217,12 +221,7 @@ void Renderer::draw() {
         layer->onImGuiRender();
     _imGuiLayer->end();
 
-    // No need to reset the command buffer, beginCommandBuffer does it implicitally
-    //VK_CHECK(vkResetCommandBuffer(_vrd.commandBuffers[imageIndex], 0));
-    // reset the command pool, probably not optimal but good enough for now
-    //VK_CHECK(vkResetCommandPool(_vrd.device, _vrd.commandPool, 0));
-
-    // record command buffer at image index
+    // record command buffer at image index No need to reset the command buffer, beginCommandBuffer does it implicitally
     recordCommandBuffer(imageIndex);
 
     // semaphore check to occur before writing to the color attachment
@@ -231,20 +230,21 @@ void Renderer::draw() {
     VkSubmitInfo submitInfo = {
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &_imageAvailSemaphore, // wait until signaled before starting
+        .pWaitSemaphores = &_imageAvailSpres[_indexFiFGPU], // wait until signaled before starting
         .pWaitDstStageMask = waitStages,
         .commandBufferCount = 1,
         .pCommandBuffers = &_vrd.commandBuffers[imageIndex],
         .signalSemaphoreCount = 1,
-        .pSignalSemaphores = &_renderFinishedSemaphore // signaled when command buffer is done executing
+        .pSignalSemaphores = &_renderFinishedSpres[_indexFiFGPU] // signaled when command buffer is done executing
     };
-    VK_CHECK(vkQueueSubmit(_vrd.graphicsQueue, 1, &submitInfo, nullptr));
+    // the fence will be signaled once all commands have completed execution
+    VK_CHECK(vkQueueSubmit(_vrd.graphicsQueue, 1, &submitInfo, _renderFinishedFence));
 
-
+    // present to the screen once done rendering
     VkPresentInfoKHR presentInfo = {
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &_renderFinishedSemaphore,
+        .pWaitSemaphores = &_renderFinishedSpres[_indexFiFGPU], // wait until frame in flight at _indexFif is done rendering
         .swapchainCount = 1,
         .pSwapchains = &_swapchain,
         .pImageIndices = &imageIndex,
@@ -252,8 +252,11 @@ void Renderer::draw() {
     };
     VK_CHECK(vkQueuePresentKHR(_vrd.graphicsQueue, &presentInfo));
 
+    // alternate index of the frame in flight currently being rendered
+    _indexFiFGPU = !_indexFiFGPU;
+
     // wait for completion of all operation on graphics queue (not optimal, but good enough for now)
-    VK_CHECK(vkDeviceWaitIdle(_vrd.device));
+    //VK_CHECK(vkDeviceWaitIdle(_vrd.device));
 }
 
 void Renderer::createInstance() {
