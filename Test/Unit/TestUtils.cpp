@@ -48,6 +48,3 @@ TEST_CASE( "IsFeaturesSupported", "[UtilsVulkan]") {
     REQUIRE(utils::isFeaturesSupported({VK_TRUE, VK_TRUE, VK_TRUE}, {VK_FALSE, VK_FALSE, VK_TRUE, VK_FALSE, VK_FALSE}));
     REQUIRE(utils::isFeaturesSupported({}, {}));
 }
-
-
-
