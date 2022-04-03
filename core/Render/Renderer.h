@@ -72,8 +72,9 @@ private:
 
     // sync
     VkFence _renderFinishedFence = nullptr; ///< signaled when the GPU is done rendering a frame
-    std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> _imageAvailSemaphores = {nullptr};
-    std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> _renderFinishedSemaphores = {nullptr};
+    std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> _imageAvailSpres = {nullptr};
+    std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> _renderFinishedSpres = {nullptr};
+    bool _indexFiFGPU = true; ///< Index of the frame in flight that the gpu is currently rendering
 
     // DepthBuffer
     struct DepthBuffer{
