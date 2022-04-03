@@ -64,10 +64,17 @@ bool Renderer::init() {
     _vrd.physicalDevice = utils::pickPhysicalDevice(_vrd.instance);
     utils::printPhysicalDeviceProps(_vrd.physicalDevice);
 
+    // gpu feature to be enabled (all disabled by default)
+    VkPhysicalDeviceFeatures features{};
+    features.geometryShader = VK_TRUE;
+    features.samplerAnisotropy = VK_TRUE;
+    features.multiDrawIndirect = VK_TRUE;
+    features.drawIndirectFirstInstance = VK_TRUE;
+
     // create a logical device (interface to gpu)
     utils::printQueueFamiliesInfo(_vrd.physicalDevice);
     _vrd.graphicsQueueFamilyIndex = utils::getQueueFamilyIndex(_vrd.physicalDevice, VK_QUEUE_GRAPHICS_BIT);
-    _vrd.device = Factory::createDevice(_vrd.physicalDevice, _vrd.graphicsQueueFamilyIndex);
+    _vrd.device = Factory::createDevice(_vrd.physicalDevice, _vrd.graphicsQueueFamilyIndex, features);
 
     // create surface
     VK_CHECK(glfwCreateWindowSurface(_vrd.instance, Application::getApp()->getWindow(), nullptr, &_surface));

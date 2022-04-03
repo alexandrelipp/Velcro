@@ -32,7 +32,7 @@ namespace utils {
         return false;
     }
 
-    VkPhysicalDevice pickPhysicalDevice(VkInstance instance) {
+    VkPhysicalDevice pickPhysicalDevice(VkInstance instance, const VkPhysicalDeviceFeatures& features) {
         uint32_t count;
         VK_CHECK(vkEnumeratePhysicalDevices(instance, &count, nullptr));
         std::vector<VkPhysicalDevice> devices(count);
@@ -40,12 +40,12 @@ namespace utils {
         SPDLOG_INFO("Number of available physical devices {}", count);
 
         for (VkPhysicalDevice device: devices) {
-            VkPhysicalDeviceFeatures features;
-            vkGetPhysicalDeviceFeatures(device, &features);
+            VkPhysicalDeviceFeatures deviceFeatures;
+            vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
             VkPhysicalDeviceProperties props;
             vkGetPhysicalDeviceProperties(device, &props);
-            // geo shader must be supported and the gpu must be dedicated (not virtual/integrated/cpu)
-            if (features.drawIndirectFirstInstance && features.multiDrawIndirect && features.samplerAnisotropy && features.geometryShader && props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
+            // gpu must be dedicated (not virtual/integrated/cpu) and all requested features must be supported
+            if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU && utils::isFeaturesSupported(deviceFeatures, features))
                 return device;
         }
         VK_ASSERT(false, "Failed to pick a physical device");
@@ -70,6 +70,22 @@ namespace utils {
                 return true;
         }
         return false;
+    }
+
+    bool isFeaturesSupported(const VkPhysicalDeviceFeatures& supportedFeatures,
+                             const VkPhysicalDeviceFeatures& requestedFeatures) {
+        VkBool32* supportedFeaturesPtr = (VkBool32*)&supportedFeatures;
+        VkBool32* requestedFeaturesPtr = (VkBool32*)&requestedFeatures;
+
+        // VkPhysicalDeviceFeatures is only composed of VkBool32
+        uint32_t numFlags = sizeof(VkPhysicalDeviceFeatures)/sizeof(VkBool32);
+
+        // iterate all the features and make sure all the requested features are supported
+        for (uint32_t i = 0; i < numFlags; ++i){
+            if (requestedFeaturesPtr[i] == VK_TRUE && supportedFeaturesPtr[i] != VK_TRUE)
+                return false;
+        }
+        return true;
     }
 
     uint32_t getQueueFamilyIndex(VkPhysicalDevice device, VkQueueFlagBits queueFlags) {
