@@ -220,7 +220,7 @@ void Renderer::draw() {
     _imGuiLayer->end();
 
     // record command buffer at image index No need to reset the command buffer, beginCommandBuffer does it implicitally
-    recordCommandBuffer(imageIndex);
+    recordCommandBuffer(_currentFiFIndex, _frameBuffers[imageIndex]);
 
     // semaphore check to occur before writing to the color attachment
     VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
