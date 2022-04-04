@@ -211,7 +211,7 @@ void Renderer::draw() {
     // TODO : correct DT!!!
     glm::mat4 pv = *_camera.getPVMatrix();
     for (auto layer : _renderLayers)
-        layer->update(0.001f, imageIndex, pv);
+        layer->update(0.001f, _currentFiFIndex, pv);
 
     _imGuiLayer->begin();
     onImGuiRender();

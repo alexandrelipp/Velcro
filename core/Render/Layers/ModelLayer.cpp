@@ -52,7 +52,7 @@ ModelLayer::~ModelLayer() {
     _texture.destroy(_vrd->device);
 }
 
-void ModelLayer::update(float dt, uint32_t currentImage, const glm::mat4& pv) {
+void ModelLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) {
     static float time = 0.f;
     time += dt;
     glm::mat4 m = glm::rotate(
@@ -63,17 +63,17 @@ void ModelLayer::update(float dt, uint32_t currentImage, const glm::mat4& pv) {
     );
 
     glm::mat4 mvp = pv * m;
-    VK_ASSERT(_mvpUniformBuffers[currentImage].setData(_vrd->device, glm::value_ptr(mvp), sizeof(mvp)), "Failed to dat");
+    VK_ASSERT(_mvpUniformBuffers[commandBufferIndex].setData(_vrd->device, glm::value_ptr(mvp), sizeof(mvp)), "Failed to dat");
 }
 
 
-void ModelLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage) {
+void ModelLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) {
     // bind pipeline and render
-    vkCmdBindPipeline(_vrd->commandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
-    vkCmdBindDescriptorSets(_vrd->commandBuffers[currentImage], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout,
-                            0, 1, &_descriptorSets[currentImage], 0, nullptr);
+    vkCmdBindPipeline(_vrd->commandBuffers[commandBufferIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
+    vkCmdBindDescriptorSets(_vrd->commandBuffers[commandBufferIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout,
+                            0, 1, &_descriptorSets[commandBufferIndex], 0, nullptr);
 
-    vkCmdDraw(_vrd->commandBuffers[currentImage], _indexCount, 1, 0, 0);
+    vkCmdDraw(_vrd->commandBuffers[commandBufferIndex], _indexCount, 1, 0, 0);
 }
 
 void ModelLayer::onImGuiRender() {
@@ -141,9 +141,9 @@ void ModelLayer::createDescriptorSets() {
     // us get away with an allocation that exceeds the limits of our descriptor pool.
     // Other times, vkAllocateDescriptorSets will fail and return VK_ERROR_POOL_OUT_OF_MEMORY.
     // This can be particularly frustrating if the allocation succeeds on some machines, but fails on others.
-    _descriptorPool = Factory::createDescriptorPool(_vrd->device, FB_COUNT, 1, 2, 1);
+    _descriptorPool = Factory::createDescriptorPool(_vrd->device, MAX_FRAMES_IN_FLIGHT, 1, 2, 1);
 
-    std::array<VkDescriptorSetLayout, FB_COUNT> layouts = {_descriptorSetLayout, _descriptorSetLayout, _descriptorSetLayout};
+    std::array<VkDescriptorSetLayout, MAX_FRAMES_IN_FLIGHT> layouts = {_descriptorSetLayout, _descriptorSetLayout};
 
     VkDescriptorSetAllocateInfo descriptorSetAI = {
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,

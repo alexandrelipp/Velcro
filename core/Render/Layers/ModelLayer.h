@@ -15,8 +15,8 @@ public:
     ModelLayer(VkRenderPass renderPass);
     virtual ~ModelLayer();
 
-    virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage) override;
-    virtual void update(float dt, uint32_t currentImage, const glm::mat4& pv) override;
+    virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) override;
+    virtual void update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) override;
     virtual void onImGuiRender() override;
 
 private:
