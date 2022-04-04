@@ -37,7 +37,7 @@ Renderer::~Renderer() {
     _renderLayers.clear();
     _imGuiLayer = nullptr;
 
-    vkFreeCommandBuffers(_vrd.device, _vrd.commandPool, FB_COUNT, _vrd.commandBuffers.data());
+    vkFreeCommandBuffers(_vrd.device, _vrd.commandPool, _vrd.commandBuffers.size(), _vrd.commandBuffers.data());
     vkDestroyCommandPool(_vrd.device, _vrd.commandPool, nullptr);
     for (auto view : _swapchainImageViews) {
         vkDestroyImageView(_vrd.device, view, nullptr);
@@ -135,13 +135,13 @@ bool Renderer::init() {
         .pNext = nullptr,
         .commandPool = _vrd.commandPool,
         .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandBufferCount = FB_COUNT,
+        .commandBufferCount = MAX_FRAMES_IN_FLIGHT,
     };
     VK_CHECK(vkAllocateCommandBuffers(_vrd.device, &allocateInfo, _vrd.commandBuffers.data()));
    
     createRenderPass(surfaceFormat.format);
 
-    //_renderLayers.push_back(std::make_shared<ModelLayer>(_renderPass));
+    _renderLayers.push_back(std::make_shared<ModelLayer>(_renderPass));
     _renderLayers.push_back(std::make_shared<LineLayer>(_renderPass));
     _renderLayers.push_back(std::make_shared<MultiMeshLayer>(_renderPass));
     _imGuiLayer = std::make_shared<ImGuiLayer>(_renderPass);
@@ -231,7 +231,7 @@ void Renderer::draw() {
         .pWaitSemaphores = &_imageAvailSpres[_currentFiFIndex], // wait until signaled before starting
         .pWaitDstStageMask = waitStages,
         .commandBufferCount = 1,
-        .pCommandBuffers = &_vrd.commandBuffers[imageIndex],
+        .pCommandBuffers = &_vrd.commandBuffers[_currentFiFIndex],
         .signalSemaphoreCount = 1,
         .pSignalSemaphores = &_renderFinishedSpres[_currentFiFIndex] // signaled when command buffer is done executing
     };
