@@ -20,9 +20,9 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
         buffer.init(_vrd->device, _vrd->physicalDevice, sizeof(glm::mat4));
 
     _scene = std::make_shared<Scene>("NanoWorld");
-    FactoryModel::importFromFile("../../../core/Assets/Models/Nano/nanosuit.obj", _scene);
+    //FactoryModel::importFromFile("../../../core/Assets/Models/Nano/nanosuit.obj", _scene);
     //FactoryModel::importFromFile("../../../core/Assets/Models/utahTeapot.fbx", _scene);
-    //FactoryModel::importFromFile("../../../core/Assets/Models/cube.fbx", _scene);
+    FactoryModel::importFromFile("../../../core/Assets/Models/engine.fbx", _scene);
     //FactoryModel::importFromFile("../../../core/Assets/Models/Bell Huey.fbx", _scene);
     //FactoryModel::importFromFile("../../../core/Assets/Models/duck/scene.gltf", _scene);
 
