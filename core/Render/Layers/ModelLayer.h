@@ -15,8 +15,8 @@ public:
     ModelLayer(VkRenderPass renderPass);
     virtual ~ModelLayer();
 
-    virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage) override;
-    virtual void update(float dt, uint32_t currentImage, const glm::mat4& pv) override;
+    virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) override;
+    virtual void update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) override;
     virtual void onImGuiRender() override;
 
 private:
@@ -25,7 +25,7 @@ private:
 
 private:
     // Buffers
-    std::array<UniformBuffer, FB_COUNT> _mvpUniformBuffers{};
+    std::array<UniformBuffer, MAX_FRAMES_IN_FLIGHT> _mvpUniformBuffers{};
     ShaderStorageBuffer _vertices{};
     ShaderStorageBuffer _indices{};
     uint32_t _indexCount = 0;

@@ -15,8 +15,10 @@ public:
 
     virtual ~RenderLayer();
 
-    virtual void update(float dt, uint32_t currentImage, const glm::mat4& pv) = 0;
-    virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage) = 0;
+    virtual void update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) = 0;
+
+    // TODO : it is a bit redundant to pass both the command buffer and the index or we don't care?
+    virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) = 0;
     virtual void onImGuiRender() = 0;
 
 protected:
@@ -24,16 +26,13 @@ protected:
 
 
 public:
-    //static inline std::array<VkFramebuffer, FB_COUNT> _framebuffers{nullptr};
     static inline VulkanRenderDevice* _vrd = nullptr;
     static inline VkExtent2D _swapchainExtent{};
-    //static inline DepthTexture;
-
 
     // descriptors
     VkDescriptorSetLayout _descriptorSetLayout = nullptr;
     VkDescriptorPool _descriptorPool = nullptr;
-    std::array<VkDescriptorSet, FB_COUNT> _descriptorSets = {nullptr};
+    std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT> _descriptorSets = {nullptr};
 
     // graphics pipeline
     VkPipelineLayout _pipelineLayout = nullptr;

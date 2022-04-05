@@ -72,11 +72,11 @@ ImGuiLayer::~ImGuiLayer() {
     ImGui::DestroyContext();
 }
 
-void ImGuiLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage) {
+void ImGuiLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) {
     ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 }
 
-void ImGuiLayer::update(float dt, uint32_t currentImage, const glm::mat4& pv) {}
+void ImGuiLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) {}
 
 
 void ImGuiLayer::onImGuiRender() {

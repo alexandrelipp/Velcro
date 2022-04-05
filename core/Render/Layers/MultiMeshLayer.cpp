@@ -97,7 +97,7 @@ MultiMeshLayer::~MultiMeshLayer() {
     //_texture.destroy(_vrd->device);
 }
 
-void MultiMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage) {
+void MultiMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) {
     Camera* camera = Application::getApp()->getRenderer()->getCamera();
     // bind pipeline
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
@@ -106,20 +106,20 @@ void MultiMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t c
     // push the camera pos and bind descriptor sets
     vkCmdPushConstants(commandBuffer, _pipelineLayout, _cameraPosPC.stageFlags, _cameraPosPC.offset, _cameraPosPC.size, &value);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout,
-                            0, 1, &_descriptorSets[currentImage], 0, nullptr);
+                            0, 1, &_descriptorSets[commandBufferIndex], 0, nullptr);
 
     // render
     vkCmdDrawIndirect(commandBuffer, _indirectCommandBuffer.getBuffer(), 0,
                       _scene->getMeshes().size(), sizeof(VkDrawIndirectCommand));
 }
 
-void MultiMeshLayer::update(float dt, uint32_t currentImage, const glm::mat4& pv) {
+void MultiMeshLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) {
     _scene->propagateTransforms();
     glm::mat4 nec = pv; // TODO : necessary??
-    VK_ASSERT(_vpUniformBuffers[currentImage].setData(_vrd->device, glm::value_ptr(nec), sizeof(pv)), "Failed to dat");
+    VK_ASSERT(_vpUniformBuffers[commandBufferIndex].setData(_vrd->device, glm::value_ptr(nec), sizeof(pv)), "Failed to dat");
     const auto& transforms = _scene->getMeshTransforms();
-    _meshTransformBuffers[currentImage].setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool,
-                                                (void*)transforms.data(), transforms.size() * sizeof(transforms[0]));
+    _meshTransformBuffers[commandBufferIndex].setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool,
+                                                      (void*)transforms.data(), transforms.size() * sizeof(transforms[0]));
 }
 
 void MultiMeshLayer::onImGuiRender() {
@@ -214,9 +214,9 @@ void MultiMeshLayer::createPipelineLayout() {
 }
 
 void MultiMeshLayer::createDescriptorSets() {
-    _descriptorPool = Factory::createDescriptorPool(_vrd->device, FB_COUNT, 1, 2, 1);
+    _descriptorPool = Factory::createDescriptorPool(_vrd->device, MAX_FRAMES_IN_FLIGHT, 1, 2, 1);
 
-    std::array<VkDescriptorSetLayout, FB_COUNT> layouts = {_descriptorSetLayout, _descriptorSetLayout, _descriptorSetLayout};
+    std::array<VkDescriptorSetLayout, MAX_FRAMES_IN_FLIGHT> layouts = {_descriptorSetLayout, _descriptorSetLayout};
 
     VkDescriptorSetAllocateInfo descriptorSetAI = {
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,

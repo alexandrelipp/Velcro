@@ -15,8 +15,8 @@ public:
     LineLayer(VkRenderPass renderPass);
     virtual ~LineLayer();
 
-    virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage) override;
-    virtual void update(float dt, uint32_t currentImage, const glm::mat4& pv) override;
+    virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) override;
+    virtual void update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) override;
     virtual void onImGuiRender() override;
 
     void line(const glm::vec3& p1, const glm::vec3& p2, const glm::vec4& c);
@@ -39,5 +39,5 @@ private:
     ShaderStorageBuffer _pointsSSBO{}; // TODO : probably want dynamic buffer
     std::vector<VertexData> _lines{};
 
-    std::array<UniformBuffer, FB_COUNT> _mvpUniformBuffers{};
+    std::array<UniformBuffer, MAX_FRAMES_IN_FLIGHT> _mvpUniformBuffers{};
 };

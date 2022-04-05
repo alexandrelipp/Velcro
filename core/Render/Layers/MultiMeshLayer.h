@@ -16,8 +16,9 @@ public:
     MultiMeshLayer(VkRenderPass renderPass);
     virtual ~MultiMeshLayer();
 
-    virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage) override;
-    virtual void update(float dt, uint32_t currentImage, const glm::mat4& pv) override;
+
+    virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) override;
+    virtual void update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) override;
     virtual void onImGuiRender() override;
 
 private:
@@ -35,8 +36,8 @@ private:
     };
 
     // Buffers
-    std::array<UniformBuffer, FB_COUNT> _vpUniformBuffers{};
-    std::array<ShaderStorageBuffer, FB_COUNT> _meshTransformBuffers{};
+    std::array<UniformBuffer, MAX_FRAMES_IN_FLIGHT> _vpUniformBuffers{};
+    std::array<ShaderStorageBuffer, MAX_FRAMES_IN_FLIGHT> _meshTransformBuffers{};
     ShaderStorageBuffer _vertices{};
     ShaderStorageBuffer _indices{};
     ShaderStorageBuffer _indirectCommandBuffer{};

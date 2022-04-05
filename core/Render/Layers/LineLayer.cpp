@@ -38,17 +38,17 @@ LineLayer::~LineLayer() {
     _pointsSSBO.destroy(_vrd->device);
 }
 
-void LineLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t currentImage) {
+void LineLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) {
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0,
-                            1, &_descriptorSets[currentImage], 0, nullptr);
+                            1, &_descriptorSets[commandBufferIndex], 0, nullptr);
 
     vkCmdDraw(commandBuffer, _lines.size(), 1, 0, 0);
 }
 
-void LineLayer::update(float dt, uint32_t currentImage, const glm::mat4& pv) {
+void LineLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) {
     glm::mat4 mvp = pv;
-    _mvpUniformBuffers[currentImage].setData(_vrd->device, glm::value_ptr(mvp), sizeof(mvp));
+    _mvpUniformBuffers[commandBufferIndex].setData(_vrd->device, glm::value_ptr(mvp), sizeof(mvp));
 }
 
 
@@ -123,9 +123,9 @@ void LineLayer::createPipelineLayout() {
 }
 
 void LineLayer::createDescriptorSets() {
-    _descriptorPool = Factory::createDescriptorPool(_vrd->device, FB_COUNT, 1, 1, 0);
+    _descriptorPool = Factory::createDescriptorPool(_vrd->device, MAX_FRAMES_IN_FLIGHT, 1, 1, 0);
 
-    std::array<VkDescriptorSetLayout, FB_COUNT> layouts = {_descriptorSetLayout, _descriptorSetLayout, _descriptorSetLayout};
+    std::array<VkDescriptorSetLayout, MAX_FRAMES_IN_FLIGHT> layouts = {_descriptorSetLayout, _descriptorSetLayout};
 
     VkDescriptorSetAllocateInfo descriptorSetAI = {
             .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,

@@ -37,7 +37,7 @@ Renderer::~Renderer() {
     _renderLayers.clear();
     _imGuiLayer = nullptr;
 
-    vkFreeCommandBuffers(_vrd.device, _vrd.commandPool, FB_COUNT, _vrd.commandBuffers.data());
+    vkFreeCommandBuffers(_vrd.device, _vrd.commandPool, _vrd.commandBuffers.size(), _vrd.commandBuffers.data());
     vkDestroyCommandPool(_vrd.device, _vrd.commandPool, nullptr);
     for (auto view : _swapchainImageViews) {
         vkDestroyImageView(_vrd.device, view, nullptr);
@@ -135,13 +135,13 @@ bool Renderer::init() {
         .pNext = nullptr,
         .commandPool = _vrd.commandPool,
         .level = VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        .commandBufferCount = FB_COUNT,
+        .commandBufferCount = MAX_FRAMES_IN_FLIGHT,
     };
     VK_CHECK(vkAllocateCommandBuffers(_vrd.device, &allocateInfo, _vrd.commandBuffers.data()));
    
     createRenderPass(surfaceFormat.format);
 
-    //_renderLayers.push_back(std::make_shared<ModelLayer>(_renderPass));
+    _renderLayers.push_back(std::make_shared<ModelLayer>(_renderPass));
     _renderLayers.push_back(std::make_shared<LineLayer>(_renderPass));
     _renderLayers.push_back(std::make_shared<MultiMeshLayer>(_renderPass));
     _imGuiLayer = std::make_shared<ImGuiLayer>(_renderPass);
@@ -206,12 +206,12 @@ void Renderer::draw() {
     VK_CHECK(vkResetFences(_vrd.device, 1, &_renderFinishedFence));
 
     uint32_t imageIndex;
-    VK_CHECK(vkAcquireNextImageKHR(_vrd.device, _swapchain, UINT64_MAX, _imageAvailSpres[_indexFiFGPU], nullptr, &imageIndex));
+    VK_CHECK(vkAcquireNextImageKHR(_vrd.device, _swapchain, UINT64_MAX, _imageAvailSpres[_currentFiFIndex], nullptr, &imageIndex));
 
     // TODO : correct DT!!!
     glm::mat4 pv = *_camera.getPVMatrix();
     for (auto layer : _renderLayers)
-        layer->update(0.001f, imageIndex, pv);
+        layer->update(0.001f, _currentFiFIndex, pv);
 
     _imGuiLayer->begin();
     onImGuiRender();
@@ -220,7 +220,7 @@ void Renderer::draw() {
     _imGuiLayer->end();
 
     // record command buffer at image index No need to reset the command buffer, beginCommandBuffer does it implicitally
-    recordCommandBuffer(imageIndex);
+    recordCommandBuffer(_currentFiFIndex, _frameBuffers[imageIndex]);
 
     // semaphore check to occur before writing to the color attachment
     VkPipelineStageFlags waitStages[] = { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT };
@@ -228,12 +228,12 @@ void Renderer::draw() {
     VkSubmitInfo submitInfo = {
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &_imageAvailSpres[_indexFiFGPU], // wait until signaled before starting
+        .pWaitSemaphores = &_imageAvailSpres[_currentFiFIndex], // wait until signaled before starting
         .pWaitDstStageMask = waitStages,
         .commandBufferCount = 1,
-        .pCommandBuffers = &_vrd.commandBuffers[imageIndex],
+        .pCommandBuffers = &_vrd.commandBuffers[_currentFiFIndex],
         .signalSemaphoreCount = 1,
-        .pSignalSemaphores = &_renderFinishedSpres[_indexFiFGPU] // signaled when command buffer is done executing
+        .pSignalSemaphores = &_renderFinishedSpres[_currentFiFIndex] // signaled when command buffer is done executing
     };
     // the fence will be signaled once all commands have completed execution
     VK_CHECK(vkQueueSubmit(_vrd.graphicsQueue, 1, &submitInfo, _renderFinishedFence));
@@ -242,7 +242,7 @@ void Renderer::draw() {
     VkPresentInfoKHR presentInfo = {
         .sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &_renderFinishedSpres[_indexFiFGPU], // wait until frame in flight at _indexFif is done rendering
+        .pWaitSemaphores = &_renderFinishedSpres[_currentFiFIndex], // wait until frame in flight at _indexFif is done rendering
         .swapchainCount = 1,
         .pSwapchains = &_swapchain,
         .pImageIndices = &imageIndex,
@@ -251,7 +251,7 @@ void Renderer::draw() {
     VK_CHECK(vkQueuePresentKHR(_vrd.graphicsQueue, &presentInfo));
 
     // alternate index of the frame in flight currently being rendered
-    _indexFiFGPU = !_indexFiFGPU;
+    _currentFiFIndex = !_currentFiFIndex;
 
     // wait for completion of all operation on graphics queue (not optimal, but good enough for now)
     //VK_CHECK(vkDeviceWaitIdle(_vrd.device));
@@ -429,7 +429,7 @@ void Renderer::createRenderPass(VkFormat swapchainFormat){
     VK_CHECK(vkCreateRenderPass(_vrd.device, &renderPassCI, nullptr, &_renderPass));
 }
 
-void Renderer::recordCommandBuffer(uint32_t index){
+void Renderer::recordCommandBuffer(uint32_t commandBufferIndex, VkFramebuffer framebuffer){
     
     // begin recording command
     VkCommandBufferBeginInfo commandBufferCI = {
@@ -439,7 +439,7 @@ void Renderer::recordCommandBuffer(uint32_t index){
     };
 
     // begin command buffer implicitally resets the commands buffer : https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VkCommandPoolCreateFlagBits.html
-    VK_CHECK(vkBeginCommandBuffer(_vrd.commandBuffers[index], &commandBufferCI));
+    VK_CHECK(vkBeginCommandBuffer(_vrd.commandBuffers[commandBufferIndex], &commandBufferCI));
 
     // being render pass
     VkRect2D renderArea = {
@@ -462,22 +462,22 @@ void Renderer::recordCommandBuffer(uint32_t index){
     VkRenderPassBeginInfo beginCI = {
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
         .renderPass = _renderPass,
-        .framebuffer = _frameBuffers[index],
+        .framebuffer = framebuffer,
         .renderArea = renderArea,
         .clearValueCount = sizeof(clearValues)/sizeof(VkClearValue),
         .pClearValues = clearValues,
     };
-    vkCmdBeginRenderPass(_vrd.commandBuffers[index], &beginCI, VK_SUBPASS_CONTENTS_INLINE);
+    vkCmdBeginRenderPass(_vrd.commandBuffers[commandBufferIndex], &beginCI, VK_SUBPASS_CONTENTS_INLINE);
 
     // record render commands from all the layers
     for (auto layer : _renderLayers)
-        layer->fillCommandBuffer(_vrd.commandBuffers[index], index);
+        layer->fillCommandBuffer(_vrd.commandBuffers[commandBufferIndex], commandBufferIndex);
 
     // end the render pass
-    vkCmdEndRenderPass(_vrd.commandBuffers[index]);
+    vkCmdEndRenderPass(_vrd.commandBuffers[commandBufferIndex]);
 
     // stop recording commands
-    VK_CHECK(vkEndCommandBuffer(_vrd.commandBuffers[index]));
+    VK_CHECK(vkEndCommandBuffer(_vrd.commandBuffers[commandBufferIndex]));
 }
 
 void Renderer::onImGuiRender() {
