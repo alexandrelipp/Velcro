@@ -25,7 +25,7 @@ private:
 
 private:
     // Buffers
-    std::array<UniformBuffer, FB_COUNT> _mvpUniformBuffers{};
+    std::array<UniformBuffer, MAX_FRAMES_IN_FLIGHT> _mvpUniformBuffers{};
     ShaderStorageBuffer _vertices{};
     ShaderStorageBuffer _indices{};
     uint32_t _indexCount = 0;

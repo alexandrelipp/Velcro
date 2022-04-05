@@ -26,11 +26,8 @@ protected:
 
 
 public:
-    //static inline std::array<VkFramebuffer, FB_COUNT> _framebuffers{nullptr};
     static inline VulkanRenderDevice* _vrd = nullptr;
     static inline VkExtent2D _swapchainExtent{};
-    //static inline DepthTexture;
-
 
     // descriptors
     VkDescriptorSetLayout _descriptorSetLayout = nullptr;
