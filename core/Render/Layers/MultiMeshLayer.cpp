@@ -209,9 +209,7 @@ void MultiMeshLayer::onImGuiRender() {
 
     ImGui::End();
 
-    // FIXME : we need this for reasons with ImGuizmo + ImGui, but should be removed!!
-    if (Application::getApp()->isKeyPressed(KeyCode::LeftShift))
-        displayGuizmo(_selectedEntity);
+    displayGuizmo(_selectedEntity);
 }
 
 void MultiMeshLayer::createPipelineLayout() {
@@ -395,21 +393,11 @@ void MultiMeshLayer::displayGuizmo(int selectedEntity) {
         return;
     }
 
-    // push a big invisible window that covers the entire glfw window and start at the top
-    // FIXME : this works (big invisible window), but blocks all the events for other imguiWindow
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, {0.f, 0.f, 0.f, 0.f});
-    ImVec2 size = {(float)Application::getApp()->getWindowWidth(), (float)Application::getApp()->getWindowHeight()};
-    ImGui::SetNextWindowSize(size);
-    ImGui::SetNextWindowPos({0.f, 0.f});
-    bool isOpen = true;
-    ImGui::Begin("Guizmo", &isOpen, ImGuiWindowFlags_NoTitleBar);
-
     Camera* camera = Application::getApp()->getRenderer()->getCamera();
 
     // set up imguizmo
     ImGuizmo::SetOrthographic(false);
     ImGuizmo::SetRect(0, 0, (float)Application::getApp()->getWindowWidth(), (float)Application::getApp()->getWindowHeight());
-    ImGuizmo::SetDrawlist();
 
     // add optional snapping
     float* snapValue = nullptr;
@@ -458,7 +446,4 @@ void MultiMeshLayer::displayGuizmo(int selectedEntity) {
         // notify the scene about the change
         _scene->setDirtyTransform(selectedEntity);
     }
-
-    ImGui::End();
-    ImGui::PopStyleColor();
 }

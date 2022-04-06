@@ -38,9 +38,6 @@ public:
 
     void setSpeed(float speed);
 
-    void setRotation(float rotation);
-    float getRotation();
-
     void translate(const glm::vec3& translation);
 
     // Perspective projection info
@@ -75,7 +72,6 @@ private:
     glm::vec3 _position = BASE_POS;
     float _yaw = BASE_YAW;
     float _pitch = BASE_PITCH;
-    float _rotationZ = 0.f; ///< rotation around z axis
 
     PProjectionInfo _projInfo;   ///< Perspective projection info
 
