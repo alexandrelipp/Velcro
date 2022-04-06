@@ -174,7 +174,6 @@ void Camera::recalculateViewMatrix() {
 
     //_viewMatrix = glm::lookAt(_viewMatInfo.position, _viewMatInfo.position + _viewMatInfo.forward, UP_VECTOR);
     //_viewMatrix = glm::lookAt(_viewMatInfo.position, _viewMatInfo.center, UP_VECTOR);
-    SPDLOG_INFO("Cam Pos {}", glm::to_string(_position));
     glm::mat4 translate = glm::translate(glm::mat4(1.f), _position);
     glm::mat4 rotation = glm::toMat4(calculateQuaternion(_pitch, _yaw));
     _viewMatrix = glm::inverse(translate * rotation);
