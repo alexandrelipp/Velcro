@@ -412,8 +412,12 @@ void MultiMeshLayer::displayGuizmo(int selectedEntity) {
     auto& ntc =  _scene->getTransform(selectedEntity);
     glm::mat4 transform = ntc.worldTransform;
 
+    // the Y is flipped for vulkan (see camera!), but ImGuizmo does not expect it to be flipped, so we flip it back!
+    glm::mat4 projectionMatrix = *(glm::mat4*)camera->getProjectionMatrix();
+    projectionMatrix[1][1] *= -1;
+
     // we add a snapping value if ctrl is pressed
-    ImGuizmo::Manipulate(camera->getViewMatrix(), camera->getProjectionMatrix(),
+    ImGuizmo::Manipulate(camera->getViewMatrix(), glm::value_ptr(projectionMatrix),
                          _operation, ImGuizmo::MODE::LOCAL, glm::value_ptr(transform), nullptr, snapValue);
 
 
