@@ -10,7 +10,6 @@
 #include <imgui/imgui.h>
 #include <imgui/backends/imgui_impl_vulkan.h>
 #include <imgui/backends/imgui_impl_glfw.h>
-
 #include <ImGuizmo/ImGuizmo.h>
 
 ImGuiLayer::ImGuiLayer(VkRenderPass renderPass) {

@@ -11,6 +11,7 @@
 #include "../Objects/Texture.h"
 #include "../../Scene/Scene.h"
 
+// NOTE : ImGui must be included before ImGuizmo
 #include <imgui.h>
 #include <ImGuizmo/ImGuizmo.h>
 
@@ -55,6 +56,7 @@ private:
     int _selectedEntity = -1;
     std::shared_ptr<Scene> _scene = nullptr;
 
+    // current operation done with the guizmo (translate, rotate or scale)
     ImGuizmo::OPERATION _operation = ImGuizmo::OPERATION::TRANSLATE;
 
     //Texture _texture{};

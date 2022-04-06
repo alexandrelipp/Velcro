@@ -42,6 +42,7 @@ if(PROFILE_VELCRO)
 endif()
 
 target_sources(${PROJECT_NAME} PUBLIC
+        # imgui base
         "${CMAKE_CURRENT_LIST_DIR}/imgui/imgui.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/imgui/imgui.h"
         "${CMAKE_CURRENT_LIST_DIR}/imgui/imgui_demo.cpp"
@@ -59,6 +60,7 @@ target_sources(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/imgui/backends/imgui_impl_glfw.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/imgui/backends/imgui_impl_glfw.h"
 
+        # imguizmo
         "${CMAKE_CURRENT_LIST_DIR}/ImGuizmo/ImGuizmo.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/ImGuizmo/ImGuizmo.h"
 )
