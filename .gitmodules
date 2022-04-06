@@ -16,3 +16,6 @@
 [submodule "dep/optick"]
 	path = dep/optick
 	url = https://github.com/bombomby/optick.git
+[submodule "dep/ImGuizmo"]
+	path = dep/ImGuizmo
+	url = https://github.com/CedricGuillemet/ImGuizmo.git

@@ -184,6 +184,8 @@ VkExtent2D Renderer::getSwapchainExtent() {
 void Renderer::onEvent(Event& e) {
     if (!_imguiFocus)
         _camera.onEvent(e);
+    for (auto layer : _renderLayers)
+        layer->onEvent(e);
 }
 
 Camera* Renderer::getCamera() {
@@ -483,9 +485,11 @@ void Renderer::recordCommandBuffer(uint32_t commandBufferIndex, VkFramebuffer fr
 void Renderer::onImGuiRender() {
     // check if imgui wants capture (used to block event propagation)
     ImGuiIO& io = ImGui::GetIO();
-    _imguiFocus =   io.WantCaptureMouse;
+    _imguiFocus = io.WantCaptureMouse;
 
     ImGui::Begin("Hello from Renderer");
     ImGui::Text("FPS %.2f", _fpsCounter.getFPS());
+    if (ImGui::Button("Reset Camera"))
+        _camera.reset();
     ImGui::End();
 }

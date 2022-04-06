@@ -60,7 +60,8 @@ void FactoryModel::importFromFile(const std::string& path, std::shared_ptr<Scene
 
     _aiScene = importer.ReadFile(path, aiProcess_Triangulate
                                        | aiProcess_JoinIdenticalVertices // without this, index buffer is useless
-                                       | aiProcess_FlipWindingOrder // by default counter clockwise/ direct 11 wants clockwise
+                                       | aiProcess_FlipWindingOrder      // by default counter clockwise/ vulkan wants clockwise // TODO: really??
+                                       | aiProcess_GenNormals            // generate normals if not already in model
     );
 
     // TODO : prob want to remove this

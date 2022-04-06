@@ -158,16 +158,6 @@ float* Camera::getProjectionMatrix() {
     return glm::value_ptr(_projectionMatrix);
 }
 
-
-float Camera::getRotation()  {
-    return _rotationZ;
-}
-
-void Camera::setRotation(float rotation) {
-    _rotationZ = rotation;
-    recalculateViewMatrix();
-}
-
 void Camera::translate(const glm::vec3& translation){
     _position += translation;
     recalculateViewMatrix();

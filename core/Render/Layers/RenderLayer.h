@@ -5,6 +5,7 @@
 #pragma once
 
 #include "../VulkanRenderDevice.hpp"
+#include "../../events/Event.h"
 
 #include <vulkan/vulkan_core.h>
 #include <glm/glm.hpp>
@@ -16,6 +17,7 @@ public:
     virtual ~RenderLayer();
 
     virtual void update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) = 0;
+    virtual void onEvent(Event& event) = 0;
 
     // TODO : it is a bit redundant to pass both the command buffer and the index or we don't care?
     virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) = 0;

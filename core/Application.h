@@ -55,7 +55,7 @@ private:
     struct WindowData
     {
         std::string title;
-        uint32_t width = 800, height = 800;
+        uint32_t width = 1100, height = 1100;
         bool VSync;
 
         std::function<void(Event& e)> eventCallback;
