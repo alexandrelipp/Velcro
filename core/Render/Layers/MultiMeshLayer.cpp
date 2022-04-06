@@ -180,6 +180,7 @@ void MultiMeshLayer::onImGuiRender() {
         return;
 
     ImGui::Begin("Selected");
+
     auto& transform = _scene->getTransform(_selectedEntity);
     bool needUpdate = false;
     needUpdate |= ImGui::DragFloat3("Position", glm::value_ptr(transform.position), 0.01f);
@@ -204,9 +205,16 @@ void MultiMeshLayer::onImGuiRender() {
 
     ImGui::Begin("Specular");
     ImGui::DragFloat("s", &_specularS, 0.1f, 0.f, 10.f);
+
+
     ImGui::End();
 
+    ImVec2 size = {(float)Application::getApp()->getWindowWidth(), (float)Application::getApp()->getWindowHeight()};
+    ImGui::SetNextWindowSize(size);
+    ImGui::SetNextWindowPos({0.f, 0.f});
+    ImGui::Begin("Guizmo");
     displayGuizmo(_selectedEntity);
+    ImGui::End();
 }
 
 void MultiMeshLayer::createPipelineLayout() {
@@ -392,11 +400,12 @@ void MultiMeshLayer::displayGuizmo(int selectedEntity) {
 
     Camera* camera = Application::getApp()->getRenderer()->getCamera();
 
-
+    // set up imguizmo
     ImGuizmo::SetOrthographic(false);
-    //ImGuizmo::SetRect(_viewPortBounds[0].x, _viewPortBounds[0].y, _viewPortBounds[1].x - _viewPortBounds[0].x, _viewPortBounds[1].y - _viewPortBounds[0].y);
+    ImGuizmo::SetRect(0, 0, (float)Application::getApp()->getWindowWidth(), (float)Application::getApp()->getWindowHeight());
     ImGuizmo::SetDrawlist();
 
+    // add optional snapping
     float* snapValue = nullptr;
     if (Application::getApp()->isKeyPressed(KeyCode::LeftControl)){
         // This value could be set in UI
