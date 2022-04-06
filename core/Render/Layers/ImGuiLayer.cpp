@@ -11,6 +11,8 @@
 #include <imgui/backends/imgui_impl_vulkan.h>
 #include <imgui/backends/imgui_impl_glfw.h>
 
+#include <ImGuizmo/ImGuizmo.h>
+
 ImGuiLayer::ImGuiLayer(VkRenderPass renderPass) {
     ImGui::CreateContext();
     VK_ASSERT(ImGui_ImplGlfw_InitForVulkan(Application::getApp()->getWindow(), true), "Failed to init glfw");
@@ -79,6 +81,9 @@ void ImGuiLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t comma
 void ImGuiLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) {}
 
 
+void ImGuiLayer::onEvent(Event& event) {}
+
+
 void ImGuiLayer::onImGuiRender() {
     bool show = false;
     //ImGui::ShowDemoWindow(&show);
@@ -90,6 +95,7 @@ void ImGuiLayer::begin() {
     ImGui_ImplVulkan_NewFrame();
     ImGui_ImplGlfw_NewFrame();
     ImGui::NewFrame();
+    ImGuizmo::BeginFrame();
 }
 
 void ImGuiLayer::end() {

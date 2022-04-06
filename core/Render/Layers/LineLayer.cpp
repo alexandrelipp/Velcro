@@ -51,6 +51,8 @@ void LineLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& p
     _mvpUniformBuffers[commandBufferIndex].setData(_vrd->device, glm::value_ptr(mvp), sizeof(mvp));
 }
 
+void LineLayer::onEvent(Event& event) {}
+
 
 void LineLayer::onImGuiRender() {
 

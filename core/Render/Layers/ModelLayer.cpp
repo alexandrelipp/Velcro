@@ -66,6 +66,8 @@ void ModelLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& 
     VK_ASSERT(_mvpUniformBuffers[commandBufferIndex].setData(_vrd->device, glm::value_ptr(mvp), sizeof(mvp)), "Failed to dat");
 }
 
+void ModelLayer::onEvent(Event& event) {}
+
 
 void ModelLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) {
     // bind pipeline and render

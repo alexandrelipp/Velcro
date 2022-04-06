@@ -58,6 +58,9 @@ target_sources(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/imgui/backends/imgui_impl_vulkan.h"
         "${CMAKE_CURRENT_LIST_DIR}/imgui/backends/imgui_impl_glfw.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/imgui/backends/imgui_impl_glfw.h"
+
+        "${CMAKE_CURRENT_LIST_DIR}/ImGuizmo/ImGuizmo.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/ImGuizmo/ImGuizmo.h"
 )
 
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/glfw" libGLFW)

@@ -4,11 +4,15 @@
 
 #pragma once
 
+
 #include "RenderLayer.h"
 #include "../Objects/UniformBuffer.h"
 #include "../Objects/ShaderStorageBuffer.h"
 #include "../Objects/Texture.h"
 #include "../../Scene/Scene.h"
+
+#include <imgui.h>
+#include <ImGuizmo/ImGuizmo.h>
 
 
 class MultiMeshLayer : public RenderLayer {
@@ -19,6 +23,7 @@ public:
 
     virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) override;
     virtual void update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) override;
+    virtual void onEvent(Event& event) override;
     virtual void onImGuiRender() override;
 
 private:
@@ -26,6 +31,7 @@ private:
     void createDescriptorSets();
 
     void displayHierarchy(int entity);
+    void displayGuizmo(int selectedEntity);
 
 private:
     struct InstanceData{
@@ -48,6 +54,8 @@ private:
     // Scene
     int _selectedEntity = -1;
     std::shared_ptr<Scene> _scene = nullptr;
+
+    ImGuizmo::OPERATION _operation = ImGuizmo::OPERATION::TRANSLATE;
 
     //Texture _texture{};
 };

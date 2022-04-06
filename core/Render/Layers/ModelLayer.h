@@ -16,6 +16,7 @@ public:
     virtual ~ModelLayer();
 
     virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) override;
+    virtual void onEvent(Event& event) override;
     virtual void update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) override;
     virtual void onImGuiRender() override;
 
