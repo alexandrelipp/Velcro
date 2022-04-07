@@ -30,7 +30,7 @@ ModelLayer::ModelLayer(VkRenderPass renderPass) : RenderLayer() {
                                indices.data(), indices.size() * sizeof(indices[0])), "set data failed");
 
     // init the statue texture
-    _texture.init("../../../core/Assets/Models/duck/textures/Duck_baseColor.png", _vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool);
+    _texture.init("../../../core/Assets/Models/duck/textures/Duck_baseColor.png", *_vrd, true);
     createPipelineLayout();
     createDescriptorSets();
     Factory::GraphicsPipelineProps props = {
