@@ -8,18 +8,18 @@ struct Vertex{
     float y;
     float u;
     float v;
-}
+};
 
-layout(binding = 0) readonly buffer vertices{
-    Vertex data[];
-}
+layout(binding = 0) readonly buffer Vertices{
+    Vertex vertices[];
+};
 
-layout(push_constant) uniform pushConstant {
+layout(push_constant) uniform PushConstant {
     uint textureIndex;
-}
+} pushConstant;
 
 void main(){
-    Vertex vtx = vertices.data[gl_VertexIndex];
+    Vertex vtx = vertices[gl_VertexIndex];
     gl_Position = vec4(vtx.x, vtx.y, 0.0, 0.0);
     uv = vec2(vtx.u, vtx.v);
     texIndex = pushConstant.textureIndex;
