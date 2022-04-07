@@ -11,6 +11,7 @@ class ShaderStorageBuffer {
 public:
     ShaderStorageBuffer() = default;
 
+    // TODO : should just take a VRD
     void init(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t size,
               bool hostVisible = false, VkBufferUsageFlags additionalUsage = 0);
     void destroy(VkDevice device);
@@ -18,6 +19,7 @@ public:
     uint32_t getSize();
     VkBuffer getBuffer();
 
+    // TODO : should just take a VRD
     bool setData(VkDevice device, VkPhysicalDevice physicalDevice,
                  VkQueue queue, VkCommandPool commandPool, void* data, uint32_t size);
 

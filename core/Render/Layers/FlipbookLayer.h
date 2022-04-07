@@ -6,6 +6,7 @@
 
 #include "RenderLayer.h"
 #include "../Objects/Texture.h"
+#include "../Objects/ShaderStorageBuffer.h"
 
 
 class FlipbookLayer : public RenderLayer {
@@ -21,10 +22,18 @@ public:
     virtual void onImGuiRender() override;
 
 private:
+    void createPipelineLayout();
+    void createDescriptorSets();
+
+private:
+
     struct Animation {
         uint32_t textureIndex;
     };
-    std::vector<Texture> _textures;
     std::vector<Animation> _animations;
+
+    std::vector<Texture> _textures;
+    ShaderStorageBuffer _vertices;
+    VkPushConstantRange _pushConstantRange;
 
 };

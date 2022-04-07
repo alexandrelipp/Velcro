@@ -301,8 +301,8 @@ namespace Factory {
 
         VkPipelineDepthStencilStateCreateInfo depthStencilCI = {
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-                .depthTestEnable = VK_TRUE,
-                .depthWriteEnable = VK_TRUE,
+                .depthTestEnable = props.enableTestTest,
+                .depthWriteEnable = props.enableTestTest, // TODO : do we want to distinct write + enable depth test ?
                 .depthCompareOp = VK_COMPARE_OP_LESS,
                 .depthBoundsTestEnable = VK_FALSE,      // if enabled, depth test will only pass when inside the given bounds
                 .stencilTestEnable = VK_FALSE,

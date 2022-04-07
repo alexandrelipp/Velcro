@@ -33,6 +33,7 @@ namespace Factory {
    struct GraphicsPipelineProps{
        VkPrimitiveTopology primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
        ShaderFiles shaders;
+       VkBool32 enableTestTest = true;
    };
    VkPipeline createGraphicsPipeline(VkDevice device, VkExtent2D& extent, VkRenderPass renderPass,
                                      VkPipelineLayout pipelineLayout, const GraphicsPipelineProps& props);
