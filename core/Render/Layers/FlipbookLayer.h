@@ -21,5 +21,10 @@ public:
     virtual void onImGuiRender() override;
 
 private:
+    struct Animation {
+        uint32_t textureIndex;
+    };
     std::vector<Texture> _textures;
+    std::vector<Animation> _animations;
+
 };

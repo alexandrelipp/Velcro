@@ -3,6 +3,7 @@
 //
 
 #include "FlipbookLayer.h"
+#include "../../events/MouseEvent.h"
 
 FlipbookLayer::FlipbookLayer(VkRenderPass renderPass) {
     std::filesystem::path explosionFolder = "../../../core/Assets/Flipbooks/Explosion0";
@@ -23,6 +24,22 @@ void FlipbookLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat
 }
 
 void FlipbookLayer::onEvent(Event& event) {
+    switch (event.getType()) {
+        case Event::Type::MOUSE_PRESSED:{
+            MouseButtonEvent* mouseButtonEvent = (MouseButtonEvent*)&event;
+            switch (mouseButtonEvent->getMouseButton()) {
+                case MouseCode::ButtonLeft:
+                    _animations.push_back({
+                        .textureIndex = 0
+                    });
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        default: break;
+    }
 
 }
 

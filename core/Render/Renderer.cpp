@@ -213,10 +213,13 @@ void Renderer::draw() {
     uint32_t imageIndex;
     VK_CHECK(vkAcquireNextImageKHR(_vrd.device, _swapchain, UINT64_MAX, _imageAvailSpres[_currentFiFIndex], nullptr, &imageIndex));
 
-    // TODO : correct DT!!!
+    // update render layers with delta time
+    static double time = 0.f, lastFrame = 0.f;
+    time = glfwGetTime();
     glm::mat4 pv = *_camera.getPVMatrix();
     for (auto layer : _renderLayers)
-        layer->update(0.001f, _currentFiFIndex, pv);
+        layer->update(time - lastFrame, _currentFiFIndex, pv);
+    lastFrame = time;
 
     _imGuiLayer->begin();
     onImGuiRender();
