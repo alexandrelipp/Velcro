@@ -15,16 +15,18 @@ FlipbookLayer::FlipbookLayer(VkRenderPass renderPass) {
     std::filesystem::path explosionFolder = "../../../core/Assets/Flipbooks/Explosion0";
     for (auto& file : std::filesystem::directory_iterator(explosionFolder)){
         _textures.emplace_back();
-        _textures.back().init(file.path().string(), *_vrd, false);
+        // TODO : do we really want to create one sampler per texture ??
+        _textures.back().init(file.path().string(), *_vrd, true);
     }
 
     // init vertices ssbo
     std::vector<TexVertex2> vertices;
     VK_ASSERT(FactoryModel::createTexturedSquare2(vertices), "Failed to gen vertices");
 
-    _vertices.init(_vrd->device, _vrd->physicalDevice, false);
+    uint32_t verticesSize = utils::vectorSizeByte(vertices);
+    _vertices.init(_vrd->device, _vrd->physicalDevice, verticesSize);
     _vertices.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool, vertices.data(),
-                      utils::vectorSizeByte(vertices));
+                      verticesSize);
 
 
     createPipelineLayout();
@@ -32,8 +34,8 @@ FlipbookLayer::FlipbookLayer(VkRenderPass renderPass) {
     Factory::GraphicsPipelineProps props = {
             .primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
             .shaders = {
-                    .vertex = "FlipbookV",
-                    .fragment = "FlipbookF"
+                    .vertex = "FlipbookV.spv",
+                    .fragment = "FlipbookF.spv"
             },
             .enableTestTest = VK_FALSE, // disable depth test! (won't really matter since we are writing at min depth anyway (0)
 
@@ -83,7 +85,7 @@ void FlipbookLayer::createPipelineLayout() {
     std::array<VkDescriptorSetLayoutBinding, 2> layoutBindings = {
             VkDescriptorSetLayoutBinding{
                     .binding = 0,
-                    .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                    .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                     .descriptorCount = 1,
                     .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
             },
@@ -105,7 +107,7 @@ void FlipbookLayer::createPipelineLayout() {
 
     // create fragment push constant for camera pos
     _pushConstantRange = {
-            .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
             .offset = 0,               // must be multiple of 4 (offset into push constant block)
             .size = sizeof(uint32_t)   // must be multiple of 4
     };
@@ -123,7 +125,7 @@ void FlipbookLayer::createPipelineLayout() {
 }
 
 void FlipbookLayer::createDescriptorSets() {
-    _descriptorPool = Factory::createDescriptorPool(_vrd->device, MAX_FRAMES_IN_FLIGHT, 1, 2, 1);
+    _descriptorPool = Factory::createDescriptorPool(_vrd->device, MAX_FRAMES_IN_FLIGHT, _textures.size(), 0, 1);
 
     std::array<VkDescriptorSetLayout, MAX_FRAMES_IN_FLIGHT> layouts = {_descriptorSetLayout, _descriptorSetLayout};
 
@@ -136,28 +138,19 @@ void FlipbookLayer::createDescriptorSets() {
 
     VK_CHECK(vkAllocateDescriptorSets(_vrd->device, &descriptorSetAI, _descriptorSets.data()));
 
+    std::vector<VkDescriptorImageInfo> textureDescriptors(_textures.size());
+    for (int i = 0; i < _textures.size(); ++i){
+        textureDescriptors[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        textureDescriptors[i].imageView = _textures[i].getImageView();
+        textureDescriptors[i].sampler = _textures[i].getSampler();
+    }
+
     for (size_t i = 0; i < _descriptorSets.size(); ++i) {
         // create write descriptor set for each descriptor set
         std::vector<VkWriteDescriptorSet> writeDescriptorSets;
 
         // push back descriptor write for UBO (1 buffer/image)
         VkDescriptorBufferInfo bufferInfo = {
-                .buffer = _vpUniformBuffers[i].getBuffer(),
-                .offset = 0,
-                .range = _vpUniformBuffers[i].getSize()
-        };
-        writeDescriptorSets.push_back({
-                                              .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                              .dstSet = _descriptorSets[i],
-                                              .dstBinding = 0,
-                                              .dstArrayElement = 0,
-                                              .descriptorCount = 1,
-                                              .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                              .pBufferInfo = &bufferInfo
-                                      });
-
-        // push back descriptor write for vertices SSBO (1 buffer)
-        VkDescriptorBufferInfo verticesInfo = {
                 .buffer = _vertices.getBuffer(),
                 .offset = 0,
                 .range = _vertices.getSize()
@@ -165,44 +158,22 @@ void FlipbookLayer::createDescriptorSets() {
         writeDescriptorSets.push_back({
                                               .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
                                               .dstSet = _descriptorSets[i],
+                                              .dstBinding = 0,
+                                              .dstArrayElement = 0,
+                                              .descriptorCount = 1,
+                                              .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                              .pBufferInfo = &bufferInfo
+                                      });
+
+        // push back descriptors for textures
+        writeDescriptorSets.push_back({
+                                              .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                                              .dstSet = _descriptorSets[i],
                                               .dstBinding = 1,
                                               .dstArrayElement = 0,
-                                              .descriptorCount = 1,
-                                              .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                              .pBufferInfo = &verticesInfo
-                                      });
-
-        // push back descriptor write for indices SSBO (1 buffer)
-        VkDescriptorBufferInfo indicesInfo = {
-                .buffer = _indices.getBuffer(),
-                .offset = 0,
-                .range = _indices.getSize()
-        };
-        writeDescriptorSets.push_back({
-                                              .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                              .dstSet = _descriptorSets[i],
-                                              .dstBinding = 2,
-                                              .dstArrayElement = 0,
-                                              .descriptorCount = 1,
-                                              .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                              .pBufferInfo = &indicesInfo
-                                      });
-
-        // push back descriptor write for transform ssbos (1 buffer/ image)
-        VkDescriptorBufferInfo transformsInfo = {
-                .buffer = _meshTransformBuffers[i].getBuffer(),
-                .offset = 0,
-                .range = _meshTransformBuffers[i].getSize()
-        };
-
-        writeDescriptorSets.push_back({
-                                              .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                              .dstSet = _descriptorSets[i],
-                                              .dstBinding = 3,
-                                              .dstArrayElement = 0,
-                                              .descriptorCount = 1,
-                                              .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                              .pBufferInfo = &transformsInfo
+                                              .descriptorCount = (uint32_t)textureDescriptors.size(),
+                                              .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                              .pImageInfo = textureDescriptors.data()
                                       });
 
         // update the descriptor sets with the created decriptor writes

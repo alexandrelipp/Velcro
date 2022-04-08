@@ -483,7 +483,7 @@ namespace Factory {
         if (samplerCount){
             poolSizes.push_back(VkDescriptorPoolSize{
                     .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                    .descriptorCount = storageBufferCount * imageCount
+                    .descriptorCount = samplerCount * imageCount
             });
         }
 
