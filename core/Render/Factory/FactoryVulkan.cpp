@@ -151,10 +151,19 @@ namespace Factory {
                 .shaderDrawParameters = VK_TRUE
         };
 
+        // TODO : can we check if it is supported ?
+        VkPhysicalDeviceDescriptorIndexingFeatures indexingFeatures = {
+                .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_FEATURES,
+                .pNext = &features11,
+                .shaderSampledImageArrayNonUniformIndexing = VK_TRUE,
+                .descriptorBindingVariableDescriptorCount = VK_TRUE,
+                .runtimeDescriptorArray = VK_TRUE
+        };
+
         // create logical device
         VkDeviceCreateInfo createInfo = {
                 .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-                .pNext = &features11,
+                .pNext = &indexingFeatures,
                 .flags = 0u,
                 .queueCreateInfoCount = 1u,
                 .pQueueCreateInfos = &queueCreateInfo,

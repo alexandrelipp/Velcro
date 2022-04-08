@@ -69,7 +69,7 @@ bool Renderer::init() {
     features.samplerAnisotropy = VK_TRUE;
     features.multiDrawIndirect = VK_TRUE;
     features.drawIndirectFirstInstance = VK_TRUE;
-    features.shaderSampledImageArrayDynamicIndexing = VK_TRUE;
+    //features.shaderSampledImageArrayDynamicIndexing = VK_TRUE;
 
     // pick a physical device (gpu)
     _vrd.physicalDevice = utils::pickPhysicalDevice(_vrd.instance, features);

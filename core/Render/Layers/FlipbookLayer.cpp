@@ -46,6 +46,7 @@ FlipbookLayer::FlipbookLayer(VkRenderPass renderPass) {
 FlipbookLayer::~FlipbookLayer() {
     for (auto& texture : _textures)
         texture.destroy(_vrd->device);
+    _vertices.destroy(_vrd->device);
 }
 
 void FlipbookLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) {
