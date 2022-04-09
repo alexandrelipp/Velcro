@@ -51,13 +51,14 @@ FlipbookLayer::~FlipbookLayer() {
 }
 
 void FlipbookLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) {
-    if (_animations.empty())
+    if (!_animation.has_value())
         return;
-    auto& lastAnim = _animations.back();
-    lastAnim.textureIndex += 1;
 
-    if (lastAnim.textureIndex == _textures.size())
-        _animations.pop_back();
+    // increase texture index by 1 each frame. Not that good, animation speed depends on frame rate
+    _animation.value().textureIndex += 1;
+
+    if (_animation.value().textureIndex == _textures.size())
+        _animation = std::nullopt;
 }
 
 void FlipbookLayer::onEvent(Event& event) {
@@ -71,10 +72,10 @@ void FlipbookLayer::onEvent(Event& event) {
                     glm::vec2 size = Application::getApp()->getWindowSize();
                     glm::vec2 vulkanScreenCoordinate = pos/size * 2.f - 1.f;
 
-                    _animations.push_back({
+                    _animation = {
                         .textureIndex = 0,
                         .offset =  vulkanScreenCoordinate
-                    });
+                    };
                     break;
                 }
                 default:
@@ -88,11 +89,11 @@ void FlipbookLayer::onEvent(Event& event) {
 }
 
 void FlipbookLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) {
-    if (_animations.empty())
+    if (!_animation.has_value())
         return;
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSets[commandBufferIndex], 0, nullptr);
-    vkCmdPushConstants(commandBuffer, _pipelineLayout, _pushConstantRange.stageFlags, _pushConstantRange.offset, _pushConstantRange.size, &_animations.back());
+    vkCmdPushConstants(commandBuffer, _pipelineLayout, _pushConstantRange.stageFlags, _pushConstantRange.offset, _pushConstantRange.size, &_animation.value());
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 }
 

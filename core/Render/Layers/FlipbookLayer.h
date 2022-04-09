@@ -31,7 +31,7 @@ private:
         uint32_t textureIndex;
         glm::vec2 offset;
     };
-    std::vector<Animation> _animations;
+    std::optional<Animation> _animation;
 
     std::vector<Texture> _textures;
     ShaderStorageBuffer _vertices;
