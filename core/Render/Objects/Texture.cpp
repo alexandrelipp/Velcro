@@ -128,6 +128,7 @@ void Texture::destroy(VkDevice device) {
 }
 
 VkSampler Texture::getSampler() {
+    VK_ASSERT(_sampler != nullptr, "Sampler is null ");
     return _sampler;
 }
 

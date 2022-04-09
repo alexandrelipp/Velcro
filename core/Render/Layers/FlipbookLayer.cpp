@@ -16,9 +16,30 @@ FlipbookLayer::FlipbookLayer(VkRenderPass renderPass) {
     std::filesystem::path explosionFolder = "../../../core/Assets/Flipbooks/Explosion0";
     for (auto& file : std::filesystem::directory_iterator(explosionFolder)){
         _textures.emplace_back();
-        // TODO : do we really want to create one sampler per texture ??
-        _textures.back().init(file.path().string(), *_vrd, true);
+        _textures.back().init(file.path().string(), *_vrd, false);
     }
+
+    // create sampler
+    VkSamplerCreateInfo samplerCreateInfo = {
+            .sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+            .flags = 0u,
+            .magFilter = VK_FILTER_LINEAR,
+            .minFilter = VK_FILTER_LINEAR,
+            .mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR,    // interpolation mode between MIP
+            .addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+            .addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+            .addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT,
+            .mipLodBias = 0.f,                              // Lod bias for mip level
+            .anisotropyEnable = VK_FALSE,                    // disable anisotropy, not necessary
+            .maxAnisotropy = 16.f,                          // anisotropy sample level
+            .minLod = 0.f,                                  // min level of detail to pick mip level
+            .maxLod = 0.f,                                  // max level of dtail to pick mip level
+            .borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK, // only applied when repeat mode is clamp to border
+            .unnormalizedCoordinates = VK_FALSE,
+
+    };
+    VK_CHECK(vkCreateSampler(_vrd->device, &samplerCreateInfo, nullptr, &_sampler));
+
 
     // init vertices ssbo
     std::vector<TexVertex2> vertices;
@@ -29,7 +50,7 @@ FlipbookLayer::FlipbookLayer(VkRenderPass renderPass) {
     _vertices.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool, vertices.data(),
                       verticesSize);
 
-
+    // create graphics pipeline
     createPipelineLayout();
     createDescriptorSets();
     Factory::GraphicsPipelineProps props = {
@@ -45,6 +66,7 @@ FlipbookLayer::FlipbookLayer(VkRenderPass renderPass) {
 }
 
 FlipbookLayer::~FlipbookLayer() {
+    vkDestroySampler(_vrd->device, _sampler, nullptr);
     for (auto& texture : _textures)
         texture.destroy(_vrd->device);
     _vertices.destroy(_vrd->device);
@@ -163,7 +185,7 @@ void FlipbookLayer::createDescriptorSets() {
     for (int i = 0; i < _textures.size(); ++i){
         textureDescriptors[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         textureDescriptors[i].imageView = _textures[i].getImageView();
-        textureDescriptors[i].sampler = _textures[i].getSampler();
+        textureDescriptors[i].sampler = _sampler;
     }
 
     for (size_t i = 0; i < _descriptorSets.size(); ++i) {

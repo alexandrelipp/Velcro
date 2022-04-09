@@ -36,5 +36,5 @@ private:
     std::vector<Texture> _textures;
     ShaderStorageBuffer _vertices;
     VkPushConstantRange _pushConstantRange;
-
+    VkSampler _sampler = nullptr;
 };
