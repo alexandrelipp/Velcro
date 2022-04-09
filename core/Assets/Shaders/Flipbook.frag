@@ -10,4 +10,5 @@ layout(binding = 1) uniform sampler2D textures[];
 
 void main(){
     color = texture(textures[nonuniformEXT(texIndex)], uv);
+    //color = vec4(uv, 0.0, 1.0);
 }

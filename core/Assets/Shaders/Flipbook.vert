@@ -20,7 +20,7 @@ layout(push_constant) uniform PushConstant {
 
 void main(){
     Vertex vtx = vertices[gl_VertexIndex];
-    gl_Position = vec4(vtx.x, vtx.y, 0.0, 0.0);
+    gl_Position = vec4(vtx.x, vtx.y, 0.0, 1.0);
     uv = vec2(vtx.u, vtx.v);
     texIndex = pushConstant.textureIndex;
 }
