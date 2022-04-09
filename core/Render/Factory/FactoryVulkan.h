@@ -7,6 +7,7 @@
 #include <vulkan/vulkan.h>
 #include <optional>
 #include <string>
+#include "../VulkanRenderDevice.hpp"
 
 struct ShaderFiles {
     std::optional<std::string> vertex = std::nullopt;
@@ -47,14 +48,15 @@ namespace Factory {
                                                   uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
                                                   VkImageUsageFlags usage, VkMemoryPropertyFlags properties);
 
-    VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+   VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 
    /// descriptors
    VkDescriptorPool createDescriptorPool(VkDevice device, uint32_t imageCount,
                                                           uint32_t uniformBufferCount,
                                                           uint32_t storageBufferCount,
                                                           uint32_t samplerCount);
+
+   std::tuple<VkDescriptorSetLayout, VkDescriptorPool,std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT>>
+           createDescriptorSets();
 }
-
-
 

@@ -220,5 +220,6 @@ void FlipbookLayer::createDescriptorSets() {
         // update the descriptor sets with the created decriptor writes
         vkUpdateDescriptorSets(_vrd->device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
     }
+    //std::tie(_descriptorSetLayout, _descriptorPool, _descriptorSets) = Factory::createDescriptorSets();
 }
 

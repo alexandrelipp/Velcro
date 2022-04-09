@@ -520,4 +520,9 @@ namespace Factory {
         VK_CHECK(vkCreateDescriptorPool(device, &createInfo, nullptr, &output));
         return output;
     }
+
+    std::tuple<VkDescriptorSetLayout, VkDescriptorPool, std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT>>
+    Factory::createDescriptorSets() {
+        return std::tuple<VkDescriptorSetLayout, VkDescriptorPool, std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT>>();
+    }
 }
