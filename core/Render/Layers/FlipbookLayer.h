@@ -22,8 +22,6 @@ public:
     virtual void onImGuiRender() override;
 
 private:
-    void createPipelineLayout();
-    void createDescriptorSets();
 
 private:
 
