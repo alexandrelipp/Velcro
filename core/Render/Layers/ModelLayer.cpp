@@ -32,7 +32,7 @@ ModelLayer::ModelLayer(VkRenderPass renderPass) : RenderLayer() {
     // init the statue texture
     _texture.init("../../../core/Assets/Models/duck/textures/Duck_baseColor.png", *_vrd, true);
     createPipelineLayout();
-    createDescriptorSets();
+    //createDescriptorSets();
     Factory::GraphicsPipelineProps props = {
             .shaders =  {
                     .vertex = "vert.spv",
@@ -87,55 +87,95 @@ void ModelLayer::onImGuiRender() {
 //////////////// PRIVATE METHODS /////////////////////////
 
 void ModelLayer::createPipelineLayout() {
-    // create the pipeline layout
-    std::array<VkDescriptorSetLayoutBinding, 4> layoutBindings = {
-            VkDescriptorSetLayoutBinding{
-                    .binding = 0,
-                    .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                    .descriptorCount = 1,
-                    .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
+    std::vector<Factory::Descriptor> descriptors = {
+            {
+                .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                .shaderStage = VK_SHADER_STAGE_VERTEX_BIT,
+                .info = std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>{
+                    VkDescriptorBufferInfo {_mvpUniformBuffers[0].getBuffer(), 0, _mvpUniformBuffers[0].getSize()},
+                    VkDescriptorBufferInfo {_mvpUniformBuffers[1].getBuffer(), 0, _mvpUniformBuffers[1].getSize()},
+                }
             },
-            VkDescriptorSetLayoutBinding{
-                    .binding = 1,
-                    .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                    .descriptorCount = 1,
-                    .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
+            {
+                .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                .shaderStage = VK_SHADER_STAGE_VERTEX_BIT,
+                .info = std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>{
+                        VkDescriptorBufferInfo {_vertices.getBuffer(), 0, _vertices.getSize()},
+                        VkDescriptorBufferInfo {_vertices.getBuffer(), 0, _vertices.getSize()},
+                }
             },
-            VkDescriptorSetLayoutBinding{
-                    .binding = 2,
-                    .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                    .descriptorCount = 1,
-                    .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
+            {
+                .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                .shaderStage = VK_SHADER_STAGE_VERTEX_BIT,
+                .info = std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>{
+                        VkDescriptorBufferInfo {_indices.getBuffer(), 0, _indices.getSize()},
+                        VkDescriptorBufferInfo {_indices.getBuffer(), 0, _indices.getSize()},
+                }
             },
-            VkDescriptorSetLayoutBinding{
-                    .binding = 3,
-                    .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                    .descriptorCount = 1,
-                    .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
+            {
+                .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .shaderStage = VK_SHADER_STAGE_FRAGMENT_BIT,
+                .info = std::vector<VkDescriptorImageInfo>{
+                    VkDescriptorImageInfo{
+                            .sampler = _texture.getSampler(),
+                            .imageView = _texture.getImageView(),
+                            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                    }
+                }
             }
     };
-
-    VkDescriptorSetLayoutCreateInfo descriptorLayoutCI = {
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            .bindingCount = layoutBindings.size(),
-            .pBindings = layoutBindings.data()
-    };
-
-    VK_CHECK(vkCreateDescriptorSetLayout(_vrd->device, &descriptorLayoutCI, nullptr, &_descriptorSetLayout));
-
-
-    // create pipeline layout (used for uniform and push constants)
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &_descriptorSetLayout;
-    pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
-    pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
-
-    VK_CHECK(vkCreatePipelineLayout(_vrd->device, &pipelineLayoutInfo, nullptr, &_pipelineLayout));
+    std::tie(_descriptorSetLayout, _pipelineLayout, _descriptorPool, _descriptorSets) =
+            Factory::createDescriptorSets(descriptors, {}, _vrd);
+//    // create the pipeline layout
+//    std::array<VkDescriptorSetLayoutBinding, 4> layoutBindings = {
+//            VkDescriptorSetLayoutBinding{
+//                    .binding = 0,
+//                    .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+//                    .descriptorCount = 1,
+//                    .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
+//            },
+//            VkDescriptorSetLayoutBinding{
+//                    .binding = 1,
+//                    .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+//                    .descriptorCount = 1,
+//                    .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
+//            },
+//            VkDescriptorSetLayoutBinding{
+//                    .binding = 2,
+//                    .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+//                    .descriptorCount = 1,
+//                    .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
+//            },
+//            VkDescriptorSetLayoutBinding{
+//                    .binding = 3,
+//                    .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+//                    .descriptorCount = 1,
+//                    .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT
+//            }
+//    };
+//
+//    VkDescriptorSetLayoutCreateInfo descriptorLayoutCI = {
+//            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+//            .bindingCount = layoutBindings.size(),
+//            .pBindings = layoutBindings.data()
+//    };
+//
+//    VK_CHECK(vkCreateDescriptorSetLayout(_vrd->device, &descriptorLayoutCI, nullptr, &_descriptorSetLayout));
+//
+//
+//    // create pipeline layout (used for uniform and push constants)
+//    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+//    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+//    pipelineLayoutInfo.setLayoutCount = 1;
+//    pipelineLayoutInfo.pSetLayouts = &_descriptorSetLayout;
+//    pipelineLayoutInfo.pushConstantRangeCount = 0; // Optional
+//    pipelineLayoutInfo.pPushConstantRanges = nullptr; // Optional
+//
+//    VK_CHECK(vkCreatePipelineLayout(_vrd->device, &pipelineLayoutInfo, nullptr, &_pipelineLayout));
 }
 
 void ModelLayer::createDescriptorSets() {
+
     // Inadequate descriptor pools are a good example of a problem that the validation layers will not catch:
     // As of Vulkan 1.1, vkAllocateDescriptorSets may fail with the error code VK_ERROR_POOL_OUT_OF_MEMORY
     // if the pool is not sufficiently large, but the driver may also try to solve the problem internally.
