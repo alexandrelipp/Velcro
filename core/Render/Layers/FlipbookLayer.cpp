@@ -50,7 +50,10 @@ FlipbookLayer::~FlipbookLayer() {
 }
 
 void FlipbookLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) {
-
+    if (_animations.empty())
+        return;
+    _animations.back().textureIndex += 1;
+    _animations.back().textureIndex %= _textures.size();
 }
 
 void FlipbookLayer::onEvent(Event& event) {
@@ -74,7 +77,12 @@ void FlipbookLayer::onEvent(Event& event) {
 }
 
 void FlipbookLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) {
-
+    if (_animations.empty())
+        return;
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSets[commandBufferIndex], 0, nullptr);
+    vkCmdPushConstants(commandBuffer, _pipelineLayout, _pushConstantRange.stageFlags, _pushConstantRange.offset, _pushConstantRange.size, &_animations.back().textureIndex);
+    vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 }
 
 void FlipbookLayer::onImGuiRender() {
