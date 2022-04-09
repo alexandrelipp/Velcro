@@ -119,9 +119,7 @@ void FlipbookLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t co
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 }
 
-void FlipbookLayer::onImGuiRender() {
-
-}
+void FlipbookLayer::onImGuiRender() {}
 
 void FlipbookLayer::createPipelineLayout() {
     // create the pipeline layout
@@ -148,7 +146,7 @@ void FlipbookLayer::createPipelineLayout() {
 
     VK_CHECK(vkCreateDescriptorSetLayout(_vrd->device, &descriptorLayoutCI, nullptr, &_descriptorSetLayout));
 
-    // create fragment push constant for camera pos
+    // create fragment push constant for texture index and animation screen offset
     _pushConstantRange = {
             .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
             .offset = 0,               // must be multiple of 4 (offset into push constant block)

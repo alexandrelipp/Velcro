@@ -218,7 +218,6 @@ glm::uvec2 Application::getWindowSize() {
     return {_windowData.width, _windowData.height};
 }
 
-
 float Application::getAspectRatio() {
     return _windowData.width/(float)_windowData.height;
 }
