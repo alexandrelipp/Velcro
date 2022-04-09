@@ -42,4 +42,6 @@ namespace utils {
                                  VkImageTiling tiling, VkFormatFeatureFlags features);
     //VkFormat findDepthFormat(VkPhysicalDevice physicalDevice);
     bool hasStencilComponent(VkFormat format);
+
+    VkSampleCountFlagBits getMaximumSampleCount(VkPhysicalDevice physicalDevice);
 }
