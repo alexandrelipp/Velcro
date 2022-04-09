@@ -61,9 +61,9 @@ SPDLOG_CRITICAL("Check success failed with code {}", magic_enum::enum_name(resul
 #include <glm/glm.hpp>
 #include <glm/gtx/transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/string_cast.hpp>
 
 #include <stdexcept>
-#include "glm/glm.hpp"
 
 #include <vector>
 #include <array>

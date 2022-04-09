@@ -41,6 +41,8 @@ public:
     GLFWwindow* getWindow();
     uint32_t getWindowWidth();
     uint32_t getWindowHeight();
+    glm::uvec2 getWindowSize();
+
     float getAspectRatio();
    // void setVSync(bool enable);
     bool isVsync();

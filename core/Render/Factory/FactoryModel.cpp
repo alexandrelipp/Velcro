@@ -41,10 +41,10 @@ bool FactoryModel::createDuckModel(std::vector<TexVertex>& vertices, std::vector
 
 bool FactoryModel::createTexturedSquare(std::vector<TexVertex>& vertices, std::vector<uint32_t>& indices) {
     vertices = {
-            {glm::vec3(-0.5f, -0.5f, 0.f), glm::vec2(0.f, 0.f),},// top left
-            {glm::vec3(0.5f, -0.5f, 0.f),  glm::vec2(1.f, 0.f),},// top right
-            {glm::vec3(0.5f, 0.5f, 0.f),   glm::vec2(1.f, 1.f),},// bottom right
-            {glm::vec3(-0.5f, 0.5f, 0.f),  glm::vec2(0.f, 1.f),},// bottom left
+            {glm::vec3(-0.5f, -0.5f, 0.f), glm::vec2(0.f, 0.f)},// top left
+            {glm::vec3(0.5f, -0.5f, 0.f),  glm::vec2(1.f, 0.f)},// top right
+            {glm::vec3(0.5f, 0.5f, 0.f),   glm::vec2(1.f, 1.f)},// bottom right
+            {glm::vec3(-0.5f, 0.5f, 0.f),  glm::vec2(0.f, 1.f)},// bottom left
     };
 
     indices = {
@@ -52,6 +52,20 @@ bool FactoryModel::createTexturedSquare(std::vector<TexVertex>& vertices, std::v
     };
     return true;
 }
+
+
+bool FactoryModel::createTexturedSquare2(std::vector<TexVertex2>& vertices) {
+    vertices = {
+            {glm::vec2(-0.5f, -0.5f), glm::vec2(0.f, 0.f)},// top left
+            {glm::vec2( 0.5f, -0.5f), glm::vec2(1.f, 0.f)},// top right
+            {glm::vec2( 0.5f,  0.5f), glm::vec2(1.f, 1.f)},// bottom right
+            {glm::vec2( 0.5f,  0.5f), glm::vec2(1.f, 1.f)},// bottom right
+            {glm::vec2(-0.5f,  0.5f), glm::vec2(0.f, 1.f)},// bottom left
+            {glm::vec2(-0.5f, -0.5f), glm::vec2(0.f, 0.f)},// top left
+    };
+    return true;
+}
+
 
 void FactoryModel::importFromFile(const std::string& path, std::shared_ptr<Scene> scene) {
     Assimp::Importer importer;

@@ -12,6 +12,7 @@
 #include "Layers/ModelLayer.h"
 #include "Layers/LineLayer.h"
 #include "Layers/MultiMeshLayer.h"
+#include "Layers/FlipbookLayer.h"
 
 #include <imgui/imgui.h>
 
@@ -68,6 +69,7 @@ bool Renderer::init() {
     features.samplerAnisotropy = VK_TRUE;
     features.multiDrawIndirect = VK_TRUE;
     features.drawIndirectFirstInstance = VK_TRUE;
+    //features.shaderSampledImageArrayDynamicIndexing = VK_TRUE;
 
     // pick a physical device (gpu)
     _vrd.physicalDevice = utils::pickPhysicalDevice(_vrd.instance, features);
@@ -144,6 +146,7 @@ bool Renderer::init() {
     _renderLayers.push_back(std::make_shared<ModelLayer>(_renderPass));
     _renderLayers.push_back(std::make_shared<LineLayer>(_renderPass));
     _renderLayers.push_back(std::make_shared<MultiMeshLayer>(_renderPass));
+    _renderLayers.push_back(std::make_shared<FlipbookLayer>(_renderPass));
     _imGuiLayer = std::make_shared<ImGuiLayer>(_renderPass);
     _renderLayers.push_back(_imGuiLayer);
 
@@ -210,10 +213,13 @@ void Renderer::draw() {
     uint32_t imageIndex;
     VK_CHECK(vkAcquireNextImageKHR(_vrd.device, _swapchain, UINT64_MAX, _imageAvailSpres[_currentFiFIndex], nullptr, &imageIndex));
 
-    // TODO : correct DT!!!
+    // update render layers with delta time
+    static double time = 0.f, lastFrame = 0.f;
+    time = glfwGetTime();
     glm::mat4 pv = *_camera.getPVMatrix();
     for (auto layer : _renderLayers)
-        layer->update(0.001f, _currentFiFIndex, pv);
+        layer->update(time - lastFrame, _currentFiFIndex, pv);
+    lastFrame = time;
 
     _imGuiLayer->begin();
     onImGuiRender();

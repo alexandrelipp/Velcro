@@ -13,11 +13,17 @@ struct TexVertex{
     glm::vec2 uv;
 };
 
+struct TexVertex2{
+    glm::vec2 position;
+    glm::vec2 uv;
+};
+
 class FactoryModel {
 public:
     static bool createDuckModel(std::vector<TexVertex>& vertices, std::vector<uint32_t>& indices);
 
     static bool createTexturedSquare(std::vector<TexVertex>& vertices, std::vector<uint32_t>& indices);
+    static bool createTexturedSquare2(std::vector<TexVertex2>& vertices);
 
     static void importFromFile(const std::string& path, std::shared_ptr<Scene> scene);
 

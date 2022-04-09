@@ -14,7 +14,7 @@ layout(push_constant) uniform PushPos{
 //layout(binding = 3) uniform sampler2D texSampler;
 
 // TODO : not be hard coded!
-const vec3 lightPos = vec3(1.0);
+const vec3 lightPos = vec3(10.0);
 
 void main() {
 

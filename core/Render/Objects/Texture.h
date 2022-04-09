@@ -4,6 +4,8 @@
 
 #pragma once
 
+#include "../VulkanRenderDevice.hpp"
+
 #include <vulkan/vulkan.h>
 #include <string>
 
@@ -12,8 +14,7 @@ class Texture {
 public:
     Texture() = default;
 
-    void init(const std::string& filePath, VkDevice device, VkPhysicalDevice physicalDevice,
-              VkQueue queue, VkCommandPool commandPool);
+    void init(const std::string& filePath, VulkanRenderDevice& renderDevice, bool createSampler);
 
     void destroy(VkDevice device);
 
@@ -24,7 +25,7 @@ private:
     VkImage _image = nullptr;
     VkImageView _imageView = nullptr;
     VkDeviceMemory _imageMemory = nullptr;
-    VkSampler _sampler = nullptr; // TODO : do we need one sampler per texture?
+    VkSampler _sampler = nullptr; // TODO : we really want to store the sampler in the texture ??
 };
 
 
