@@ -114,13 +114,11 @@ bool Renderer::init() {
                                                      {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
                                                      VK_IMAGE_TILING_OPTIMAL,
                                                      VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-    auto depth = Factory::createImage(_vrd.device, _vrd.physicalDevice, _swapchainExtent.width, _swapchainExtent.height,
+    std::tie(_depthBuffer.image, _depthBuffer.deviceMemory) = Factory::createImage(_vrd.device, _vrd.physicalDevice, _swapchainExtent.width, _swapchainExtent.height,
                                       _depthBuffer.format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                                       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    _depthBuffer.image = depth.first;
-    _depthBuffer.deviceMemory = depth.second;
 
-    _depthBuffer.imageView = Factory::createImageView(_vrd.device, depth.first, _depthBuffer.format, VK_IMAGE_ASPECT_DEPTH_BIT);
+    _depthBuffer.imageView = Factory::createImageView(_vrd.device, _depthBuffer.image, _depthBuffer.format, VK_IMAGE_ASPECT_DEPTH_BIT);
 
     // create command pool
     VkCommandPoolCreateInfo commandPoolCreateInfo = {
