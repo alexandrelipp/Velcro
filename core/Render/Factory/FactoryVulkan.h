@@ -4,10 +4,12 @@
 
 #pragma once
 
+#include "../VulkanRenderDevice.hpp"
+
 #include <vulkan/vulkan.h>
 #include <optional>
 #include <string>
-#include "../VulkanRenderDevice.hpp"
+#include <variant>
 
 struct ShaderFiles {
     std::optional<std::string> vertex = std::nullopt;
@@ -54,9 +56,16 @@ namespace Factory {
    VkDescriptorPool createDescriptorPool(VkDevice device, uint32_t imageCount,
                                                           uint32_t uniformBufferCount,
                                                           uint32_t storageBufferCount,
-                                                          uint32_t samplerCount);
+                                                          uint32_t samplerImageCount);
 
-   std::tuple<VkDescriptorSetLayout, VkDescriptorPool,std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT>>
-           createDescriptorSets();
+
+   struct Descriptor {
+       VkDescriptorType type;
+       VkShaderStageFlags shaderStage;
+       std::variant<VkDescriptorBufferInfo, std::vector<VkDescriptorImageInfo>> info;
+   };
+   std::tuple<VkDescriptorSetLayout, VkPipelineLayout, VkDescriptorPool,std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT>>
+           createDescriptorSets(const std::vector<Descriptor>& descriptors,
+                                const std::vector<VkPushConstantRange>& pushConstants, VulkanRenderDevice* renderDevice);
 }
 

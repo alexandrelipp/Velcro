@@ -487,7 +487,7 @@ namespace Factory {
     VkDescriptorPool createDescriptorPool(VkDevice device, uint32_t imageCount,
                                                            uint32_t uniformBufferCount,
                                                            uint32_t storageBufferCount,
-                                                           uint32_t samplerCount) {
+                                                           uint32_t samplerImageCount) {
 
         std::vector<VkDescriptorPoolSize> poolSizes;
         if (uniformBufferCount){
@@ -503,10 +503,10 @@ namespace Factory {
             });
         }
 
-        if (samplerCount){
+        if (samplerImageCount){
             poolSizes.push_back(VkDescriptorPoolSize{
                     .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                    .descriptorCount = samplerCount * imageCount
+                    .descriptorCount = samplerImageCount * imageCount
             });
         }
 
@@ -521,8 +521,63 @@ namespace Factory {
         return output;
     }
 
-    std::tuple<VkDescriptorSetLayout, VkDescriptorPool, std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT>>
-    Factory::createDescriptorSets() {
-        return std::tuple<VkDescriptorSetLayout, VkDescriptorPool, std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT>>();
+    std::tuple<VkDescriptorSetLayout, VkPipelineLayout, VkDescriptorPool,std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT>>
+    Factory::createDescriptorSets(const std::vector<Descriptor>& descriptors,
+                                  const std::vector<VkPushConstantRange>& pushConstants,
+                                  VulkanRenderDevice* renderDevice) {
+
+        // temp variables used to count descriptor count by type
+        uint32_t uniformBufferCount = 0, storageBufferCount = 0, samplerImageCount = 0;
+
+        // create layout bindings
+        std::vector<VkDescriptorSetLayoutBinding> layoutBindings(descriptors.size());
+        for (uint32_t i = 0; i < descriptors.size(); ++i){
+            // imageInfos will be nullptr if info is not of type vector(DescriptorImageInfo)
+            auto* imageInfos = std::get_if<std::vector<VkDescriptorImageInfo>>(&descriptors[i].info);
+            layoutBindings[i] = {
+                    .binding = i,
+                    .descriptorType = descriptors[i].type,
+                    .descriptorCount = imageInfos == nullptr ? 1 : (uint32_t)imageInfos->size(),
+                    .stageFlags = descriptors[i].shaderStage
+            };
+
+            // add type of descriptor to descriptor count (only samplerImages can be arrays)
+            switch (descriptors[i].type) {
+                case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+                    uniformBufferCount++;
+                    break;
+                case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+                    storageBufferCount++;
+                    break;
+                case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+                    // imageInfos must exist if of type image sampler!
+                    samplerImageCount += imageInfos->size();
+                    break;
+                default:
+                    VK_ASSERT(false, "Descriptor's type not supported : " + std::string(magic_enum::enum_name(descriptors[i].type)));
+            }
+        }
+
+        // create the descriptor set layout
+        VkDescriptorSetLayoutCreateInfo descriptorLayoutCI = {
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+                .bindingCount = (uint32_t)layoutBindings.size(),
+                .pBindings = layoutBindings.data()
+        };
+        VkDescriptorSetLayout descriptorSetLayout = nullptr;
+        VK_CHECK(vkCreateDescriptorSetLayout(renderDevice->device, &descriptorLayoutCI, nullptr, &descriptorSetLayout));
+
+        // create pipeline layout (descriptor set layout + push constant layout)
+        VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        pipelineLayoutInfo.setLayoutCount = 1;
+        pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+        pipelineLayoutInfo.pushConstantRangeCount = pushConstants.size();
+        pipelineLayoutInfo.pPushConstantRanges = pushConstants.data();
+
+        VkPipelineLayout pipelineLayout = nullptr;
+        VK_CHECK(vkCreatePipelineLayout(renderDevice->device, &pipelineLayoutInfo, nullptr, &pipelineLayout));
+
+        return std::make_tuple(descriptorSetLayout, pipelineLayout,);
     }
 }
