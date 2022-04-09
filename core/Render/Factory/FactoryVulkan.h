@@ -58,11 +58,13 @@ namespace Factory {
                                                           uint32_t storageBufferCount,
                                                           uint32_t samplerImageCount);
 
-
+   /// describes a descriptor. For now the following are supported :
+   /// - Array of textures
+   /// - One descriptor per frame in flight (can be duplicated if ressource is the same for both frame in flight)
    struct Descriptor {
        VkDescriptorType type;
        VkShaderStageFlags shaderStage;
-       std::variant<VkDescriptorBufferInfo, std::vector<VkDescriptorImageInfo>> info;
+       std::variant<std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>, std::vector<VkDescriptorImageInfo>> info;
    };
    std::tuple<VkDescriptorSetLayout, VkPipelineLayout, VkDescriptorPool,std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT>>
            createDescriptorSets(const std::vector<Descriptor>& descriptors,

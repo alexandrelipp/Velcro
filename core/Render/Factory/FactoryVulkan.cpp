@@ -578,6 +578,51 @@ namespace Factory {
         VkPipelineLayout pipelineLayout = nullptr;
         VK_CHECK(vkCreatePipelineLayout(renderDevice->device, &pipelineLayoutInfo, nullptr, &pipelineLayout));
 
-        return std::make_tuple(descriptorSetLayout, pipelineLayout,);
+        // create descriptor pool
+        VkDescriptorPool descriptorPool = Factory::createDescriptorPool(renderDevice->device, MAX_FRAMES_IN_FLIGHT,
+                                                                        uniformBufferCount, storageBufferCount, samplerImageCount);
+
+        std::array<VkDescriptorSetLayout, MAX_FRAMES_IN_FLIGHT> layouts = {descriptorSetLayout, descriptorSetLayout};
+
+        // allocate descriptors from descriptor pool
+        VkDescriptorSetAllocateInfo descriptorSetAI = {
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+                .descriptorPool = descriptorPool,
+                .descriptorSetCount = (uint32_t)layouts.size(),
+                .pSetLayouts = layouts.data()
+        };
+        std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT> descriptorSets{};
+        VK_CHECK(vkAllocateDescriptorSets(renderDevice->device, &descriptorSetAI, descriptorSets.data()));
+
+        // update the descriptor sets with the ressources handles
+        for (uint32_t i = 0; i < descriptorSets.size(); ++i) {
+            // create write descriptor set for each descriptor set
+            std::vector<VkWriteDescriptorSet> writeDescriptorSets(descriptors.size());
+
+            for (uint32_t j = 0; j < descriptors.size(); ++j){
+                auto& descWrite = writeDescriptorSets[j];
+                descWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                descWrite.dstSet = descriptorSets[i];
+                descWrite.dstBinding = j;
+                descWrite.dstArrayElement = 0;
+                descWrite.descriptorType = descriptors[j].type;
+
+                auto* imageInfo = std::get_if<std::vector<VkDescriptorImageInfo>>(&descriptors[j].info);
+                if (imageInfo != nullptr){
+                    descWrite.descriptorCount = imageInfo->size();
+                    descWrite.pImageInfo = imageInfo->data();
+                }
+                else {
+                    descWrite.descriptorCount = 1;
+                    descWrite.pBufferInfo = &std::get<std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>>(descriptors[j].info)[i];
+                }
+            }
+
+            // update the descriptor sets with the created descriptor writes
+            vkUpdateDescriptorSets(renderDevice->device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
+        }
+
+        // return all the handles
+        return std::make_tuple(descriptorSetLayout, pipelineLayout, descriptorPool, descriptorSets);
     }
 }
