@@ -29,6 +29,7 @@ private:
 
     struct Animation {
         uint32_t textureIndex;
+        glm::vec2 offset;
     };
     std::vector<Animation> _animations;
 

@@ -214,6 +214,10 @@ uint32_t Application::getWindowHeight(){
     return _windowData.height;
 }
 
+glm::uvec2 Application::getWindowSize() {
+    return {_windowData.width, _windowData.height};
+}
+
 
 float Application::getAspectRatio() {
     return _windowData.width/(float)_windowData.height;

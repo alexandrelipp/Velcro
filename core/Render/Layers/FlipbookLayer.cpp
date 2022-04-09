@@ -9,6 +9,7 @@
 #include "../Factory/FactoryModel.h"
 
 #include "../../Utils/UtilsTemplate.h"
+#include "../../Application.h"
 
 FlipbookLayer::FlipbookLayer(VkRenderPass renderPass) {
     // create a vulkan texture for every image of the flipbook
@@ -37,7 +38,7 @@ FlipbookLayer::FlipbookLayer(VkRenderPass renderPass) {
                     .vertex = "FlipbookV.spv",
                     .fragment = "FlipbookF.spv"
             },
-            .enableTestTest = VK_FALSE, // disable depth test! (won't really matter since we are writing at min depth anyway (0)
+            .enableDepthTest = VK_FALSE, // disable depth test! (won't really matter since we are writing at min depth anyway (0)
 
     };
     _graphicsPipeline = Factory::createGraphicsPipeline(_vrd->device, _swapchainExtent, renderPass, _pipelineLayout, props);
@@ -52,8 +53,11 @@ FlipbookLayer::~FlipbookLayer() {
 void FlipbookLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) {
     if (_animations.empty())
         return;
-    _animations.back().textureIndex += 1;
-    _animations.back().textureIndex %= _textures.size();
+    auto& lastAnim = _animations.back();
+    lastAnim.textureIndex += 1;
+
+    if (lastAnim.textureIndex == _textures.size())
+        _animations.pop_back();
 }
 
 void FlipbookLayer::onEvent(Event& event) {
@@ -61,11 +65,18 @@ void FlipbookLayer::onEvent(Event& event) {
         case Event::Type::MOUSE_PRESSED:{
             MouseButtonEvent* mouseButtonEvent = (MouseButtonEvent*)&event;
             switch (mouseButtonEvent->getMouseButton()) {
-                case MouseCode::ButtonLeft:
+                case MouseCode::ButtonLeft:{
+                    // calculate screen coordinate offset : http://vulkano.rs/guide/vertex-input
+                    glm::vec2 pos = Application::getApp()->getMousePos();
+                    glm::vec2 size = Application::getApp()->getWindowSize();
+                    glm::vec2 vulkanScreenCoordinate = pos/size * 2.f - 1.f;
+
                     _animations.push_back({
-                        .textureIndex = 0
+                        .textureIndex = 0,
+                        .offset =  vulkanScreenCoordinate
                     });
                     break;
+                }
                 default:
                     break;
             }
@@ -81,7 +92,7 @@ void FlipbookLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t co
         return;
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout, 0, 1, &_descriptorSets[commandBufferIndex], 0, nullptr);
-    vkCmdPushConstants(commandBuffer, _pipelineLayout, _pushConstantRange.stageFlags, _pushConstantRange.offset, _pushConstantRange.size, &_animations.back().textureIndex);
+    vkCmdPushConstants(commandBuffer, _pipelineLayout, _pushConstantRange.stageFlags, _pushConstantRange.offset, _pushConstantRange.size, &_animations.back());
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 }
 
@@ -118,7 +129,7 @@ void FlipbookLayer::createPipelineLayout() {
     _pushConstantRange = {
             .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
             .offset = 0,               // must be multiple of 4 (offset into push constant block)
-            .size = sizeof(uint32_t)   // must be multiple of 4
+            .size = sizeof(Animation)   // must be multiple of 4
     };
 
     // create pipeline layout (used for uniform and push constants)

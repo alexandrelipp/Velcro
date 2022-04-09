@@ -310,14 +310,14 @@ namespace Factory {
 
         VkPipelineDepthStencilStateCreateInfo depthStencilCI = {
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-                .depthTestEnable = props.enableTestTest,
-                .depthWriteEnable = props.enableTestTest, // TODO : do we want to distinct write + enable depth test ?
+                .depthTestEnable = props.enableDepthTest,
+                .depthWriteEnable = props.enableDepthTest, // TODO : do we want to distinct write + enable depth test ?
                 .depthCompareOp = VK_COMPARE_OP_LESS,
                 .depthBoundsTestEnable = VK_FALSE,      // if enabled, depth test will only pass when inside the given bounds
                 .stencilTestEnable = VK_FALSE,
         };
 
-        // set up color blending (disabled for now)
+        // set up default color blending
         VkPipelineColorBlendAttachmentState colorBlendAttachment = {
                 .blendEnable = VK_FALSE,
                 .colorWriteMask = VK_COLOR_COMPONENT_R_BIT |
@@ -327,13 +327,27 @@ namespace Factory {
 
         };
 
+        // enable color blending if requested
+        if (props.enableBlending){
+            // these params accomplish these operations :
+            // finalColor.rgb = newAlpha * newColor + (1 - newAlpha) * oldColor;
+            // finalColor.a = newAlpha.a;
+            colorBlendAttachment.blendEnable = VK_TRUE;
+            colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_COLOR;
+            colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
+            colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;
+            colorBlendAttachment.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+            colorBlendAttachment.dstAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+            colorBlendAttachment.alphaBlendOp = VK_BLEND_OP_ADD;
+        }
+
         VkPipelineColorBlendStateCreateInfo colorBlendCI = {
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-                .logicOpEnable = VK_FALSE,
+                .logicOpEnable = VK_FALSE,  // alternate way of blending is by using a logic operation
                 .logicOp = VK_LOGIC_OP_COPY,
                 .attachmentCount = 1,
                 .pAttachments = &colorBlendAttachment,
-                //.blendConstants = {0.f, 0.f, 0.f, 0.f}
+                .blendConstants = {0.f, 0.f, 0.f, 0.f}
         };
 
         VkGraphicsPipelineCreateInfo pipelineCI = {
