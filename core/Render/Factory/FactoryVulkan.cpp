@@ -304,7 +304,7 @@ namespace Factory {
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
                 .pNext = nullptr,
                 .flags = 0u,
-                .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
+                .rasterizationSamples = VK_SAMPLE_COUNT_32_BIT,
                 .sampleShadingEnable = VK_FALSE,
         };
 
