@@ -68,13 +68,15 @@ private:
     std::array<VkSemaphore, MAX_FRAMES_IN_FLIGHT> _renderFinishedSpres = {nullptr};
     bool _currentFiFIndex = true; ///< Index of the current frame in flight being recorded on CPU
 
-    // DepthBuffer
-    struct DepthBuffer{
+    /// AttachmentBuffer, used by multisampled color buffer and depth/stencil buffer
+    struct AttachmentBuffer{
         VkImage image = nullptr;
         VkImageView imageView = nullptr;
         VkDeviceMemory deviceMemory = nullptr;
         VkFormat format;
-    } _depthBuffer;
+    };
+    AttachmentBuffer _depthBuffer;
+    AttachmentBuffer _colorBuffer;
 
     // Render layers
     std::vector<std::shared_ptr<RenderLayer>> _renderLayers;
