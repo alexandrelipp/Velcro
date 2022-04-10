@@ -36,7 +36,8 @@ ModelLayer::ModelLayer(VkRenderPass renderPass) : RenderLayer() {
             .shaders =  {
                     .vertex = "vert.spv",
                     .fragment = "frag.spv"
-            }
+            },
+            .sampleCountMSAA = _vrd->sampleCount
     };
     _graphicsPipeline = Factory::createGraphicsPipeline(_vrd->device, _swapchainExtent, renderPass, _pipelineLayout, props);
 }

@@ -304,8 +304,8 @@ namespace Factory {
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
                 .pNext = nullptr,
                 .flags = 0u,
-                .rasterizationSamples = VK_SAMPLE_COUNT_8_BIT, // TODO : take as props!!
-                .sampleShadingEnable = VK_FALSE,
+                .rasterizationSamples = props.sampleCountMSAA,
+                .sampleShadingEnable = VK_FALSE, // TODO : take as props ? Note : also needs to be enabled in the device features
         };
 
         VkPipelineDepthStencilStateCreateInfo depthStencilCI = {

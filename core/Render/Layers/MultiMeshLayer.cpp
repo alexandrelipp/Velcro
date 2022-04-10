@@ -82,7 +82,8 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
             .shaders =  {
                     .vertex = "multiV.spv",
                     .fragment = "multiF.spv"
-            }
+            },
+            .sampleCountMSAA = _vrd->sampleCount
     };
     _graphicsPipeline = Factory::createGraphicsPipeline(_vrd->device, _swapchainExtent, renderPass, _pipelineLayout, props);
 }
