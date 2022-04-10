@@ -49,6 +49,11 @@ Renderer::~Renderer() {
     vkDestroyImage(_vrd.device, _depthBuffer.image, nullptr);
     vkFreeMemory(_vrd.device, _depthBuffer.deviceMemory, nullptr);
 
+    // free color buffer
+    vkDestroyImageView(_vrd.device, _colorBuffer.imageView, nullptr);
+    vkDestroyImage(_vrd.device, _colorBuffer.image, nullptr);
+    vkFreeMemory(_vrd.device, _colorBuffer.deviceMemory, nullptr);
+
     vkDestroySwapchainKHR(_vrd.device, _swapchain, nullptr);
     vkDestroySurfaceKHR(_vrd.instance, _surface, nullptr);
     vkDestroyDevice(_vrd.device, nullptr);
@@ -417,11 +422,11 @@ void Renderer::createRenderPass(VkFormat swapchainFormat){
         .flags = 0u,
         .format = swapchainFormat,
         .samples = VK_SAMPLE_COUNT_1_BIT,
-        .loadOp = VK_ATTACHMENT_LOAD_OP_LOAD,
-        .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE, // TODO : why don't we care??
+        .storeOp = VK_ATTACHMENT_STORE_OP_STORE,
         .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
         .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        .initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED, // TODO : why is initial layout not color_attahcment_optimal (output of other)
         .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, // image ready for swapchain usage
     };
 
