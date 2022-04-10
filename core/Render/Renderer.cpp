@@ -124,7 +124,6 @@ bool Renderer::init() {
             = Factory::createImage(&_vrd, _vrd.sampleCount, _swapchainExtent.width, _swapchainExtent.height, _colorBuffer.format,
                                VK_IMAGE_TILING_OPTIMAL,
                                VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-                               //VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, // TODO : change for transient?
                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     _colorBuffer.imageView = Factory::createImageView(_vrd.device, _colorBuffer.image, _colorBuffer.format, VK_IMAGE_ASPECT_COLOR_BIT);
 
