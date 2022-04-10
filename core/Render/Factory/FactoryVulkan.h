@@ -38,6 +38,7 @@ namespace Factory {
        ShaderFiles shaders;
        VkBool32 enableDepthTest = VK_TRUE;
        VkBool32 enableBlending = VK_TRUE;
+       VkSampleCountFlagBits sampleCountMSAA = VK_SAMPLE_COUNT_1_BIT;
    };
    VkPipeline createGraphicsPipeline(VkDevice device, VkExtent2D& extent, VkRenderPass renderPass,
                                      VkPipelineLayout pipelineLayout, const GraphicsPipelineProps& props);
@@ -46,7 +47,7 @@ namespace Factory {
    std::pair<VkBuffer, VkDeviceMemory> createBuffer(VkDevice device, VkPhysicalDevice physicalDevice,
        VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties);
 
-   std::pair<VkImage, VkDeviceMemory> createImage(VkDevice device, VkPhysicalDevice physicalDevice,
+   std::pair<VkImage, VkDeviceMemory> createImage(VulkanRenderDevice* vrd, VkSampleCountFlagBits sampleCount,
                                                   uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
                                                   VkImageUsageFlags usage, VkMemoryPropertyFlags properties);
 

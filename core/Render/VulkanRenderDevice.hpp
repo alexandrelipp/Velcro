@@ -26,4 +26,6 @@ struct VulkanRenderDevice final{
     VkCommandPool commandPool = nullptr;
     std::array<VkCommandBuffer, MAX_FRAMES_IN_FLIGHT> commandBuffers = {nullptr};
 
+    // pipeline
+    VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT;
 };

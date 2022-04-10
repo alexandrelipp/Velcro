@@ -49,6 +49,11 @@ Renderer::~Renderer() {
     vkDestroyImage(_vrd.device, _depthBuffer.image, nullptr);
     vkFreeMemory(_vrd.device, _depthBuffer.deviceMemory, nullptr);
 
+    // free color buffer
+    vkDestroyImageView(_vrd.device, _colorBuffer.imageView, nullptr);
+    vkDestroyImage(_vrd.device, _colorBuffer.image, nullptr);
+    vkFreeMemory(_vrd.device, _colorBuffer.deviceMemory, nullptr);
+
     vkDestroySwapchainKHR(_vrd.device, _swapchain, nullptr);
     vkDestroySurfaceKHR(_vrd.instance, _surface, nullptr);
     vkDestroyDevice(_vrd.device, nullptr);
@@ -91,6 +96,9 @@ bool Renderer::init() {
     // retreive queue handle
     vkGetDeviceQueue(_vrd.device, _vrd.graphicsQueueFamilyIndex, 0, &_vrd.graphicsQueue);
 
+    // get the max sample count. Note : we could decrease this number for better performance
+    _vrd.sampleCount = utils::getMaximumSampleCount(_vrd.physicalDevice);
+
     // pick a format and a present mode for the surface
     VkSurfaceFormatKHR surfaceFormat = utils::pickSurfaceFormat(_vrd.physicalDevice, _surface);
 
@@ -110,14 +118,23 @@ bool Renderer::init() {
         _swapchainImageViews[i] = Factory::createImageView(_vrd.device, _swapchainImages[i], surfaceFormat.format, flags);
     }
 
+    // create color buffer attachment
+    _colorBuffer.format = surfaceFormat.format;
+    std::tie(_colorBuffer.image, _colorBuffer.deviceMemory)
+            = Factory::createImage(&_vrd, _vrd.sampleCount, _swapchainExtent.width, _swapchainExtent.height, _colorBuffer.format,
+                               VK_IMAGE_TILING_OPTIMAL,
+                               VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+                               VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    _colorBuffer.imageView = Factory::createImageView(_vrd.device, _colorBuffer.image, _colorBuffer.format, VK_IMAGE_ASPECT_COLOR_BIT);
+
+    // create depth buffer attachment
     _depthBuffer.format = utils::findSupportedFormat(_vrd.physicalDevice,
                                                      {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
                                                      VK_IMAGE_TILING_OPTIMAL,
                                                      VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-    std::tie(_depthBuffer.image, _depthBuffer.deviceMemory) = Factory::createImage(_vrd.device, _vrd.physicalDevice, _swapchainExtent.width, _swapchainExtent.height,
-                                      _depthBuffer.format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+    std::tie(_depthBuffer.image, _depthBuffer.deviceMemory) = Factory::createImage(&_vrd, _vrd.sampleCount, _swapchainExtent.width,
+               _swapchainExtent.height,_depthBuffer.format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                                       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-
     _depthBuffer.imageView = Factory::createImageView(_vrd.device, _depthBuffer.image, _depthBuffer.format, VK_IMAGE_ASPECT_DEPTH_BIT);
 
     // create command pool
@@ -138,9 +155,11 @@ bool Renderer::init() {
         .commandBufferCount = MAX_FRAMES_IN_FLIGHT,
     };
     VK_CHECK(vkAllocateCommandBuffers(_vrd.device, &allocateInfo, _vrd.commandBuffers.data()));
-   
+
+    // create the main render pass
     createRenderPass(surfaceFormat.format);
 
+    // push all layers
     _renderLayers.push_back(std::make_shared<ModelLayer>(_renderPass));
     _renderLayers.push_back(std::make_shared<LineLayer>(_renderPass));
     _renderLayers.push_back(std::make_shared<MultiMeshLayer>(_renderPass));
@@ -150,7 +169,7 @@ bool Renderer::init() {
 
     // create framebuffers
     for (int i = 0; i < FB_COUNT; ++i) {
-        std::array<VkImageView, 2> attachments = {_swapchainImageViews[i], _depthBuffer.imageView};
+        std::array<VkImageView, 3> attachments = {_colorBuffer.imageView, _depthBuffer.imageView, _swapchainImageViews[i]};
         VkFramebufferCreateInfo framebufferCI = {
         .sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
         .flags = 0u,
@@ -359,19 +378,22 @@ void Renderer::createSwapchain(const VkSurfaceFormatKHR& surfaceFormat){
 }
 
 void Renderer::createRenderPass(VkFormat swapchainFormat){
-    std::array<VkAttachmentDescription, 2> attachments{};
+    std::array<VkAttachmentDescription, 3> attachments{};
+
+    // attachment associated with _colorBuffer. It is a multisampled buffer that we first render too.
+    // We will then resolove this buffer to a single sampled buffer (in swapchain) to present to screen
     attachments[0] = {
       .flags = 0u,
       .format = swapchainFormat,
-      .samples = VK_SAMPLE_COUNT_1_BIT, // not using multisampling
-      .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR, // operation on color and depth at beginning of subpass
-      .storeOp = VK_ATTACHMENT_STORE_OP_STORE, //  Rendered contents will be stored in memory and can be read later
+      .samples = _vrd.sampleCount,
+      .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR, // operation on color and depth at beginning of subpass : clear color buffer
+      //  operation after subpass. We don't care since the image to be presented will be in the singled sampled swapchain buffer
+      .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
       .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,   // we don't use stencil
       .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,  // we don't use stencil
       .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED, // layout of the image subressource when subpass begin. We don't care ; we clear it anyway
-      .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, // layout to be transitioned automatically when render pass instance ends
-                                                              //We want the image to be ready for presentation using the swap chain after rendering
-
+      // multisampled images cannot be presented directly. They are first resolved to an image then presented
+      .finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // FIXME : This could probably be undefined as well since we don't use the attachment after rendering
     };
 
     VkAttachmentReference colorRef = {
@@ -379,21 +401,41 @@ void Renderer::createRenderPass(VkFormat swapchainFormat){
         .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
     };
 
+    // attachment associated with depth buffer
     attachments[1] = {
         .flags = 0u,
         .format = _depthBuffer.format,
-        .samples = VK_SAMPLE_COUNT_1_BIT,
-        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,
+        .samples = _vrd.sampleCount,
+        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,      // clear depth buffer at beginning of subpass
         .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
         .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
         .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
         .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
-        .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+        .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL // layout to be transitioned automatically when render pass instance ends
     };
 
     VkAttachmentReference depthRef = {
             .attachment = 1,
             .layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+    };
+
+    // attachment associated with color image of the swapchain that will be presented
+    attachments[2] = {
+        .flags = 0u,
+        .format = swapchainFormat,
+        .samples = VK_SAMPLE_COUNT_1_BIT,          // must be singled sampled for presentation
+        .loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE, // we don't care since : (I think) : every pixel will be overwritten anyway when resolving from multisample -> single sampled
+        .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,   // Store the image for presentation
+        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED, // layout of attachment at beggining of subpass
+        .finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR, // image ready for swapchain usage
+    };
+
+    // resolving from multi sample -> single sample in order to be presented
+    VkAttachmentReference colorAttachmentResolve = {
+            .attachment = 2,
+            .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
     };
 
     // a render pass can consist of multiple subpasses. In our case we only use 1
@@ -404,7 +446,8 @@ void Renderer::createRenderPass(VkFormat swapchainFormat){
         .pInputAttachments = nullptr,
         .colorAttachmentCount = 1,
         .pColorAttachments = &colorRef,  // The index of the attachment in this array is directly referenced from 
-                                         //the fragment shader with the layout(location = 0) out vec4 outColor directive!
+                                         //the fragment shader with the layout(location = 0) out vec4 outColor direct
+        .pResolveAttachments = &colorAttachmentResolve,
         .pDepthStencilAttachment = &depthRef
     };
 
@@ -463,7 +506,7 @@ void Renderer::recordCommandBuffer(uint32_t commandBufferIndex, VkFramebuffer fr
             },
             {
                 .depthStencil = {.depth = 1.f}
-            }
+            },
     };
     VkRenderPassBeginInfo beginCI = {
         .sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,

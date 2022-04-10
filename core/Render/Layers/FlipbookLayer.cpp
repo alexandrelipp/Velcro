@@ -96,7 +96,7 @@ FlipbookLayer::FlipbookLayer(VkRenderPass renderPass) {
                     .fragment = "FlipbookF.spv"
             },
             .enableDepthTest = VK_FALSE, // disable depth test! (won't really matter since we are writing at min depth anyway (0)
-
+            .sampleCountMSAA = _vrd->sampleCount
     };
     _graphicsPipeline = Factory::createGraphicsPipeline(_vrd->device, _swapchainExtent, renderPass, _pipelineLayout, props);
 }

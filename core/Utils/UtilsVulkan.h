@@ -42,4 +42,7 @@ namespace utils {
                                  VkImageTiling tiling, VkFormatFeatureFlags features);
     //VkFormat findDepthFormat(VkPhysicalDevice physicalDevice);
     bool hasStencilComponent(VkFormat format);
+
+    /// Returns the maximum sample count (depth + color) for the given GPU
+    VkSampleCountFlagBits getMaximumSampleCount(VkPhysicalDevice physicalDevice);
 }
