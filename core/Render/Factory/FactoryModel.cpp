@@ -72,10 +72,11 @@ void FactoryModel::importFromFile(const std::string& path, std::shared_ptr<Scene
     if (scene == nullptr)
         throw std::runtime_error("Scene is null");
 
+    // Note : assimp winding order is by default counterclockwise
     _aiScene = importer.ReadFile(path, aiProcess_Triangulate
                                        | aiProcess_JoinIdenticalVertices // without this, index buffer is useless
-                                       | aiProcess_FlipWindingOrder      // by default counter clockwise/ vulkan wants clockwise // TODO: really??
                                        | aiProcess_GenNormals            // generate normals if not already in model
+                                       // TODO : add flags from rendering coockbook!! or other!
     );
 
     // TODO : prob want to remove this
