@@ -315,6 +315,7 @@ namespace utils {
         return format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT;
     }
 
+    /// Returns the maximum sample count (depth + color) for the given GPU
     VkSampleCountFlagBits getMaximumSampleCount(VkPhysicalDevice physicalDevice) {
         VkPhysicalDeviceProperties physicalDeviceProperties;
         vkGetPhysicalDeviceProperties(physicalDevice, &physicalDeviceProperties);
