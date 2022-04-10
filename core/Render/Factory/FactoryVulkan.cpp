@@ -304,7 +304,7 @@ namespace Factory {
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
                 .pNext = nullptr,
                 .flags = 0u,
-                .rasterizationSamples = VK_SAMPLE_COUNT_32_BIT,
+                .rasterizationSamples = VK_SAMPLE_COUNT_8_BIT, // TODO : take as props!!
                 .sampleShadingEnable = VK_FALSE,
         };
 
@@ -412,7 +412,7 @@ namespace Factory {
         return std::make_pair(buffer, bufferMemory);
     }
 
-    std::pair<VkImage, VkDeviceMemory> createImage(VkDevice device, VkPhysicalDevice physicalDevice,
+    std::pair<VkImage, VkDeviceMemory> createImage(VulkanRenderDevice* vrd, VkSampleCountFlagBits sampleCount,
                                                    uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
                                             VkImageUsageFlags usage, VkMemoryPropertyFlags properties) {
         // create image
@@ -428,7 +428,7 @@ namespace Factory {
                 },
                 .mipLevels = 1,
                 .arrayLayers = 1,
-                .samples = VK_SAMPLE_COUNT_1_BIT,
+                .samples = sampleCount,
                 .tiling = tiling,
                 .usage = usage,
                 .sharingMode = VK_SHARING_MODE_EXCLUSIVE,
@@ -436,22 +436,22 @@ namespace Factory {
         };
 
         VkImage image = nullptr;
-        VK_CHECK(vkCreateImage(device, &imageCreateInfo, nullptr, &image));
+        VK_CHECK(vkCreateImage(vrd->device, &imageCreateInfo, nullptr, &image));
 
         // allocate memory
         VkMemoryRequirements memoryRequirements;
-        vkGetImageMemoryRequirements(device, image, &memoryRequirements);
+        vkGetImageMemoryRequirements(vrd->device, image, &memoryRequirements);
         VkMemoryAllocateInfo allocateInfo = {
                 .sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
                 .allocationSize = memoryRequirements.size,
-                .memoryTypeIndex = utils::findMemoryType(physicalDevice, memoryRequirements.memoryTypeBits, properties)
+                .memoryTypeIndex = utils::findMemoryType(vrd->physicalDevice, memoryRequirements.memoryTypeBits, properties)
         };
 
         VkDeviceMemory deviceMemory = nullptr;
-        VK_CHECK(vkAllocateMemory(device, &allocateInfo, nullptr, &deviceMemory));
+        VK_CHECK(vkAllocateMemory(vrd->device, &allocateInfo, nullptr, &deviceMemory));
 
         // bind image to memory
-        VK_CHECK(vkBindImageMemory(device, image, deviceMemory, 0));
+        VK_CHECK(vkBindImageMemory(vrd->device, image, deviceMemory, 0));
 
         return std::make_pair(image, deviceMemory);
     }

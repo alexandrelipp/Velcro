@@ -51,7 +51,7 @@ ImGuiLayer::ImGuiLayer(VkRenderPass renderPass) {
             .Subpass = 0,
             .MinImageCount = 2,
             .ImageCount = FB_COUNT,
-            .MSAASamples = VK_SAMPLE_COUNT_1_BIT,
+            .MSAASamples = _vrd->sampleCount,
             .Allocator = nullptr
     };
 
