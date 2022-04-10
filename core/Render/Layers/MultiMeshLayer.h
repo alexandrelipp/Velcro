@@ -28,8 +28,7 @@ public:
     virtual void onImGuiRender() override;
 
 private:
-    void createPipelineLayout();
-    void createDescriptorSets();
+    void createDescriptors();
 
     void displayHierarchy(int entity);
     void displayGuizmo(int selectedEntity);

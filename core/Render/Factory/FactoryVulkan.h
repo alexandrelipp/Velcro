@@ -4,9 +4,12 @@
 
 #pragma once
 
+#include "../VulkanRenderDevice.hpp"
+
 #include <vulkan/vulkan.h>
 #include <optional>
 #include <string>
+#include <variant>
 
 struct ShaderFiles {
     std::optional<std::string> vertex = std::nullopt;
@@ -47,14 +50,24 @@ namespace Factory {
                                                   uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling,
                                                   VkImageUsageFlags usage, VkMemoryPropertyFlags properties);
 
-    VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
+   VkImageView createImageView(VkDevice device, VkImage image, VkFormat format, VkImageAspectFlags aspectFlags);
 
    /// descriptors
    VkDescriptorPool createDescriptorPool(VkDevice device, uint32_t imageCount,
                                                           uint32_t uniformBufferCount,
                                                           uint32_t storageBufferCount,
-                                                          uint32_t samplerCount);
+                                                          uint32_t samplerImageCount);
+
+   /// describes a descriptor. For now the following are supported :
+   /// - Array of textures
+   /// - One descriptor per frame in flight (can be duplicated if ressource is the same for both frame in flight)
+   struct Descriptor {
+       VkDescriptorType type;
+       VkShaderStageFlags shaderStage;
+       std::variant<std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>, std::vector<VkDescriptorImageInfo>> info;
+   };
+   std::tuple<VkDescriptorSetLayout, VkPipelineLayout, VkDescriptorPool, std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT>>
+           createDescriptorSets(VulkanRenderDevice* renderDevice, const std::vector<Descriptor>& descriptors,
+                                const std::vector<VkPushConstantRange>& pushConstants);
 }
-
-
 

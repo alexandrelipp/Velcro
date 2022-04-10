@@ -50,9 +50,45 @@ FlipbookLayer::FlipbookLayer(VkRenderPass renderPass) {
     _vertices.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool, vertices.data(),
                       verticesSize);
 
+    // create fragment push constant for texture index and animation screen offset
+    _pushConstantRange = {
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+            .offset = 0,               // must be multiple of 4 (offset into push constant block)
+            .size = sizeof(Animation)   // must be multiple of 4
+    };
+
+    // create descriptor image info for textures
+    std::vector<VkDescriptorImageInfo> imagesInfo(_textures.size());
+    for (uint32_t i = 0; i < imagesInfo.size(); ++i){
+        imagesInfo[i] = {
+                .sampler = _sampler,
+                .imageView = _textures[i].getImageView(),
+                .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+        };
+    }
+
+    // describe descriptors
+    std::vector<Factory::Descriptor> descriptors = {
+            {
+                    .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                    .shaderStage = VK_SHADER_STAGE_VERTEX_BIT,
+                    .info = std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>{
+                            VkDescriptorBufferInfo {_vertices.getBuffer(), 0, _vertices.getSize()},
+                            VkDescriptorBufferInfo {_vertices.getBuffer(), 0, _vertices.getSize()},
+                    }
+            },
+            {
+                    .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                    .shaderStage = VK_SHADER_STAGE_FRAGMENT_BIT,
+                    .info = imagesInfo
+            }
+    };
+
+    // create descriptors
+    std::tie(_descriptorSetLayout, _pipelineLayout, _descriptorPool, _descriptorSets) =
+            Factory::createDescriptorSets(_vrd, descriptors, {_pushConstantRange});
+
     // create graphics pipeline
-    createPipelineLayout();
-    createDescriptorSets();
     Factory::GraphicsPipelineProps props = {
             .primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
             .shaders = {
@@ -120,105 +156,4 @@ void FlipbookLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t co
 }
 
 void FlipbookLayer::onImGuiRender() {}
-
-void FlipbookLayer::createPipelineLayout() {
-    // create the pipeline layout
-    std::array<VkDescriptorSetLayoutBinding, 2> layoutBindings = {
-            VkDescriptorSetLayoutBinding{
-                    .binding = 0,
-                    .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                    .descriptorCount = 1,
-                    .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
-            },
-            VkDescriptorSetLayoutBinding{
-                    .binding = 1,
-                    .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                    .descriptorCount = (uint32_t)_textures.size(),
-                    .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
-            },
-    };
-
-    VkDescriptorSetLayoutCreateInfo descriptorLayoutCI = {
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            .bindingCount = layoutBindings.size(),
-            .pBindings = layoutBindings.data()
-    };
-
-    VK_CHECK(vkCreateDescriptorSetLayout(_vrd->device, &descriptorLayoutCI, nullptr, &_descriptorSetLayout));
-
-    // create fragment push constant for texture index and animation screen offset
-    _pushConstantRange = {
-            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-            .offset = 0,               // must be multiple of 4 (offset into push constant block)
-            .size = sizeof(Animation)   // must be multiple of 4
-    };
-
-    // create pipeline layout (used for uniform and push constants)
-    VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
-    pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-    pipelineLayoutInfo.setLayoutCount = 1;
-    pipelineLayoutInfo.pSetLayouts = &_descriptorSetLayout;
-    pipelineLayoutInfo.pushConstantRangeCount = 1;
-    pipelineLayoutInfo.pPushConstantRanges = &_pushConstantRange;
-
-    VK_CHECK(vkCreatePipelineLayout(_vrd->device, &pipelineLayoutInfo, nullptr, &_pipelineLayout));
-
-}
-
-void FlipbookLayer::createDescriptorSets() {
-    _descriptorPool = Factory::createDescriptorPool(_vrd->device, MAX_FRAMES_IN_FLIGHT, _textures.size(), 0, 1);
-
-    std::array<VkDescriptorSetLayout, MAX_FRAMES_IN_FLIGHT> layouts = {_descriptorSetLayout, _descriptorSetLayout};
-
-    VkDescriptorSetAllocateInfo descriptorSetAI = {
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            .descriptorPool = _descriptorPool,
-            .descriptorSetCount = (uint32_t)layouts.size(),
-            .pSetLayouts = layouts.data()
-    };
-
-    VK_CHECK(vkAllocateDescriptorSets(_vrd->device, &descriptorSetAI, _descriptorSets.data()));
-
-    std::vector<VkDescriptorImageInfo> textureDescriptors(_textures.size());
-    for (int i = 0; i < _textures.size(); ++i){
-        textureDescriptors[i].imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        textureDescriptors[i].imageView = _textures[i].getImageView();
-        textureDescriptors[i].sampler = _sampler;
-    }
-
-    for (size_t i = 0; i < _descriptorSets.size(); ++i) {
-        // create write descriptor set for each descriptor set
-        std::vector<VkWriteDescriptorSet> writeDescriptorSets;
-
-        // push back descriptor write for UBO (1 buffer/image)
-        VkDescriptorBufferInfo bufferInfo = {
-                .buffer = _vertices.getBuffer(),
-                .offset = 0,
-                .range = _vertices.getSize()
-        };
-        writeDescriptorSets.push_back({
-                                              .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                              .dstSet = _descriptorSets[i],
-                                              .dstBinding = 0,
-                                              .dstArrayElement = 0,
-                                              .descriptorCount = 1,
-                                              .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                              .pBufferInfo = &bufferInfo
-                                      });
-
-        // push back descriptors for textures
-        writeDescriptorSets.push_back({
-                                              .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                              .dstSet = _descriptorSets[i],
-                                              .dstBinding = 1,
-                                              .dstArrayElement = 0,
-                                              .descriptorCount = (uint32_t)textureDescriptors.size(),
-                                              .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                                              .pImageInfo = textureDescriptors.data()
-                                      });
-
-        // update the descriptor sets with the created decriptor writes
-        vkUpdateDescriptorSets(_vrd->device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
-    }
-}
 

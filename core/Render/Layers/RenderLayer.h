@@ -6,6 +6,7 @@
 
 #include "../VulkanRenderDevice.hpp"
 #include "../../events/Event.h"
+#include "../Factory/FactoryVulkan.h"
 
 #include <vulkan/vulkan_core.h>
 #include <glm/glm.hpp>
@@ -25,6 +26,9 @@ public:
 
 protected:
     explicit RenderLayer();
+
+    // Reusable helper methods for render layers
+    // TODO : add bind!!
 
 
 public:

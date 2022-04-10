@@ -4,10 +4,8 @@
 
 void UniformBuffer::init(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t size){
     _size = size;
-    auto buffer = Factory::createBuffer(device, physicalDevice, size,
+    std::tie(_buffer, _bufferMemory) = Factory::createBuffer(device, physicalDevice, size,
 		VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-	_buffer = buffer.first;
-	_bufferMemory = buffer.second;
 }
 
 void UniformBuffer::destroy(VkDevice device){
