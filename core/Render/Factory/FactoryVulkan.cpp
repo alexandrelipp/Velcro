@@ -522,9 +522,8 @@ namespace Factory {
     }
 
     std::tuple<VkDescriptorSetLayout, VkPipelineLayout, VkDescriptorPool, std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT>>
-    Factory::createDescriptorSets(const std::vector<Descriptor>& descriptors,
-                                  const std::vector<VkPushConstantRange>& pushConstants,
-                                  VulkanRenderDevice* renderDevice) {
+    Factory::createDescriptorSets(VulkanRenderDevice* renderDevice, const std::vector<Descriptor>& descriptors,
+                                  const std::vector<VkPushConstantRange>& pushConstants) {
 
         // temp variables used to count descriptor count by type
         uint32_t uniformBufferCount = 0, storageBufferCount = 0, samplerImageCount = 0;

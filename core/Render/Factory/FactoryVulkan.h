@@ -67,7 +67,7 @@ namespace Factory {
        std::variant<std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>, std::vector<VkDescriptorImageInfo>> info;
    };
    std::tuple<VkDescriptorSetLayout, VkPipelineLayout, VkDescriptorPool, std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT>>
-           createDescriptorSets(const std::vector<Descriptor>& descriptors,
-                                const std::vector<VkPushConstantRange>& pushConstants, VulkanRenderDevice* renderDevice);
+           createDescriptorSets(VulkanRenderDevice* renderDevice, const std::vector<Descriptor>& descriptors,
+                                const std::vector<VkPushConstantRange>& pushConstants);
 }
 

@@ -86,7 +86,7 @@ FlipbookLayer::FlipbookLayer(VkRenderPass renderPass) {
 
     // create descriptors
     std::tie(_descriptorSetLayout, _pipelineLayout, _descriptorPool, _descriptorSets) =
-            Factory::createDescriptorSets(descriptors, {_pushConstantRange}, _vrd);
+            Factory::createDescriptorSets(_vrd, descriptors, {_pushConstantRange});
 
     // create graphics pipeline
     Factory::GraphicsPipelineProps props = {

@@ -256,7 +256,7 @@ void MultiMeshLayer::createDescriptors() {
 
     // create descriptors
     std::tie(_descriptorSetLayout, _pipelineLayout, _descriptorPool, _descriptorSets) =
-            Factory::createDescriptorSets(descriptors, {_cameraPosPC}, _vrd);
+            Factory::createDescriptorSets(_vrd, descriptors, {_cameraPosPC});
 }
 
 void MultiMeshLayer::displayHierarchy(int entity) {

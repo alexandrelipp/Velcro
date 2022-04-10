@@ -39,7 +39,7 @@ LineLayer::LineLayer(VkRenderPass renderPass) : RenderLayer() {
 
     // create descriptors
     std::tie(_descriptorSetLayout, _pipelineLayout, _descriptorPool, _descriptorSets) =
-            Factory::createDescriptorSets(descriptors, {}, _vrd);
+            Factory::createDescriptorSets(_vrd, descriptors, {});
 
     Factory::GraphicsPipelineProps props = {
             .primitiveTopology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
