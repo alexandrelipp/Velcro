@@ -521,7 +521,7 @@ namespace Factory {
         return output;
     }
 
-    std::tuple<VkDescriptorSetLayout, VkPipelineLayout, VkDescriptorPool,std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT>>
+    std::tuple<VkDescriptorSetLayout, VkPipelineLayout, VkDescriptorPool, std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT>>
     Factory::createDescriptorSets(const std::vector<Descriptor>& descriptors,
                                   const std::vector<VkPushConstantRange>& pushConstants,
                                   VulkanRenderDevice* renderDevice) {
