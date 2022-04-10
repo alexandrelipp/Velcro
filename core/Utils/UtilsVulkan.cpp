@@ -185,10 +185,10 @@ namespace utils {
 
         // use mailbox if possible ; default to fifo if not present
         // TODO is it possible to MAILBOX with vsync??
-//        for (auto mode: presentModes) {
-//            if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
-//                return mode;
-//        }
+        for (auto mode: presentModes) {
+            if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
+                return mode;
+        }
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 

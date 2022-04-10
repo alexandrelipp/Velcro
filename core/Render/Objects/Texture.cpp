@@ -38,11 +38,9 @@ void Texture::init(const std::string& filePath, VulkanRenderDevice& renderDevice
     // format of the image (maybe a function to pick the best one ?)
     VkFormat imageFormat = VK_FORMAT_R8G8B8A8_SRGB;
 
-    auto image = Factory::createImage(&renderDevice, VK_SAMPLE_COUNT_1_BIT, texWidth, texHeight, imageFormat,
+    std::tie(_image, _imageMemory) = Factory::createImage(&renderDevice, VK_SAMPLE_COUNT_1_BIT, texWidth, texHeight, imageFormat,
                                       VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
                                       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
-    _image = image.first;
-    _imageMemory = image.second;
 
     // transition image layout UNDEFINED -> DST_OPTIMAL
     utils::transitionImageLayout(renderDevice.device, renderDevice.graphicsQueue, renderDevice.commandPool, _image, imageFormat,

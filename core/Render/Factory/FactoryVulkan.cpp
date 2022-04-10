@@ -487,7 +487,7 @@ namespace Factory {
     VkDescriptorPool createDescriptorPool(VkDevice device, uint32_t imageCount,
                                                            uint32_t uniformBufferCount,
                                                            uint32_t storageBufferCount,
-                                                           uint32_t samplerCount) {
+                                                           uint32_t samplerImageCount) {
 
         std::vector<VkDescriptorPoolSize> poolSizes;
         if (uniformBufferCount){
@@ -503,10 +503,10 @@ namespace Factory {
             });
         }
 
-        if (samplerCount){
+        if (samplerImageCount){
             poolSizes.push_back(VkDescriptorPoolSize{
                     .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                    .descriptorCount = samplerCount * imageCount
+                    .descriptorCount = samplerImageCount * imageCount
             });
         }
 
@@ -519,5 +519,116 @@ namespace Factory {
         VkDescriptorPool output = nullptr;
         VK_CHECK(vkCreateDescriptorPool(device, &createInfo, nullptr, &output));
         return output;
+    }
+
+    std::tuple<VkDescriptorSetLayout, VkPipelineLayout, VkDescriptorPool, std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT>>
+    Factory::createDescriptorSets(VulkanRenderDevice* renderDevice, const std::vector<Descriptor>& descriptors,
+                                  const std::vector<VkPushConstantRange>& pushConstants) {
+
+        // temp variables used to count descriptor count by type
+        uint32_t uniformBufferCount = 0, storageBufferCount = 0, samplerImageCount = 0;
+
+        // create layout bindings
+        std::vector<VkDescriptorSetLayoutBinding> layoutBindings(descriptors.size());
+        for (uint32_t i = 0; i < descriptors.size(); ++i){
+            // imageInfos will be nullptr if info is not of type vector(DescriptorImageInfo)
+            auto* imageInfos = std::get_if<std::vector<VkDescriptorImageInfo>>(&descriptors[i].info);
+            layoutBindings[i] = {
+                    .binding = i,
+                    .descriptorType = descriptors[i].type,
+                    .descriptorCount = imageInfos == nullptr ? 1 : (uint32_t)imageInfos->size(),
+                    .stageFlags = descriptors[i].shaderStage
+            };
+
+            // add type of descriptor to descriptor count (only samplerImages can be arrays)
+            switch (descriptors[i].type) {
+                case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
+                    uniformBufferCount++;
+                    break;
+                case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
+                    storageBufferCount++;
+                    break;
+                case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
+                    // imageInfos must exist if of type image sampler!
+                    samplerImageCount += imageInfos->size();
+                    break;
+                default:
+                    VK_ASSERT(false, "Descriptor's type not supported : " + std::string(magic_enum::enum_name(descriptors[i].type)));
+            }
+        }
+
+        // create the descriptor set layout
+        VkDescriptorSetLayoutCreateInfo descriptorLayoutCI = {
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+                .bindingCount = (uint32_t)layoutBindings.size(),
+                .pBindings = layoutBindings.data()
+        };
+        VkDescriptorSetLayout descriptorSetLayout = nullptr;
+        VK_CHECK(vkCreateDescriptorSetLayout(renderDevice->device, &descriptorLayoutCI, nullptr, &descriptorSetLayout));
+
+        // create pipeline layout (descriptor set layout + push constant layout)
+        VkPipelineLayoutCreateInfo pipelineLayoutInfo{};
+        pipelineLayoutInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
+        pipelineLayoutInfo.setLayoutCount = 1;
+        pipelineLayoutInfo.pSetLayouts = &descriptorSetLayout;
+        pipelineLayoutInfo.pushConstantRangeCount = pushConstants.size();
+        pipelineLayoutInfo.pPushConstantRanges = pushConstants.data();
+
+        VkPipelineLayout pipelineLayout = nullptr;
+        VK_CHECK(vkCreatePipelineLayout(renderDevice->device, &pipelineLayoutInfo, nullptr, &pipelineLayout));
+
+        // create descriptor pool
+        // Inadequate descriptor pools are a good example of a problem that the validation layers will not catch:
+        // As of Vulkan 1.1, vkAllocateDescriptorSets may fail with the error code VK_ERROR_POOL_OUT_OF_MEMORY
+        // if the pool is not sufficiently large, but the driver may also try to solve the problem internally.
+        // This means that sometimes (depending on hardware, pool size and allocation size) the driver will let
+        // us get away with an allocation that exceeds the limits of our descriptor pool.
+        // Other times, vkAllocateDescriptorSets will fail and return VK_ERROR_POOL_OUT_OF_MEMORY.
+        // This can be particularly frustrating if the allocation succeeds on some machines, but fails on others.
+        VkDescriptorPool descriptorPool = Factory::createDescriptorPool(renderDevice->device, MAX_FRAMES_IN_FLIGHT,
+                                                                        uniformBufferCount, storageBufferCount, samplerImageCount);
+
+        std::array<VkDescriptorSetLayout, MAX_FRAMES_IN_FLIGHT> layouts = {descriptorSetLayout, descriptorSetLayout};
+
+        // allocate descriptors from descriptor pool
+        VkDescriptorSetAllocateInfo descriptorSetAI = {
+                .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+                .descriptorPool = descriptorPool,
+                .descriptorSetCount = (uint32_t)layouts.size(),
+                .pSetLayouts = layouts.data()
+        };
+        std::array<VkDescriptorSet, MAX_FRAMES_IN_FLIGHT> descriptorSets{};
+        VK_CHECK(vkAllocateDescriptorSets(renderDevice->device, &descriptorSetAI, descriptorSets.data()));
+
+        // update the descriptor sets with the ressources handles
+        for (uint32_t i = 0; i < descriptorSets.size(); ++i) {
+            // create write descriptor set for each descriptor set
+            std::vector<VkWriteDescriptorSet> writeDescriptorSets(descriptors.size());
+
+            for (uint32_t j = 0; j < descriptors.size(); ++j){
+                auto& descWrite = writeDescriptorSets[j];
+                descWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                descWrite.dstSet = descriptorSets[i];
+                descWrite.dstBinding = j;
+                descWrite.dstArrayElement = 0;
+                descWrite.descriptorType = descriptors[j].type;
+
+                auto* imageInfo = std::get_if<std::vector<VkDescriptorImageInfo>>(&descriptors[j].info);
+                if (imageInfo != nullptr){
+                    descWrite.descriptorCount = imageInfo->size();
+                    descWrite.pImageInfo = imageInfo->data();
+                }
+                else {
+                    descWrite.descriptorCount = 1;
+                    descWrite.pBufferInfo = &std::get<std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>>(descriptors[j].info)[i];
+                }
+            }
+
+            // update the descriptor sets with the created descriptor writes
+            vkUpdateDescriptorSets(renderDevice->device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
+        }
+
+        // return all the handles
+        return std::make_tuple(descriptorSetLayout, pipelineLayout, descriptorPool, descriptorSets);
     }
 }

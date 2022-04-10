@@ -14,11 +14,9 @@ void ShaderStorageBuffer::init(VkDevice device, VkPhysicalDevice physicalDevice,
             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
     _hostVisible = hostVisible;
     _size = size;
-    auto [buffer, memory] = Factory::createBuffer(device, physicalDevice, _size,
+    std::tie(_buffer, _bufferMemory) = Factory::createBuffer(device, physicalDevice, _size,
                           VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | additionalUsage,
                           memFlags);
-    _buffer = buffer;
-    _bufferMemory = memory;
 }
 
 void ShaderStorageBuffer::destroy(VkDevice device) {

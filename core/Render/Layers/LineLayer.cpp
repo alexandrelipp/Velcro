@@ -18,8 +18,28 @@ LineLayer::LineLayer(VkRenderPass renderPass) : RenderLayer() {
     _pointsSSBO.init(_vrd->device, _vrd->physicalDevice, size);
     _pointsSSBO.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool, _lines.data(), size);
 
-    createPipelineLayout();
-    createDescriptorSets();
+    std::vector<Factory::Descriptor> descriptors = {
+            {
+                    .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                    .shaderStage = VK_SHADER_STAGE_VERTEX_BIT,
+                    .info = std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>{
+                            VkDescriptorBufferInfo{_mvpUniformBuffers[0].getBuffer(), 0, _mvpUniformBuffers[0].getSize()},
+                            VkDescriptorBufferInfo{_mvpUniformBuffers[1].getBuffer(), 0, _mvpUniformBuffers[1].getSize()},
+                    }
+            },
+            {
+                    .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                    .shaderStage = VK_SHADER_STAGE_VERTEX_BIT,
+                    .info = std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>{
+                            VkDescriptorBufferInfo{_pointsSSBO.getBuffer(), 0, _pointsSSBO.getSize()},
+                            VkDescriptorBufferInfo{_pointsSSBO.getBuffer(), 0, _pointsSSBO.getSize()},
+                    }
+            },
+    };
+
+    // create descriptors
+    std::tie(_descriptorSetLayout, _pipelineLayout, _descriptorPool, _descriptorSets) =
+            Factory::createDescriptorSets(_vrd, descriptors, {});
 
     Factory::GraphicsPipelineProps props = {
             .primitiveTopology = VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
@@ -28,6 +48,7 @@ LineLayer::LineLayer(VkRenderPass renderPass) : RenderLayer() {
                     .fragment = "lineF.spv"
             }
     };
+
     _graphicsPipeline = Factory::createGraphicsPipeline(_vrd->device, _swapchainExtent, renderPass, _pipelineLayout, props);
 }
 
@@ -88,93 +109,3 @@ void LineLayer::plane3d(const glm::vec3& o, const glm::vec3& v1, const glm::vec3
 
 
 //////////////////////// PRIVATE METHODS ///////////////////////////////////
-
-void LineLayer::createPipelineLayout() {
-
-    std::array<VkDescriptorSetLayoutBinding, 2> bindings = {
-            VkDescriptorSetLayoutBinding{
-                .binding = 0,
-                .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                .descriptorCount = 1,
-                .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
-            },
-            VkDescriptorSetLayoutBinding{
-                    .binding = 1,
-                    .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                    .descriptorCount = 1,
-                    .stageFlags = VK_SHADER_STAGE_VERTEX_BIT
-            },
-    };
-
-    VkDescriptorSetLayoutCreateInfo layoutCI = {
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-            .bindingCount = bindings.size(),
-            .pBindings = bindings.data(),
-    };
-
-    VK_CHECK(vkCreateDescriptorSetLayout(_vrd->device, &layoutCI, nullptr, &_descriptorSetLayout));
-
-    VkPipelineLayoutCreateInfo layoutCreateInfo = {
-        .sType = VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        .flags = 0u,
-        .setLayoutCount = 1,
-        .pSetLayouts = &_descriptorSetLayout
-    };
-
-    VK_CHECK(vkCreatePipelineLayout(_vrd->device, &layoutCreateInfo, nullptr, &_pipelineLayout));
-}
-
-void LineLayer::createDescriptorSets() {
-    _descriptorPool = Factory::createDescriptorPool(_vrd->device, MAX_FRAMES_IN_FLIGHT, 1, 1, 0);
-
-    std::array<VkDescriptorSetLayout, MAX_FRAMES_IN_FLIGHT> layouts = {_descriptorSetLayout, _descriptorSetLayout};
-
-    VkDescriptorSetAllocateInfo descriptorSetAI = {
-            .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-            .descriptorPool = _descriptorPool,
-            .descriptorSetCount = (uint32_t)layouts.size(),
-            .pSetLayouts = layouts.data()
-    };
-
-    VK_CHECK(vkAllocateDescriptorSets(_vrd->device, &descriptorSetAI, _descriptorSets.data()));
-
-    for (size_t i = 0; i < _descriptorSets.size(); ++i) {
-        // create write descriptor set for each descriptor set
-        std::vector<VkWriteDescriptorSet> writeDescriptorSets;
-
-        // push back descriptor write for UBO (1 buffer/image)
-        VkDescriptorBufferInfo bufferInfo = {
-                .buffer = _mvpUniformBuffers[i].getBuffer(),
-                .offset = 0,
-                .range = _mvpUniformBuffers[i].getSize()
-        };
-        writeDescriptorSets.push_back({
-                                      .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                      .dstSet = _descriptorSets[i],
-                                      .dstBinding = 0,
-                                      .dstArrayElement = 0,
-                                      .descriptorCount = 1,
-                                      .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-                                      .pBufferInfo = &bufferInfo
-                                      });
-
-        // push back descriptor write for vertices SSBO (1 buffer)
-        VkDescriptorBufferInfo verticesInfo = {
-                .buffer = _pointsSSBO.getBuffer(),
-                .offset = 0,
-                .range = _pointsSSBO.getSize()
-        };
-        writeDescriptorSets.push_back({
-                                      .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                                      .dstSet = _descriptorSets[i],
-                                      .dstBinding = 1,
-                                      .dstArrayElement = 0,
-                                      .descriptorCount = 1,
-                                      .descriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                                      .pBufferInfo = &verticesInfo
-                                      });
-
-        // update the descriptor sets with the created decriptor writes
-        vkUpdateDescriptorSets(_vrd->device, writeDescriptorSets.size(), writeDescriptorSets.data(), 0, nullptr);
-    }
-}
