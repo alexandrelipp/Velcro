@@ -535,7 +535,8 @@ void Renderer::onImGuiRender() {
     _imguiFocus = io.WantCaptureMouse;
 
     ImGui::Begin("Hello from Renderer");
-    ImGui::Text("FPS %.2f", _fpsCounter.getFPS());
+    ImGui::Text("FPS (last 0.5s) %.2f", _fpsCounter.getFPS());
+    ImGui::Text("Average FPS     %.2f", _fpsCounter.getAverageFPS());
     if (ImGui::Button("Reset Camera"))
         _camera.reset();
     ImGui::End();

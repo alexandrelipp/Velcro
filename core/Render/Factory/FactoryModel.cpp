@@ -40,15 +40,16 @@ bool FactoryModel::createDuckModel(std::vector<TexVertex>& vertices, std::vector
 }
 
 bool FactoryModel::createTexturedSquare(std::vector<TexVertex>& vertices, std::vector<uint32_t>& indices) {
+    // NOTE : this code was not tested!! order of vertices + winding might be wrong
     vertices = {
-            {glm::vec3(-0.5f, -0.5f, 0.f), glm::vec2(0.f, 0.f)},// top left
             {glm::vec3(0.5f, -0.5f, 0.f),  glm::vec2(1.f, 0.f)},// top right
+            {glm::vec3(-0.5f, -0.5f, 0.f), glm::vec2(0.f, 0.f)},// top left
             {glm::vec3(0.5f, 0.5f, 0.f),   glm::vec2(1.f, 1.f)},// bottom right
             {glm::vec3(-0.5f, 0.5f, 0.f),  glm::vec2(0.f, 1.f)},// bottom left
     };
 
     indices = {
-            0, 1, 2, 2, 3, 0
+            0, 1, 2, 2, 1, 3
     };
     return true;
 }
@@ -56,12 +57,12 @@ bool FactoryModel::createTexturedSquare(std::vector<TexVertex>& vertices, std::v
 
 bool FactoryModel::createTexturedSquare2(std::vector<TexVertex2>& vertices) {
     vertices = {
-            {glm::vec2(-0.5f, -0.5f), glm::vec2(0.f, 0.f)},// top left
             {glm::vec2( 0.5f, -0.5f), glm::vec2(1.f, 0.f)},// top right
-            {glm::vec2( 0.5f,  0.5f), glm::vec2(1.f, 1.f)},// bottom right
-            {glm::vec2( 0.5f,  0.5f), glm::vec2(1.f, 1.f)},// bottom right
-            {glm::vec2(-0.5f,  0.5f), glm::vec2(0.f, 1.f)},// bottom left
             {glm::vec2(-0.5f, -0.5f), glm::vec2(0.f, 0.f)},// top left
+            {glm::vec2( 0.5f,  0.5f), glm::vec2(1.f, 1.f)},// bottom right
+            {glm::vec2( 0.5f,  0.5f), glm::vec2(1.f, 1.f)},// bottom right
+            {glm::vec2(-0.5f, -0.5f), glm::vec2(0.f, 0.f)},// top left
+            {glm::vec2(-0.5f,  0.5f), glm::vec2(0.f, 1.f)},// bottom left
     };
     return true;
 }
@@ -72,10 +73,11 @@ void FactoryModel::importFromFile(const std::string& path, std::shared_ptr<Scene
     if (scene == nullptr)
         throw std::runtime_error("Scene is null");
 
+    // Note : assimp winding order is by default counterclockwise
     _aiScene = importer.ReadFile(path, aiProcess_Triangulate
                                        | aiProcess_JoinIdenticalVertices // without this, index buffer is useless
-                                       | aiProcess_FlipWindingOrder      // by default counter clockwise/ vulkan wants clockwise // TODO: really??
                                        | aiProcess_GenNormals            // generate normals if not already in model
+                                       // TODO : add flags from rendering coockbook!! or other!
     );
 
     // TODO : prob want to remove this

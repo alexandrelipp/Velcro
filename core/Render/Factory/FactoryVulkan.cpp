@@ -293,13 +293,14 @@ namespace Factory {
                 .flags = 0u,
                 .depthClampEnable = VK_FALSE, // if true, fragments beyond the near and far planes are clamped to them instead of discarded
                 .polygonMode = VK_POLYGON_MODE_FILL,
-                .cullMode = VK_CULL_MODE_NONE,
-                .frontFace = VK_FRONT_FACE_CLOCKWISE,
+                // this stupid cast is why enum should always be enum class
+                .cullMode = (VkCullModeFlags)(props.enableBackFaceCulling == VK_TRUE ? VK_CULL_MODE_BACK_BIT : VK_CULL_MODE_NONE),
+                .frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE,
                 .depthBiasEnable = VK_FALSE, // rasterizer can alter the depth values
                 .lineWidth = 1.f,            // line width (in pixels)
         };
 
-        // set up multisampling (disabled for now)
+        // set up multisampling
         VkPipelineMultisampleStateCreateInfo multisampleCI = {
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
                 .pNext = nullptr,
