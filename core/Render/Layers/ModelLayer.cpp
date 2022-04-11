@@ -71,17 +71,13 @@ void ModelLayer::onEvent(Event& event) {}
 
 void ModelLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) {
     // bind pipeline and render
-    vkCmdBindPipeline(_vrd->commandBuffers[commandBufferIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
-    vkCmdBindDescriptorSets(_vrd->commandBuffers[commandBufferIndex], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout,
-                            0, 1, &_descriptorSets[commandBufferIndex], 0, nullptr);
-
+    bindPipelineAndDS(commandBuffer, commandBufferIndex);
     vkCmdDraw(_vrd->commandBuffers[commandBufferIndex], _indexCount, 1, 0, 0);
 }
 
 void ModelLayer::onImGuiRender() {
 
 }
-
 
 
 //////////////// PRIVATE METHODS /////////////////////////

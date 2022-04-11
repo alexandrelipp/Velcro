@@ -48,6 +48,8 @@ target_sources(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/LineLayer.h"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/FlipbookLayer.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/FlipbookLayer.h"
+        "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/SelectedMeshLayer.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/SelectedMeshLayer.h"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/ImGuiLayer.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/ImGuiLayer.h"
 
