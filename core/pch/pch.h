@@ -47,6 +47,10 @@ SPDLOG_CRITICAL("Check success failed with code {}", magic_enum::enum_name(resul
 #define handleError handleErrorRelease
 #endif
 
+// TODO : add VK_ASSERT that does not take a message. And write a test for it
+//  https://stackoverflow.com/questions/3046889/optional-parameters-with-c-macros
+
+
 // only defined when cLion is indexing, seems to help with IDE performance
 #ifndef __CLION_IDE__
 #define VK_ASSERT(result, mes) if (!(result)) \

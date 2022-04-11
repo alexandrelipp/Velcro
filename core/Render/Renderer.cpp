@@ -127,11 +127,14 @@ bool Renderer::init() {
                                VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     _colorBuffer.imageView = Factory::createImageView(_vrd.device, _colorBuffer.image, _colorBuffer.format, VK_IMAGE_ASPECT_COLOR_BIT);
 
-    // create depth buffer attachment
+    // find format for depth buffer
     _depthBuffer.format = utils::findSupportedFormat(_vrd.physicalDevice,
-                                                     {VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT},
+                 {VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT},
                                                      VK_IMAGE_TILING_OPTIMAL,
                                                      VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+    VK_ASSERT(utils::hasStencilComponent(_depthBuffer.format), "Stencil not supported");
+
+    // create depth buffer attachment
     std::tie(_depthBuffer.image, _depthBuffer.deviceMemory) = Factory::createImage(&_vrd, _vrd.sampleCount, _swapchainExtent.width,
                _swapchainExtent.height,_depthBuffer.format, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
                                       VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
