@@ -40,6 +40,7 @@ bool FactoryModel::createDuckModel(std::vector<TexVertex>& vertices, std::vector
 }
 
 bool FactoryModel::createTexturedSquare(std::vector<TexVertex>& vertices, std::vector<uint32_t>& indices) {
+    // NOTE : this code was not tested!! order of vertices + winding might be wrong
     vertices = {
             {glm::vec3(0.5f, -0.5f, 0.f),  glm::vec2(1.f, 0.f)},// top right
             {glm::vec3(-0.5f, -0.5f, 0.f), glm::vec2(0.f, 0.f)},// top left
