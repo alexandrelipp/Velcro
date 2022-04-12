@@ -59,11 +59,15 @@ SelectedMeshLayer::SelectedMeshLayer(VkRenderPass renderPass) {
 }
 
 SelectedMeshLayer::~SelectedMeshLayer() {
-
+    // destroy the buffers
+    for (auto& buffer : _mvpUniformBuffers)
+        buffer.destroy(_vrd->device);
+    _vertices.destroy(_vrd->device);
 }
 
 void SelectedMeshLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) {
-
+    glm::mat4 data(1.f);
+    _mvpUniformBuffers[commandBufferIndex].setData(_vrd->device, &data, sizeof(data));
 }
 
 void SelectedMeshLayer::onEvent(Event& event) {
@@ -72,6 +76,9 @@ void SelectedMeshLayer::onEvent(Event& event) {
 
 void SelectedMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) {
     bindPipelineAndDS(commandBuffer, commandBufferIndex);
+    vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+    vkCmdDraw(commandBuffer, 6, 1, 0, 1);
+
     //vkCmdSetStencilTestEnable(commandBuffer, VK_FALSE);
     //vkCmdSetStencilCompareMask(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0xffffff);
     //vkCmdSetStencilOp(commandBuffer, )

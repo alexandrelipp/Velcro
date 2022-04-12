@@ -13,6 +13,7 @@
 #include "Layers/LineLayer.h"
 #include "Layers/MultiMeshLayer.h"
 #include "Layers/FlipbookLayer.h"
+#include "Layers/SelectedMeshLayer.h"
 
 #include <imgui/imgui.h>
 
@@ -168,6 +169,7 @@ bool Renderer::init() {
     _renderLayers.push_back(std::make_shared<LineLayer>(_renderPass));
     _renderLayers.push_back(std::make_shared<MultiMeshLayer>(_renderPass));
     _renderLayers.push_back(std::make_shared<FlipbookLayer>(_renderPass));
+    _renderLayers.push_back(std::make_shared<SelectedMeshLayer>(_renderPass));
     _imGuiLayer = std::make_shared<ImGuiLayer>(_renderPass);
     _renderLayers.push_back(_imGuiLayer);
 

@@ -309,9 +309,9 @@ namespace Factory {
                 .sampleShadingEnable = VK_FALSE, // TODO : take as props ? Note : also needs to be enabled in the device features
         };
 
-        VkStencilOpState frontStencilState = {
-                .
-        };
+//        VkStencilOpState frontStencilState = {
+//                .
+//        };
 
         VkPipelineDepthStencilStateCreateInfo depthStencilCI = {
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,

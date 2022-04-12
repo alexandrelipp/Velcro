@@ -16,6 +16,7 @@ layout(binding = 1) readonly buffer Vertices{
 };
 
 void main(){
+    float test = gl_InstanceIndex / 2.0;
     Vertex vtx = vertices[gl_VertexIndex];
-    gl_Position = mvp * vec4(vtx.x, vtx.y, 0.0, 1.0);
+    gl_Position = mvp * vec4(vtx.x + test, vtx.y, 0.0, 1.0);
 }
