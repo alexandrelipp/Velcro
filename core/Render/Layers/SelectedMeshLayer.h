@@ -24,5 +24,8 @@ public:
     virtual void onImGuiRender() override;
 
 private:
+    // Buffers
+    std::array<UniformBuffer, MAX_FRAMES_IN_FLIGHT> _mvpUniformBuffers{};
+    ShaderStorageBuffer _vertices;
 
 };

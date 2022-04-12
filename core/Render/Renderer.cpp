@@ -129,6 +129,7 @@ bool Renderer::init() {
 
     // find format for depth buffer
     _depthBuffer.format = utils::findSupportedFormat(_vrd.physicalDevice,
+                 // Note : UNORM is a float in the range [0, 1], perfect for depth buffer
                  {VK_FORMAT_D24_UNORM_S8_UINT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D32_SFLOAT},
                                                      VK_IMAGE_TILING_OPTIMAL,
                                                      VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
@@ -392,8 +393,8 @@ void Renderer::createRenderPass(VkFormat swapchainFormat){
       .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR, // operation on color and depth at beginning of subpass : clear color buffer
       //  operation after subpass. We don't care since the image to be presented will be in the singled sampled swapchain buffer
       .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-      .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,   // we don't use stencil
-      .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,  // we don't use stencil
+      .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,   // no stencil component in this attachment
+      .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,  //no stencil component in this attachment
       .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED, // layout of the image subressource when subpass begin. We don't care ; we clear it anyway
       // multisampled images cannot be presented directly. They are first resolved to an image then presented
       .finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // FIXME : This could probably be undefined as well since we don't use the attachment after rendering
@@ -404,14 +405,14 @@ void Renderer::createRenderPass(VkFormat swapchainFormat){
         .layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
     };
 
-    // attachment associated with depth buffer
+    // attachment associated with depth/stencil buffer
     attachments[1] = {
         .flags = 0u,
         .format = _depthBuffer.format,
         .samples = _vrd.sampleCount,
-        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,      // clear depth buffer at beginning of subpass
+        .loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR,      // clear depth component of at beginning of subpass
         .storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+        .stencilLoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR, // clear stencil component at the beginning of subpass
         .stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE,
         .initialLayout = VK_IMAGE_LAYOUT_UNDEFINED,
         .finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL // layout to be transitioned automatically when render pass instance ends
@@ -508,7 +509,7 @@ void Renderer::recordCommandBuffer(uint32_t commandBufferIndex, VkFramebuffer fr
                 .color = {_clearValue.r, _clearValue.g, _clearValue.b, _clearValue.a}
             },
             {
-                .depthStencil = {.depth = 1.f}
+                .depthStencil = {.depth = 1.f, .stencil = 0} // TODO : sure we clear stencil with 0??
             },
     };
     VkRenderPassBeginInfo beginCI = {

@@ -309,6 +309,10 @@ namespace Factory {
                 .sampleShadingEnable = VK_FALSE, // TODO : take as props ? Note : also needs to be enabled in the device features
         };
 
+        VkStencilOpState frontStencilState = {
+                .
+        };
+
         VkPipelineDepthStencilStateCreateInfo depthStencilCI = {
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
                 .depthTestEnable = props.enableDepthTest,
@@ -351,6 +355,13 @@ namespace Factory {
                 .blendConstants = {0.f, 0.f, 0.f, 0.f}
         };
 
+        // set up dynamic states with requested dynamic states
+        VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+                .dynamicStateCount = (uint32_t)props.dynamicStates.size(),
+                .pDynamicStates = props.dynamicStates.data()
+        };
+
         VkGraphicsPipelineCreateInfo pipelineCI = {
                 .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
                 .stageCount = shadersCI.size(),
@@ -362,7 +373,7 @@ namespace Factory {
                 .pMultisampleState = &multisampleCI,
                 .pDepthStencilState = &depthStencilCI,
                 .pColorBlendState = &colorBlendCI,
-                .pDynamicState = nullptr, // not used for now
+                .pDynamicState = &dynamicStateCreateInfo,
                 .layout = pipelineLayout,
                 .renderPass = renderPass,
                 .subpass = 0, // index of subpass where the graphics pipeline willbe used
