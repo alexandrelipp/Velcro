@@ -52,7 +52,12 @@ SelectedMeshLayer::SelectedMeshLayer(VkRenderPass renderPass) {
                     .vertex = "SelectedMeshV.spv",
                     .fragment = "SelectedMeshF.spv"
             },
-            .sampleCountMSAA = _vrd->sampleCount
+            .enableStencilTest = VK_TRUE,
+            .sampleCountMSAA = _vrd->sampleCount,
+            .dynamicStates = {
+                    VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK,
+                    VK_DYNAMIC_STATE_STENCIL_OP
+            }
     };
     _graphicsPipeline = Factory::createGraphicsPipeline(_vrd->device, _swapchainExtent, renderPass, _pipelineLayout, props);
 
@@ -76,12 +81,22 @@ void SelectedMeshLayer::onEvent(Event& event) {
 
 void SelectedMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) {
     bindPipelineAndDS(commandBuffer, commandBufferIndex);
+
+    vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_REPLACE,
+                      VK_STENCIL_OP_KEEP, VK_COMPARE_OP_ALWAYS);
+
+    vkCmdSetStencilCompareMask(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0xffffffff);
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+
+    //vkCmdSetStencilCompareMask(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0);
+
+    vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_REPLACE,
+                      VK_STENCIL_OP_KEEP, VK_COMPARE_OP_LESS);
     vkCmdDraw(commandBuffer, 6, 1, 0, 1);
 
     //vkCmdSetStencilTestEnable(commandBuffer, VK_FALSE);
     //vkCmdSetStencilCompareMask(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0xffffff);
-    //vkCmdSetStencilOp(commandBuffer, )
+
 }
 
 void SelectedMeshLayer::onImGuiRender() {

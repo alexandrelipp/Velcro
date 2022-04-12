@@ -319,7 +319,7 @@ namespace Factory {
                 .depthWriteEnable = props.enableDepthTest, // TODO : do we want to distinct write + enable depth test ?
                 .depthCompareOp = VK_COMPARE_OP_LESS,
                 .depthBoundsTestEnable = VK_FALSE,      // if enabled, depth test will only pass when inside the given bounds
-                .stencilTestEnable = VK_FALSE,
+                .stencilTestEnable = props.enableStencilTest,
         };
 
         // set up default color blending
