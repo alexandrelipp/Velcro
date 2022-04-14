@@ -13,8 +13,15 @@
 
 class SelectedMeshLayer : public RenderLayer {
 public:
-    SelectedMeshLayer(VkRenderPass renderPass, std::shared_ptr<Scene> scene, const ShaderStorageBuffer& vertices,
-                      const ShaderStorageBuffer& indices);
+    struct Props{
+        std::shared_ptr<Scene> scene;
+        ShaderStorageBuffer vertices;
+        ShaderStorageBuffer indices;
+        std::array<ShaderStorageBuffer, MAX_FRAMES_IN_FLIGHT> meshTransformBuffers{};
+    };
+
+public:
+    SelectedMeshLayer(VkRenderPass renderPass, const Props& props);
 
     virtual ~SelectedMeshLayer();
 
@@ -27,16 +34,17 @@ public:
     void setSelectedEntity(int selectedEntity);
 
 private:
-    struct SelectedMeshMVP{
-        glm::mat4 original = glm::mat4(1.f);
-        glm::mat4 scaledUp = glm::mat4(1.f);
-    };
+//    struct SelectedMeshMVP{
+//        glm::mat4 original = glm::mat4(1.f);
+//        glm::mat4 scaledUp = glm::mat4(1.f);
+//    };
     // Buffers
-    std::array<UniformBuffer, MAX_FRAMES_IN_FLIGHT> _mvpUniformBuffers{};
+    std::array<UniformBuffer, MAX_FRAMES_IN_FLIGHT> _vpUniformBuffers{};
     std::shared_ptr<Scene> _scene = nullptr;
 
-    // TODO : should be a vector!!
-    MeshComponent* _selectedMesh = nullptr;
+    std::vector<MeshComponent*> _selectedMeshes;
     int _selectedEntity = -1;
+
+    static float constexpr MAG_STENCIL_FACTOR = 1.04f;
 
 };

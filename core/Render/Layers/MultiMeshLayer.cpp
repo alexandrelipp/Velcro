@@ -85,8 +85,15 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
     };
     _graphicsPipeline = Factory::createGraphicsPipeline(_vrd->device, _swapchainExtent, renderPass, _pipelineLayout, props);
 
+    SelectedMeshLayer::Props selectedMeshProps = {
+        .scene = _scene,
+        .vertices = _vertices,
+        .indices = _indices,
+        .meshTransformBuffers = _meshTransformBuffers
+    };
+
     // create the selected mesh layer
-    _selectedMeshLayer = std::make_shared<SelectedMeshLayer>(renderPass, _scene, _vertices, _indices);
+    _selectedMeshLayer = std::make_shared<SelectedMeshLayer>(renderPass, selectedMeshProps);
 }
 
 MultiMeshLayer::~MultiMeshLayer() {

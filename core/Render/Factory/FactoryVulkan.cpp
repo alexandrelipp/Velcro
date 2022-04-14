@@ -42,7 +42,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugReportCallback
     // https://github.com/zeux/niagara/blob/master/src/device.cpp   [ignoring performance warnings]
     // This silences warnings like "For optimal performance image layout should be VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL instead of GENERAL."
     if (flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
-        return VK_FALSE;
+        SPDLOG_TRACE("Debug callback {} : {}", pLayerPrefix, pMessage);
 
     if (flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT){
         SPDLOG_DEBUG("Debug callback {} : {}", pLayerPrefix, pMessage);

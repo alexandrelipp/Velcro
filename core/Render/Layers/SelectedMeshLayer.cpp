@@ -9,11 +9,12 @@
 #include "../../Utils/UtilsVulkan.h"
 #include "../../Utils/UtilsTemplate.h"
 
-SelectedMeshLayer::SelectedMeshLayer(VkRenderPass renderPass, std::shared_ptr<Scene> scene, const ShaderStorageBuffer& vertices,
-                                     const ShaderStorageBuffer& indices) : _scene(scene) {
+// Better way to do this using post processing : http://geoffprewett.com/blog/software/opengl-outline/
+
+SelectedMeshLayer::SelectedMeshLayer(VkRenderPass renderPass, const Props& props) : _scene(props.scene) {
     // init the uniform buffers
-    for (auto& buffer : _mvpUniformBuffers)
-        buffer.init(_vrd->device, _vrd->physicalDevice, sizeof(SelectedMeshMVP));
+    for (auto& buffer : _vpUniformBuffers)
+        buffer.init(_vrd->device, _vrd->physicalDevice, sizeof(glm::mat4));
 
     // describe descriptors
     std::vector<Factory::Descriptor> descriptors = {
@@ -21,24 +22,32 @@ SelectedMeshLayer::SelectedMeshLayer(VkRenderPass renderPass, std::shared_ptr<Sc
                     .type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
                     .shaderStage = VK_SHADER_STAGE_VERTEX_BIT,
                     .info = std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>{
-                            VkDescriptorBufferInfo {_mvpUniformBuffers[0].getBuffer(), 0, _mvpUniformBuffers[0].getSize()},
-                            VkDescriptorBufferInfo {_mvpUniformBuffers[1].getBuffer(), 0, _mvpUniformBuffers[1].getSize()},
+                            VkDescriptorBufferInfo {_vpUniformBuffers[0].getBuffer(), 0, _vpUniformBuffers[0].getSize()},
+                            VkDescriptorBufferInfo {_vpUniformBuffers[1].getBuffer(), 0, _vpUniformBuffers[1].getSize()},
                     }
             },
             {
                     .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                     .shaderStage = VK_SHADER_STAGE_VERTEX_BIT,
                     .info = std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>{
-                            VkDescriptorBufferInfo {vertices.getBuffer(), 0, vertices.getSize()},
-                            VkDescriptorBufferInfo {vertices.getBuffer(), 0, vertices.getSize()},
+                            VkDescriptorBufferInfo {props.vertices.getBuffer(), 0, props.vertices.getSize()},
+                            VkDescriptorBufferInfo {props.vertices.getBuffer(), 0, props.vertices.getSize()},
                     }
             },
             {
                     .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                     .shaderStage = VK_SHADER_STAGE_VERTEX_BIT,
                     .info = std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>{
-                            VkDescriptorBufferInfo {indices.getBuffer(), 0, indices.getSize()},
-                            VkDescriptorBufferInfo {indices.getBuffer(), 0, indices.getSize()},
+                            VkDescriptorBufferInfo {props.indices.getBuffer(), 0, props.indices.getSize()},
+                            VkDescriptorBufferInfo {props.indices.getBuffer(), 0, props.indices.getSize()},
+                    }
+            },
+            {
+                    .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                    .shaderStage = VK_SHADER_STAGE_VERTEX_BIT,
+                    .info = std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>{
+                            VkDescriptorBufferInfo {props.meshTransformBuffers[0].getBuffer(), 0, props.meshTransformBuffers[0].getSize()},
+                            VkDescriptorBufferInfo {props.meshTransformBuffers[1].getBuffer(), 0, props.meshTransformBuffers[1].getSize()},
                     }
             },
     };
@@ -58,7 +67,7 @@ SelectedMeshLayer::SelectedMeshLayer(VkRenderPass renderPass, std::shared_ptr<Sc
             .writeMask = 0xffffffff,           // always write
             .reference = 0,
     };
-    Factory::GraphicsPipelineProps props = {
+    Factory::GraphicsPipelineProps factoryProps = {
             .shaders =  {
                     .vertex = "SelectedMeshV.spv",
                     .fragment = "SelectedMeshF.spv"
@@ -71,48 +80,55 @@ SelectedMeshLayer::SelectedMeshLayer(VkRenderPass renderPass, std::shared_ptr<Sc
                     VK_DYNAMIC_STATE_STENCIL_OP, // we dynamically change the stencil operation
                     }
     };
-    _graphicsPipeline = Factory::createGraphicsPipeline(_vrd->device, _swapchainExtent, renderPass, _pipelineLayout, props);
+    _graphicsPipeline = Factory::createGraphicsPipeline(_vrd->device, _swapchainExtent, renderPass, _pipelineLayout, factoryProps);
 
 }
 
 SelectedMeshLayer::~SelectedMeshLayer() {
     // destroy the buffers
-    for (auto& buffer : _mvpUniformBuffers)
+    for (auto& buffer : _vpUniformBuffers)
         buffer.destroy(_vrd->device);
 }
 
 void SelectedMeshLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) {
-    if (_selectedMesh == nullptr || _selectedEntity == -1)
+    if (_selectedEntity == -1 || _selectedMeshes.empty() )
         return;
-    glm::mat4 model = _scene->getTransform(_selectedEntity).worldTransform;
-    SelectedMeshMVP mvps = {
-            .original = pv * model,
-            .scaledUp = pv * glm::scale(model, glm::vec3(1.1f))
-    };
-    _mvpUniformBuffers[commandBufferIndex].setData(_vrd->device, &mvps, sizeof(mvps));
+//    glm::mat4 model = _scene->getTransform(_selectedEntity).worldTransform;
+//    SelectedMeshMVP mvps = {
+//            .original = pv * model,
+//            .scaledUp = pv * glm::scale(model, glm::vec3(MAG_STENCIL_FACTOR))
+//    };
+    _vpUniformBuffers[commandBufferIndex].setData(_vrd->device, &pv, sizeof(pv));
 }
 
 void SelectedMeshLayer::onEvent(Event& event) {}
 
 void SelectedMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) {
-    if (_selectedMesh == nullptr)
+    // nothing to do if no selected entity
+    if (_selectedEntity == -1 || _selectedMeshes.empty() )
         return;
+
+    // bind the layer
     bindPipelineAndDS(commandBuffer, commandBufferIndex);
 
     // at the beginning of the render pass, the stencil buffer is cleared with 0's
 
-    //
-    vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, VK_STENCIL_OP_INCREMENT_AND_CLAMP, VK_STENCIL_OP_INCREMENT_AND_CLAMP,
-                      VK_STENCIL_OP_KEEP, VK_COMPARE_OP_GREATER);
+    // TODO : maybe don't change stencil op every time ??
+    for (auto mesh : _selectedMeshes){
+        //
+        vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, VK_STENCIL_OP_INCREMENT_AND_CLAMP, VK_STENCIL_OP_INCREMENT_AND_CLAMP,
+                          VK_STENCIL_OP_KEEP, VK_COMPARE_OP_GREATER);
+        //vkCmdSetStencilCompareMask(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0xffffffff);
+        vkCmdDraw(commandBuffer, mesh->indexCount, 1, mesh->firstVertexIndex, 0);
 
-    //vkCmdSetStencilCompareMask(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0xffffffff);
-    vkCmdDraw(commandBuffer, _selectedMesh->indexCount, 1, _selectedMesh->firstVertexIndex, 0);
+        //vkCmdSetStencilCompareMask(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0);
 
-    //vkCmdSetStencilCompareMask(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0);
+        vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_REPLACE,
+                          VK_STENCIL_OP_KEEP, VK_COMPARE_OP_EQUAL);
+        vkCmdDraw(commandBuffer, mesh->indexCount, 1, mesh->firstVertexIndex, 1);
+    }
 
-    vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_REPLACE,
-                      VK_STENCIL_OP_KEEP, VK_COMPARE_OP_EQUAL);
-    vkCmdDraw(commandBuffer, _selectedMesh->indexCount, 1, _selectedMesh->firstVertexIndex, 1);
+
 
     //vkCmdSetStencilTestEnable(commandBuffer, VK_FALSE);
     //vkCmdSetStencilCompareMask(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0xffffff);
@@ -124,13 +140,20 @@ void SelectedMeshLayer::onImGuiRender() {
 }
 
 void SelectedMeshLayer::setSelectedEntity(int selectedEntity) {
+    // set selected entity
     _selectedEntity = selectedEntity;
-    _selectedMesh = _scene->getMesh(_selectedEntity);
-    if (_selectedMesh == nullptr) {
-        SPDLOG_INFO("Failed to find a mesh component for entity {}", _selectedEntity);
-        return;
-    }
-    SPDLOG_INFO("Selected mesh name {}",_scene->getName(selectedEntity));
+    _selectedMeshes.clear();
 
+    // nothing to do if no selected entity
+    if (selectedEntity == -1)
+        return;
+
+    // append all mesh components that are child of the selected entity
+    _scene->traverseRecursive(_selectedEntity, [this](int entity){
+        MeshComponent* mesh = _scene->getMesh(entity);
+        if (mesh != nullptr)
+            _selectedMeshes.push_back(mesh);
+    });
+    SPDLOG_INFO("Selected mesh name {}", _scene->getName(selectedEntity));
 }
 
