@@ -15,15 +15,6 @@ SelectedMeshLayer::SelectedMeshLayer(VkRenderPass renderPass, std::shared_ptr<Sc
     for (auto& buffer : _mvpUniformBuffers)
         buffer.init(_vrd->device, _vrd->physicalDevice, sizeof(SelectedMeshMVP));
 
-    // init vertices ssbo
-//    std::vector<TexVertex2> vertices;
-//    VK_ASSERT(FactoryModel::createTexturedSquare2(vertices), "Failed to gen vertices");
-//
-//    uint32_t verticesSize = utils::vectorSizeByte(vertices);
-//    _vertices.init(_vrd->device, _vrd->physicalDevice, verticesSize);
-//    _vertices.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool, vertices.data(),
-//                      verticesSize);
-
     // describe descriptors
     std::vector<Factory::Descriptor> descriptors = {
             {
@@ -56,11 +47,14 @@ SelectedMeshLayer::SelectedMeshLayer(VkRenderPass renderPass, std::shared_ptr<Sc
     std::tie(_descriptorSetLayout, _pipelineLayout, _descriptorPool, _descriptorSets) =
             Factory::createDescriptorSets(_vrd, descriptors, {});
 
+    // Fill up front stencil state as described by the spec :
+    // https://www.khronos.org/registry/vulkan/specs/1.3/html/chap26.html#fragops-stencil
     VkStencilOpState frontStencilState = {
-            .failOp = VK_STENCIL_OP_KEEP, // Will be set dynamically
-            .passOp = VK_STENCIL_OP_KEEP, // will be set dynamically
-            .depthFailOp = VK_STENCIL_OP_KEEP, // TODO : what?
-            .compareOp = VK_COMPARE_OP_NEVER, // will be set dynamically
+            .failOp = VK_STENCIL_OP_KEEP,      // will be set dynamically
+            .passOp = VK_STENCIL_OP_KEEP,      // will be set dynamically
+            .depthFailOp = VK_STENCIL_OP_KEEP, // operation if stencil passes, but depth fails. Will never happen, depth test is disabled
+            .compareOp = VK_COMPARE_OP_NEVER,  // will be set dynamically
+            .compareMask = 0xffffffff,         // compare mask
             .writeMask = 0xffffffff,           // always write
             .reference = 0,
     };
@@ -69,15 +63,12 @@ SelectedMeshLayer::SelectedMeshLayer(VkRenderPass renderPass, std::shared_ptr<Sc
                     .vertex = "SelectedMeshV.spv",
                     .fragment = "SelectedMeshF.spv"
             },
-            .enableDepthTest = VK_FALSE, // TODO : renable!!
+            .enableDepthTest = VK_FALSE, // depth dest is disabled
             .enableStencilTest = VK_TRUE,
             .frontStencilState = frontStencilState,
             .sampleCountMSAA = _vrd->sampleCount,
             .dynamicStates = {
-                    VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK,
-                    VK_DYNAMIC_STATE_STENCIL_OP,
-                    //VK_DYNAMIC_STATE_STENCIL_REFERENCE, // TODO : really need this as dynamic??
-                    //VK_DYNAMIC_STATE_STENCIL_WRITE_MASK, // TODO : same here
+                    VK_DYNAMIC_STATE_STENCIL_OP, // we dynamically change the stencil operation
                     }
     };
     _graphicsPipeline = Factory::createGraphicsPipeline(_vrd->device, _swapchainExtent, renderPass, _pipelineLayout, props);
@@ -88,7 +79,6 @@ SelectedMeshLayer::~SelectedMeshLayer() {
     // destroy the buffers
     for (auto& buffer : _mvpUniformBuffers)
         buffer.destroy(_vrd->device);
-    //_vertices.destroy(_vrd->device);
 }
 
 void SelectedMeshLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) {
@@ -109,17 +99,13 @@ void SelectedMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_
         return;
     bindPipelineAndDS(commandBuffer, commandBufferIndex);
 
-    // set the reference at 0
-    //vkCmdSetStencilReference(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0);
-    //vkCmdSetStencilWriteMask(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0xfffffff);
+    // at the beginning of the render pass, the stencil buffer is cleared with 0's
 
-    //vkCmdDraw(commandBuffer, _selectedMesh->indexCount, 1, _selectedMesh->firstVertexIndex, 0);
-    //return;
-
+    //
     vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, VK_STENCIL_OP_INCREMENT_AND_CLAMP, VK_STENCIL_OP_INCREMENT_AND_CLAMP,
                       VK_STENCIL_OP_KEEP, VK_COMPARE_OP_GREATER);
 
-    vkCmdSetStencilCompareMask(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0xffffffff);
+    //vkCmdSetStencilCompareMask(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0xffffffff);
     vkCmdDraw(commandBuffer, _selectedMesh->indexCount, 1, _selectedMesh->firstVertexIndex, 0);
 
     //vkCmdSetStencilCompareMask(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0);
