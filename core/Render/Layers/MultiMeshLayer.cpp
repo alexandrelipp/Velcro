@@ -86,6 +86,9 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
             .sampleCountMSAA = _vrd->sampleCount
     };
     _graphicsPipeline = Factory::createGraphicsPipeline(_vrd->device, _swapchainExtent, renderPass, _pipelineLayout, props);
+
+    // create the selected mesh layer
+    _selectedMeshLayer = std::make_shared<SelectedMeshLayer>(renderPass, _scene, _vertices, _indices);
 }
 
 MultiMeshLayer::~MultiMeshLayer() {
@@ -206,10 +209,13 @@ void MultiMeshLayer::onImGuiRender() {
     ImGui::Begin("Specular");
     ImGui::DragFloat("s", &_specularS, 0.1f, 0.f, 10.f);
 
-
     ImGui::End();
 
     displayGuizmo(_selectedEntity);
+}
+
+std::shared_ptr<SelectedMeshLayer> MultiMeshLayer::getSelectedMeshLayer() {
+    return _selectedMeshLayer;
 }
 
 void MultiMeshLayer::createDescriptors() {

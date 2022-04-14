@@ -10,6 +10,7 @@
 #include "../Objects/ShaderStorageBuffer.h"
 #include "../Objects/Texture.h"
 #include "../../Scene/Scene.h"
+#include "SelectedMeshLayer.h"
 
 // NOTE : ImGui must be included before ImGuizmo
 #include <imgui.h>
@@ -26,6 +27,8 @@ public:
     virtual void update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) override;
     virtual void onEvent(Event& event) override;
     virtual void onImGuiRender() override;
+
+    std::shared_ptr<SelectedMeshLayer> getSelectedMeshLayer();
 
 private:
     void createDescriptors();
@@ -57,6 +60,9 @@ private:
 
     // current operation done with the guizmo (translate, rotate or scale)
     ImGuizmo::OPERATION _operation = ImGuizmo::OPERATION::TRANSLATE;
+
+    // TODO : assign!!
+    std::shared_ptr<SelectedMeshLayer> _selectedMeshLayer = nullptr;
 
     //Texture _texture{};
 };

@@ -167,9 +167,14 @@ bool Renderer::init() {
     // push all layers
     _renderLayers.push_back(std::make_shared<ModelLayer>(_renderPass));
     _renderLayers.push_back(std::make_shared<LineLayer>(_renderPass));
-    _renderLayers.push_back(std::make_shared<MultiMeshLayer>(_renderPass));
     _renderLayers.push_back(std::make_shared<FlipbookLayer>(_renderPass));
-    _renderLayers.push_back(std::make_shared<SelectedMeshLayer>(_renderPass));
+
+    // push mesh layers
+    std::shared_ptr<MultiMeshLayer> multiMeshLayer = std::make_shared<MultiMeshLayer>(_renderPass);
+    _renderLayers.push_back(multiMeshLayer);
+    _renderLayers.push_back(multiMeshLayer->getSelectedMeshLayer());
+
+    // finish with imgui layer
     _imGuiLayer = std::make_shared<ImGuiLayer>(_renderPass);
     _renderLayers.push_back(_imGuiLayer);
 

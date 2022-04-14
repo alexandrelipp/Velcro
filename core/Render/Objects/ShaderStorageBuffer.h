@@ -16,8 +16,8 @@ public:
               bool hostVisible = false, VkBufferUsageFlags additionalUsage = 0);
     void destroy(VkDevice device);
 
-    uint32_t getSize();
-    VkBuffer getBuffer();
+    uint32_t getSize() const;
+    VkBuffer getBuffer() const;
 
     // TODO : should just take a VRD
     bool setData(VkDevice device, VkPhysicalDevice physicalDevice,

@@ -13,7 +13,8 @@
 
 class SelectedMeshLayer : public RenderLayer {
 public:
-    SelectedMeshLayer(VkRenderPass renderPass);
+    SelectedMeshLayer(VkRenderPass renderPass, std::shared_ptr<Scene> scene, const ShaderStorageBuffer& vertices,
+                      const ShaderStorageBuffer& indices);
 
     virtual ~SelectedMeshLayer();
 
@@ -23,6 +24,8 @@ public:
     virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) override;
     virtual void onImGuiRender() override;
 
+    void setSelectedEntity(int selectedEntity);
+
 private:
     struct SelectedMeshMVP{
         glm::mat4 original = glm::mat4(1.f);
@@ -30,6 +33,6 @@ private:
     };
     // Buffers
     std::array<UniformBuffer, MAX_FRAMES_IN_FLIGHT> _mvpUniformBuffers{};
-    ShaderStorageBuffer _vertices;
+    std::shared_ptr<Scene> _scene = nullptr;
 
 };

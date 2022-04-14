@@ -27,14 +27,13 @@ void ShaderStorageBuffer::destroy(VkDevice device) {
     _buffer = nullptr;
 }
 
-uint32_t ShaderStorageBuffer::getSize() {
+uint32_t ShaderStorageBuffer::getSize() const {
     return _size;
 }
 
-VkBuffer ShaderStorageBuffer::getBuffer() {
+VkBuffer ShaderStorageBuffer::getBuffer() const {
     return _buffer;
 }
-
 
 bool ShaderStorageBuffer::setData(VkDevice device, VkPhysicalDevice physicalDevice,
                              VkQueue queue, VkCommandPool commandPool, void* data, uint32_t size) {

@@ -78,6 +78,13 @@ TransformComponent& Scene::getTransform(int entity) {
     return _transforms[entity];
 }
 
+MeshComponent* Scene::getMesh(int entity) {
+    auto it = _meshesMap.find(entity);
+    if (it == _meshesMap.end())
+        return nullptr;
+    return &_meshes[it->second];
+}
+
 /// creates a mesh for the given entityID and returns the created mesh
 MeshComponent& Scene::createMesh(int entityID){
     // check if the mesh already exists

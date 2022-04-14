@@ -32,6 +32,8 @@ public:
     HierarchyComponent& getHierarchy(int entity);
     TransformComponent& getTransform(int entity);
 
+    MeshComponent* getMesh(int entity);
+
     int addSceneNode(int parent, int level, const std::string& name);
 
     /// creates a mesh for the given entityID and returns the created mesh

@@ -9,19 +9,20 @@
 #include "../../Utils/UtilsVulkan.h"
 #include "../../Utils/UtilsTemplate.h"
 
-SelectedMeshLayer::SelectedMeshLayer(VkRenderPass renderPass) {
+SelectedMeshLayer::SelectedMeshLayer(VkRenderPass renderPass, std::shared_ptr<Scene> scene, const ShaderStorageBuffer& vertices,
+                                     const ShaderStorageBuffer& indices) : _scene(scene) {
     // init the uniform buffers
     for (auto& buffer : _mvpUniformBuffers)
         buffer.init(_vrd->device, _vrd->physicalDevice, sizeof(SelectedMeshMVP));
 
     // init vertices ssbo
-    std::vector<TexVertex2> vertices;
-    VK_ASSERT(FactoryModel::createTexturedSquare2(vertices), "Failed to gen vertices");
-
-    uint32_t verticesSize = utils::vectorSizeByte(vertices);
-    _vertices.init(_vrd->device, _vrd->physicalDevice, verticesSize);
-    _vertices.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool, vertices.data(),
-                      verticesSize);
+//    std::vector<TexVertex2> vertices;
+//    VK_ASSERT(FactoryModel::createTexturedSquare2(vertices), "Failed to gen vertices");
+//
+//    uint32_t verticesSize = utils::vectorSizeByte(vertices);
+//    _vertices.init(_vrd->device, _vrd->physicalDevice, verticesSize);
+//    _vertices.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool, vertices.data(),
+//                      verticesSize);
 
     // describe descriptors
     std::vector<Factory::Descriptor> descriptors = {
@@ -37,8 +38,16 @@ SelectedMeshLayer::SelectedMeshLayer(VkRenderPass renderPass) {
                     .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
                     .shaderStage = VK_SHADER_STAGE_VERTEX_BIT,
                     .info = std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>{
-                            VkDescriptorBufferInfo {_vertices.getBuffer(), 0, _vertices.getSize()},
-                            VkDescriptorBufferInfo {_vertices.getBuffer(), 0, _vertices.getSize()},
+                            VkDescriptorBufferInfo {vertices.getBuffer(), 0, vertices.getSize()},
+                            VkDescriptorBufferInfo {vertices.getBuffer(), 0, vertices.getSize()},
+                    }
+            },
+            {
+                    .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                    .shaderStage = VK_SHADER_STAGE_VERTEX_BIT,
+                    .info = std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>{
+                            VkDescriptorBufferInfo {indices.getBuffer(), 0, indices.getSize()},
+                            VkDescriptorBufferInfo {indices.getBuffer(), 0, indices.getSize()},
                     }
             },
     };
@@ -79,7 +88,7 @@ SelectedMeshLayer::~SelectedMeshLayer() {
     // destroy the buffers
     for (auto& buffer : _mvpUniformBuffers)
         buffer.destroy(_vrd->device);
-    _vertices.destroy(_vrd->device);
+    //_vertices.destroy(_vrd->device);
 }
 
 void SelectedMeshLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) {
@@ -93,6 +102,7 @@ void SelectedMeshLayer::update(float dt, uint32_t commandBufferIndex, const glm:
 void SelectedMeshLayer::onEvent(Event& event) {}
 
 void SelectedMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) {
+    return;
     bindPipelineAndDS(commandBuffer, commandBufferIndex);
 
     // set the reference at 0
@@ -117,6 +127,10 @@ void SelectedMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_
 }
 
 void SelectedMeshLayer::onImGuiRender() {
+
+}
+
+void SelectedMeshLayer::setSelectedEntity(int selectedEntity) {
 
 }
 
