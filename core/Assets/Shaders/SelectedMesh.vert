@@ -17,8 +17,15 @@ layout(binding = 1) readonly buffer Vertices{
     Vertex vertices[];
 };
 
+layout(binding = 2) readonly buffer Indices{
+    uint indices[];
+};
+
 void main(){
-    Vertex vtx = vertices[gl_VertexIndex];
+    // get vertex using PVP
+    uint idx = indices[gl_VertexIndex];
+    Vertex vtx = vertices[idx];
+
     gl_Position = mvp[gl_InstanceIndex] * vec4(vtx.x, vtx.y, 0.0, 1.0);
     if (gl_InstanceIndex == 0)
         color = vec4(1.0, 0.0, 0.0, 1.0);

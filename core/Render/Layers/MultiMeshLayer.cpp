@@ -285,8 +285,10 @@ void MultiMeshLayer::displayHierarchy(int entity) {
 
     ImGui::PushID((int)entity);
 
-    if (ImGui::IsItemClicked())
+    if (ImGui::IsItemClicked()) {
         _selectedEntity = entity;
+        _selectedMeshLayer->setSelectedEntity(_selectedEntity);
+    }
 
     if (opened) {
         for (int e = hc.firstChild; e != -1; e = _scene->getHierarchy(e).nextSibling)

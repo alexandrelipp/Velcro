@@ -33,6 +33,7 @@ public:
 private:
     void createDescriptors();
 
+    // TODO : should this be done in the selected mesh layer ??
     void displayHierarchy(int entity);
     void displayGuizmo(int selectedEntity);
 
@@ -55,7 +56,7 @@ private:
     float _specularS = 0.5f;
 
     // Scene
-    int _selectedEntity = -1;
+    int _selectedEntity = -1; // TODO  Remove since we have selected mesh layer??
     std::shared_ptr<Scene> _scene = nullptr;
 
     // current operation done with the guizmo (translate, rotate or scale)

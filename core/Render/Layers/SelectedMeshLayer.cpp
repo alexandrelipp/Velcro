@@ -92,9 +92,12 @@ SelectedMeshLayer::~SelectedMeshLayer() {
 }
 
 void SelectedMeshLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) {
+    if (_selectedMesh == nullptr || _selectedEntity == -1)
+        return;
+    glm::mat4 model = _scene->getTransform(_selectedEntity).worldTransform;
     SelectedMeshMVP mvps = {
-            .original = glm::mat4(1.f),
-            .scaledUp = glm::scale(glm::mat4(1.f), glm::vec3(1.1f))
+            .original = pv * model,
+            .scaledUp = pv * glm::scale(model, glm::vec3(1.1f))
     };
     _mvpUniformBuffers[commandBufferIndex].setData(_vrd->device, &mvps, sizeof(mvps));
 }
@@ -102,7 +105,8 @@ void SelectedMeshLayer::update(float dt, uint32_t commandBufferIndex, const glm:
 void SelectedMeshLayer::onEvent(Event& event) {}
 
 void SelectedMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) {
-    return;
+    if (_selectedMesh == nullptr)
+        return;
     bindPipelineAndDS(commandBuffer, commandBufferIndex);
 
     // set the reference at 0
@@ -113,13 +117,13 @@ void SelectedMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_
                       VK_STENCIL_OP_KEEP, VK_COMPARE_OP_GREATER);
 
     vkCmdSetStencilCompareMask(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0xffffffff);
-    vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+    vkCmdDraw(commandBuffer, _selectedMesh->indexCount, 1, _selectedMesh->firstVertexIndex, 0);
 
     //vkCmdSetStencilCompareMask(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0);
 
     vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_REPLACE,
                       VK_STENCIL_OP_KEEP, VK_COMPARE_OP_EQUAL);
-    vkCmdDraw(commandBuffer, 6, 1, 0, 1);
+    vkCmdDraw(commandBuffer, _selectedMesh->indexCount, 1, _selectedMesh->firstVertexIndex, 1);
 
     //vkCmdSetStencilTestEnable(commandBuffer, VK_FALSE);
     //vkCmdSetStencilCompareMask(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0xffffff);
@@ -131,6 +135,9 @@ void SelectedMeshLayer::onImGuiRender() {
 }
 
 void SelectedMeshLayer::setSelectedEntity(int selectedEntity) {
-
+    _selectedEntity = selectedEntity;
+    _selectedMesh = _scene->getMesh(_selectedEntity);
+    if (_selectedMesh == nullptr)
+        SPDLOG_INFO("Failed to find a mesh component for entity {}", _selectedEntity);
 }
 

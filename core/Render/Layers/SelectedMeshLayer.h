@@ -35,4 +35,8 @@ private:
     std::array<UniformBuffer, MAX_FRAMES_IN_FLIGHT> _mvpUniformBuffers{};
     std::shared_ptr<Scene> _scene = nullptr;
 
+    // TODO : should be a vector!!
+    MeshComponent* _selectedMesh = nullptr;
+    int _selectedEntity = -1;
+
 };
