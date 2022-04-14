@@ -24,6 +24,10 @@ public:
     virtual void onImGuiRender() override;
 
 private:
+    struct SelectedMeshMVP{
+        glm::mat4 original = glm::mat4(1.f);
+        glm::mat4 scaledUp = glm::mat4(1.f);
+    };
     // Buffers
     std::array<UniformBuffer, MAX_FRAMES_IN_FLIGHT> _mvpUniformBuffers{};
     ShaderStorageBuffer _vertices;

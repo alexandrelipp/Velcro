@@ -12,7 +12,7 @@
 SelectedMeshLayer::SelectedMeshLayer(VkRenderPass renderPass) {
     // init the uniform buffers
     for (auto& buffer : _mvpUniformBuffers)
-        buffer.init(_vrd->device, _vrd->physicalDevice, sizeof(glm::mat4));
+        buffer.init(_vrd->device, _vrd->physicalDevice, sizeof(SelectedMeshMVP));
 
     // init vertices ssbo
     std::vector<TexVertex2> vertices;
@@ -47,17 +47,29 @@ SelectedMeshLayer::SelectedMeshLayer(VkRenderPass renderPass) {
     std::tie(_descriptorSetLayout, _pipelineLayout, _descriptorPool, _descriptorSets) =
             Factory::createDescriptorSets(_vrd, descriptors, {});
 
+    VkStencilOpState frontStencilState = {
+            .failOp = VK_STENCIL_OP_KEEP, // Will be set dynamically
+            .passOp = VK_STENCIL_OP_KEEP, // will be set dynamically
+            .depthFailOp = VK_STENCIL_OP_KEEP, // TODO : what?
+            .compareOp = VK_COMPARE_OP_NEVER, // will be set dynamically
+            .writeMask = 0xffffffff,           // always write
+            .reference = 0,
+    };
     Factory::GraphicsPipelineProps props = {
             .shaders =  {
                     .vertex = "SelectedMeshV.spv",
                     .fragment = "SelectedMeshF.spv"
             },
+            .enableDepthTest = VK_FALSE, // TODO : renable!!
             .enableStencilTest = VK_TRUE,
+            .frontStencilState = frontStencilState,
             .sampleCountMSAA = _vrd->sampleCount,
             .dynamicStates = {
                     VK_DYNAMIC_STATE_STENCIL_COMPARE_MASK,
-                    VK_DYNAMIC_STATE_STENCIL_OP
-            }
+                    VK_DYNAMIC_STATE_STENCIL_OP,
+                    //VK_DYNAMIC_STATE_STENCIL_REFERENCE, // TODO : really need this as dynamic??
+                    //VK_DYNAMIC_STATE_STENCIL_WRITE_MASK, // TODO : same here
+                    }
     };
     _graphicsPipeline = Factory::createGraphicsPipeline(_vrd->device, _swapchainExtent, renderPass, _pipelineLayout, props);
 
@@ -71,19 +83,24 @@ SelectedMeshLayer::~SelectedMeshLayer() {
 }
 
 void SelectedMeshLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) {
-    glm::mat4 data(1.f);
-    _mvpUniformBuffers[commandBufferIndex].setData(_vrd->device, &data, sizeof(data));
+    SelectedMeshMVP mvps = {
+            .original = glm::mat4(1.f),
+            .scaledUp = glm::scale(glm::mat4(1.f), glm::vec3(1.1f))
+    };
+    _mvpUniformBuffers[commandBufferIndex].setData(_vrd->device, &mvps, sizeof(mvps));
 }
 
-void SelectedMeshLayer::onEvent(Event& event) {
-
-}
+void SelectedMeshLayer::onEvent(Event& event) {}
 
 void SelectedMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) {
     bindPipelineAndDS(commandBuffer, commandBufferIndex);
 
-    vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_REPLACE,
-                      VK_STENCIL_OP_KEEP, VK_COMPARE_OP_ALWAYS);
+    // set the reference at 0
+    //vkCmdSetStencilReference(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0);
+    //vkCmdSetStencilWriteMask(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0xfffffff);
+
+    vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, VK_STENCIL_OP_INCREMENT_AND_CLAMP, VK_STENCIL_OP_INCREMENT_AND_CLAMP,
+                      VK_STENCIL_OP_KEEP, VK_COMPARE_OP_GREATER);
 
     vkCmdSetStencilCompareMask(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0xffffffff);
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
@@ -91,7 +108,7 @@ void SelectedMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_
     //vkCmdSetStencilCompareMask(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0);
 
     vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_REPLACE,
-                      VK_STENCIL_OP_KEEP, VK_COMPARE_OP_LESS);
+                      VK_STENCIL_OP_KEEP, VK_COMPARE_OP_EQUAL);
     vkCmdDraw(commandBuffer, 6, 1, 0, 1);
 
     //vkCmdSetStencilTestEnable(commandBuffer, VK_FALSE);

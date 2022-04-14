@@ -38,6 +38,7 @@ namespace Factory {
        ShaderFiles shaders;
        VkBool32 enableDepthTest = VK_TRUE;
        VkBool32 enableStencilTest = VK_FALSE;
+       std::optional<VkStencilOpState> frontStencilState = std::nullopt;
        VkBool32 enableBlending = VK_TRUE;
        VkBool32 enableBackFaceCulling = VK_TRUE;
        VkSampleCountFlagBits sampleCountMSAA = VK_SAMPLE_COUNT_1_BIT;

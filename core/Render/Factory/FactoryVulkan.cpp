@@ -309,10 +309,7 @@ namespace Factory {
                 .sampleShadingEnable = VK_FALSE, // TODO : take as props ? Note : also needs to be enabled in the device features
         };
 
-//        VkStencilOpState frontStencilState = {
-//                .
-//        };
-
+        // set up depth + stencil state
         VkPipelineDepthStencilStateCreateInfo depthStencilCI = {
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
                 .depthTestEnable = props.enableDepthTest,
@@ -321,6 +318,9 @@ namespace Factory {
                 .depthBoundsTestEnable = VK_FALSE,      // if enabled, depth test will only pass when inside the given bounds
                 .stencilTestEnable = props.enableStencilTest,
         };
+        // add front stencil state if requested
+        if (props.frontStencilState.has_value())
+            depthStencilCI.front = props.frontStencilState.value();
 
         // set up default color blending
         VkPipelineColorBlendAttachmentState colorBlendAttachment = {
