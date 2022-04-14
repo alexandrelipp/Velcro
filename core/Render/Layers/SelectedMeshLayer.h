@@ -40,6 +40,7 @@ private:
 //    };
     // Buffers
     std::array<UniformBuffer, MAX_FRAMES_IN_FLIGHT> _vpUniformBuffers{};
+    VkPushConstantRange _scaleFactor{};
     std::shared_ptr<Scene> _scene = nullptr;
 
     std::vector<MeshComponent*> _selectedMeshes;

@@ -52,9 +52,16 @@ SelectedMeshLayer::SelectedMeshLayer(VkRenderPass renderPass, const Props& props
             },
     };
 
+    // push constant for factor of outline thickness
+    _scaleFactor = {
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+            .offset = 0,
+            .size = sizeof(float),
+    };
+
     // create descriptors
     std::tie(_descriptorSetLayout, _pipelineLayout, _descriptorPool, _descriptorSets) =
-            Factory::createDescriptorSets(_vrd, descriptors, {});
+            Factory::createDescriptorSets(_vrd, descriptors, {_scaleFactor});
 
     // Fill up front stencil state as described by the spec :
     // https://www.khronos.org/registry/vulkan/specs/1.3/html/chap26.html#fragops-stencil
@@ -98,7 +105,7 @@ void SelectedMeshLayer::update(float dt, uint32_t commandBufferIndex, const glm:
 //            .original = pv * model,
 //            .scaledUp = pv * glm::scale(model, glm::vec3(MAG_STENCIL_FACTOR))
 //    };
-    _vpUniformBuffers[commandBufferIndex].setData(_vrd->device, &pv, sizeof(pv));
+    _vpUniformBuffers[commandBufferIndex].setData(_vrd->device, (void*)&pv, sizeof(pv));
 }
 
 void SelectedMeshLayer::onEvent(Event& event) {}
@@ -113,19 +120,47 @@ void SelectedMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_
 
     // at the beginning of the render pass, the stencil buffer is cleared with 0's
 
+
+    // TODO : fix!! we should always see all selected mesh
+    float value = 1.f;
+    vkCmdPushConstants(commandBuffer, _pipelineLayout, _scaleFactor.stageFlags, _scaleFactor.offset, _scaleFactor.size,
+                       &value);
+    for (auto mesh : _selectedMeshes) {
+        //
+        vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, VK_STENCIL_OP_INCREMENT_AND_CLAMP,
+                          VK_STENCIL_OP_INCREMENT_AND_CLAMP,
+                          VK_STENCIL_OP_KEEP, VK_COMPARE_OP_GREATER);
+        vkCmdDraw(commandBuffer, mesh->indexCount, 1, mesh->firstVertexIndex, mesh->meshIndex);
+    }
+
+    value = MAG_STENCIL_FACTOR;
+    vkCmdPushConstants(commandBuffer, _pipelineLayout, _scaleFactor.stageFlags, _scaleFactor.offset, _scaleFactor.size,
+                       &value);
+    for (auto mesh : _selectedMeshes) {
+        vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_REPLACE,
+                          VK_STENCIL_OP_KEEP, VK_COMPARE_OP_EQUAL);
+        vkCmdDraw(commandBuffer, mesh->indexCount, 1, mesh->firstVertexIndex, mesh->meshIndex);
+    }
+
+    return;
+
+
     // TODO : maybe don't change stencil op every time ??
     for (auto mesh : _selectedMeshes){
+        float value = 1.f;
+        vkCmdPushConstants(commandBuffer, _pipelineLayout, _scaleFactor.stageFlags, _scaleFactor.offset, _scaleFactor.size, &value);
+
         //
         vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, VK_STENCIL_OP_INCREMENT_AND_CLAMP, VK_STENCIL_OP_INCREMENT_AND_CLAMP,
                           VK_STENCIL_OP_KEEP, VK_COMPARE_OP_GREATER);
-        //vkCmdSetStencilCompareMask(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0xffffffff);
-        vkCmdDraw(commandBuffer, mesh->indexCount, 1, mesh->firstVertexIndex, 0);
+        vkCmdDraw(commandBuffer, mesh->indexCount, 1, mesh->firstVertexIndex, mesh->meshIndex);
 
-        //vkCmdSetStencilCompareMask(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0);
+        value = 1.03f;
+        vkCmdPushConstants(commandBuffer, _pipelineLayout, _scaleFactor.stageFlags, _scaleFactor.offset, _scaleFactor.size, &value);
 
         vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_REPLACE,
                           VK_STENCIL_OP_KEEP, VK_COMPARE_OP_EQUAL);
-        vkCmdDraw(commandBuffer, mesh->indexCount, 1, mesh->firstVertexIndex, 1);
+        vkCmdDraw(commandBuffer, mesh->indexCount, 1, mesh->firstVertexIndex, mesh->meshIndex);
     }
 
 
