@@ -10,6 +10,9 @@
 #include "../Objects/Texture.h"
 #include "../../Scene/Scene.h"
 
+// NOTE : ImGui must be included before ImGuizmo
+#include <imgui.h>
+#include <ImGuizmo/ImGuizmo.h>
 
 class SelectedMeshLayer : public RenderLayer {
 public:
@@ -34,6 +37,11 @@ public:
     void setSelectedEntity(int selectedEntity);
 
 private:
+    // TODO : should this be done in the selected mesh layer ??
+    void displayHierarchy(int entity);
+    void displayGuizmo(int selectedEntity);
+
+private:
 //    struct SelectedMeshMVP{
 //        glm::mat4 original = glm::mat4(1.f);
 //        glm::mat4 scaledUp = glm::mat4(1.f);
@@ -45,6 +53,9 @@ private:
 
     std::vector<MeshComponent*> _selectedMeshes;
     int _selectedEntity = -1;
+
+    // current operation done with the guizmo (translate, rotate or scale)
+    ImGuizmo::OPERATION _operation = ImGuizmo::OPERATION::TRANSLATE;
 
     static float constexpr MAG_STENCIL_FACTOR = 1.04f;
 

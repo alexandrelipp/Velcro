@@ -12,10 +12,6 @@
 #include "../../Scene/Scene.h"
 #include "SelectedMeshLayer.h"
 
-// NOTE : ImGui must be included before ImGuizmo
-#include <imgui.h>
-#include <ImGuizmo/ImGuizmo.h>
-
 
 class MultiMeshLayer : public RenderLayer {
 public:
@@ -32,10 +28,6 @@ public:
 
 private:
     void createDescriptors();
-
-    // TODO : should this be done in the selected mesh layer ??
-    void displayHierarchy(int entity);
-    void displayGuizmo(int selectedEntity);
 
 private:
     struct InstanceData{
@@ -56,13 +48,9 @@ private:
     float _specularS = 0.5f;
 
     // Scene
-    int _selectedEntity = -1; // TODO  Remove since we have selected mesh layer??
     std::shared_ptr<Scene> _scene = nullptr;
 
-    // current operation done with the guizmo (translate, rotate or scale)
-    ImGuizmo::OPERATION _operation = ImGuizmo::OPERATION::TRANSLATE;
-
-    // TODO : assign!!
+    ///< Multi mesh layer
     std::shared_ptr<SelectedMeshLayer> _selectedMeshLayer = nullptr;
 
     //Texture _texture{};
