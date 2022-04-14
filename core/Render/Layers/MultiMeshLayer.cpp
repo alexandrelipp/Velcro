@@ -27,17 +27,15 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
 
     _scene = std::make_shared<Scene>("NanoWorld");
     //FactoryModel::importFromFile("../../../core/Assets/Models/Nano/nanosuit.obj", _scene);
-    //FactoryModel::importFromFile("../../../core/Assets/Models/utahTeapot.fbx", _scene);
+    FactoryModel::importFromFile("../../../core/Assets/Models/utahTeapot.fbx", _scene);
     //FactoryModel::importFromFile("../../../core/Assets/Models/engine.fbx", _scene);
-    FactoryModel::importFromFile("../../../core/Assets/Models/Bell Huey.fbx", _scene);
+    //FactoryModel::importFromFile("../../../core/Assets/Models/Bell Huey.fbx", _scene);
     //FactoryModel::importFromFile("../../../core/Assets/Models/duck/scene.gltf", _scene);
 
     static_assert(sizeof(Vertex) == sizeof(Vertex::position) + sizeof(Vertex::normal) + sizeof(Vertex::uv));
 
     auto [vertices, vtxSize] = _scene->getVerticesData();
     auto [indices, idxSize] = _scene->getIndicesData();
-
-
 
     // init the vertices ssbo
     _vertices.init(_vrd->device, _vrd->physicalDevice, vtxSize);

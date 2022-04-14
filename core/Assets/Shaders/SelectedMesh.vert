@@ -9,6 +9,10 @@ layout(binding = 0) uniform Uniform{
 struct Vertex{
     float x;
     float y;
+    float z;
+    float nx;
+    float ny;
+    float nz;
     float u;
     float v;
 };
@@ -26,7 +30,8 @@ void main(){
     uint idx = indices[gl_VertexIndex];
     Vertex vtx = vertices[idx];
 
-    gl_Position = mvp[gl_InstanceIndex] * vec4(vtx.x, vtx.y, 0.0, 1.0);
+    gl_Position = mvp[gl_InstanceIndex] * vec4(vtx.x, vtx.y, vtx.z, 1.0);
+   //gl_Position = mvptest * vec4(vtx.x, vtx.y, 0.0, 1.0);
     if (gl_InstanceIndex == 0)
         color = vec4(1.0, 0.0, 0.0, 1.0);
     else

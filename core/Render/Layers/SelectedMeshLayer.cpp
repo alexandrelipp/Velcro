@@ -113,6 +113,9 @@ void SelectedMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_
     //vkCmdSetStencilReference(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0);
     //vkCmdSetStencilWriteMask(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0xfffffff);
 
+    //vkCmdDraw(commandBuffer, _selectedMesh->indexCount, 1, _selectedMesh->firstVertexIndex, 0);
+    //return;
+
     vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, VK_STENCIL_OP_INCREMENT_AND_CLAMP, VK_STENCIL_OP_INCREMENT_AND_CLAMP,
                       VK_STENCIL_OP_KEEP, VK_COMPARE_OP_GREATER);
 
@@ -137,7 +140,11 @@ void SelectedMeshLayer::onImGuiRender() {
 void SelectedMeshLayer::setSelectedEntity(int selectedEntity) {
     _selectedEntity = selectedEntity;
     _selectedMesh = _scene->getMesh(_selectedEntity);
-    if (_selectedMesh == nullptr)
+    if (_selectedMesh == nullptr) {
         SPDLOG_INFO("Failed to find a mesh component for entity {}", _selectedEntity);
+        return;
+    }
+    SPDLOG_INFO("Selected mesh name {}",_scene->getName(selectedEntity));
+
 }
 
