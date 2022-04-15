@@ -58,6 +58,6 @@ private:
     ImGuizmo::OPERATION _operation = ImGuizmo::OPERATION::TRANSLATE;
 
     // constants
-    static constexpr float  MAG_STENCIL_FACTOR = 1.04f;
+    static constexpr float MAG_OUTLINE_FACTOR = 1.04f;
     static constexpr glm::vec4 OUTLINE_COLOR = glm::vec4(1.0f, 1.0f, 0.f, 0.9f);
 };

@@ -121,11 +121,7 @@ SelectedMeshLayer::~SelectedMeshLayer() {
 void SelectedMeshLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) {
     if (_selectedEntity == -1 || _selectedMeshes.empty() )
         return;
-//    glm::mat4 model = _scene->getTransform(_selectedEntity).worldTransform;
-//    SelectedMeshMVP mvps = {
-//            .original = pv * model,
-//            .scaledUp = pv * glm::scale(model, glm::vec3(MAG_STENCIL_FACTOR))
-//    };
+    // upload projection view matrix
     _vpUniformBuffers[commandBufferIndex].setData(_vrd->device, (void*)&pv, sizeof(pv));
 }
 
@@ -182,54 +178,68 @@ void SelectedMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_
 
     // at the beginning of the render pass, the stencil buffer is cleared with 0's
 
+    // if defined, all the mesh outlines will be rendered. If not only the outline of all the meshes will be visible
+#define RENDER_ALL_OUTLINES
+#ifdef RENDER_ALL_OUTLINES
+    // For each mesh :
+    // 1. Render Mesh with stencil test that always fail but write to stencil
+    // 2. Render scaled up mesh. Only outlined pixels will pass the stencil test
+    // 3. Decrement (effectively clearing) stencil for next mesh
+    for (auto mesh : _selectedMeshes) {
+        // render mesh at its scale
+        float value = 1.f;
+        vkCmdPushConstants(commandBuffer, _pipelineLayout, _scaleFactor.stageFlags, _scaleFactor.offset, _scaleFactor.size,
+                           &value);
+        // will always fail, but will write to stencil buffer
+        vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT,
+                          VK_STENCIL_OP_INCREMENT_AND_CLAMP, // Fail OP -> increment stencil value
+                          VK_STENCIL_OP_INCREMENT_AND_CLAMP, // Pass OP (never happens)
+                          VK_STENCIL_OP_KEEP,                // Depth fail OP (never happens, no depth test)
+                          VK_COMPARE_OP_GREATER);            // Always fail : Reference is 0 (nothing greater then 0)
 
-    // TODO : fix!! we should always see all selected mesh
+        vkCmdDraw(commandBuffer, mesh->indexCount, 1, mesh->firstVertexIndex, mesh->meshIndex);
+
+        // scale up mesh by the factor
+        value = MAG_OUTLINE_FACTOR;
+        vkCmdPushConstants(commandBuffer, _pipelineLayout, _scaleFactor.stageFlags, _scaleFactor.offset, _scaleFactor.size,
+                           &value);
+
+        // will only pass for pixels in outline
+        vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT,
+                          VK_STENCIL_OP_DECREMENT_AND_CLAMP,    // Pass OP -> decrement stencil value for next mesh
+                          VK_STENCIL_OP_DECREMENT_AND_CLAMP,    // Fail OP -> decrement stencil value for next mesh
+                          VK_STENCIL_OP_KEEP,                   // Depth fail OP (never happens, no depth test)
+                          VK_COMPARE_OP_EQUAL);                 // Reference is 0. Only the pixels with a stencil value of 0
+                                                                // (outline pixels) will pass
+        vkCmdDraw(commandBuffer, mesh->indexCount, 1, mesh->firstVertexIndex, mesh->meshIndex);
+    }
+
+#else
+
+    // render mesh at its scale
     float value = 1.f;
     vkCmdPushConstants(commandBuffer, _pipelineLayout, _scaleFactor.stageFlags, _scaleFactor.offset, _scaleFactor.size,
                        &value);
+    // will always fail, but will write to stencil buffer
+    vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, VK_STENCIL_OP_INCREMENT_AND_CLAMP,
+                      VK_STENCIL_OP_INCREMENT_AND_CLAMP,
+                      VK_STENCIL_OP_KEEP, VK_COMPARE_OP_GREATER);
     for (auto mesh : _selectedMeshes) {
-        //
-        vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, VK_STENCIL_OP_INCREMENT_AND_CLAMP,
-                          VK_STENCIL_OP_INCREMENT_AND_CLAMP,
-                          VK_STENCIL_OP_KEEP, VK_COMPARE_OP_GREATER);
         vkCmdDraw(commandBuffer, mesh->indexCount, 1, mesh->firstVertexIndex, mesh->meshIndex);
     }
 
-    value = MAG_STENCIL_FACTOR;
+    // scale up mesh by the factor
+    value = MAG_OUTLINE_FACTOR;
     vkCmdPushConstants(commandBuffer, _pipelineLayout, _scaleFactor.stageFlags, _scaleFactor.offset, _scaleFactor.size,
                        &value);
+
+    // will only pass for pixels in outline
+    vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_REPLACE,
+                      VK_STENCIL_OP_KEEP, VK_COMPARE_OP_EQUAL);
     for (auto mesh : _selectedMeshes) {
-        vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_REPLACE,
-                          VK_STENCIL_OP_KEEP, VK_COMPARE_OP_EQUAL);
         vkCmdDraw(commandBuffer, mesh->indexCount, 1, mesh->firstVertexIndex, mesh->meshIndex);
     }
-
-    return;
-
-
-    // TODO : maybe don't change stencil op every time ??
-    for (auto mesh : _selectedMeshes){
-        float value = 1.f;
-        vkCmdPushConstants(commandBuffer, _pipelineLayout, _scaleFactor.stageFlags, _scaleFactor.offset, _scaleFactor.size, &value);
-
-        //
-        vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, VK_STENCIL_OP_INCREMENT_AND_CLAMP, VK_STENCIL_OP_INCREMENT_AND_CLAMP,
-                          VK_STENCIL_OP_KEEP, VK_COMPARE_OP_GREATER);
-        vkCmdDraw(commandBuffer, mesh->indexCount, 1, mesh->firstVertexIndex, mesh->meshIndex);
-
-        value = 1.03f;
-        vkCmdPushConstants(commandBuffer, _pipelineLayout, _scaleFactor.stageFlags, _scaleFactor.offset, _scaleFactor.size, &value);
-
-        vkCmdSetStencilOp(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_REPLACE,
-                          VK_STENCIL_OP_KEEP, VK_COMPARE_OP_EQUAL);
-        vkCmdDraw(commandBuffer, mesh->indexCount, 1, mesh->firstVertexIndex, mesh->meshIndex);
-    }
-
-
-
-    //vkCmdSetStencilTestEnable(commandBuffer, VK_FALSE);
-    //vkCmdSetStencilCompareMask(commandBuffer, VK_STENCIL_FACE_FRONT_BIT, 0xffffff);
-
+#endif
 }
 
 void SelectedMeshLayer::onImGuiRender() {
