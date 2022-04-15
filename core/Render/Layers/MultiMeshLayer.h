@@ -50,7 +50,7 @@ private:
     // Scene
     std::shared_ptr<Scene> _scene = nullptr;
 
-    ///< Multi mesh layer
+    ///< Selected mesh layer
     std::shared_ptr<SelectedMeshLayer> _selectedMeshLayer = nullptr;
 
     //Texture _texture{};

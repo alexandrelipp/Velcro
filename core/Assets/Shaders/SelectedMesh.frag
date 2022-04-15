@@ -1,6 +1,7 @@
 #version 460
 
-// color defined when shader is compiled (from spirV -> machine). "'constant_id' : can only be applied to a scalar"
+// color defined when shader is compiled (from spirV -> machine).
+// "'constant_id' : can only be applied to a scalar" is the reason we don't have one constant vec4
 layout (constant_id = 0) const float R = 0.0;
 layout (constant_id = 1) const float G = 0.0;
 layout (constant_id = 2) const float B = 0.0;
