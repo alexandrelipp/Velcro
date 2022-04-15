@@ -1,11 +1,10 @@
 #version 460
 
-layout(location = 0) out vec4 color;
-
 layout(binding = 0) uniform Uniform{
     mat4 vp;
 };
 
+// even though we don't use all of the attributes, we declared them so the vertex data is compatible with the multiMeshLayer
 struct Vertex{
     float x;
     float y;
@@ -29,10 +28,6 @@ layout(binding = 3) readonly buffer Transforms{
     mat4 transforms[];
 };
 
-//mat4 scaleUp(mat4 input, float factor){
-
-//}
-
 layout(push_constant) uniform PC {
     float factor;
 };
@@ -42,12 +37,6 @@ void main(){
     uint idx = indices[gl_VertexIndex];
     Vertex vtx = vertices[idx];
 
-    //gl_Position = mvp[gl_InstanceIndex] * vec4(vtx.x * factor, vtx.y * factor, vtx.z * factor, 1.0);
-   //gl_Position = mvptest * vec4(vtx.x, vtx.y, 0.0, 1.0);
-
-   gl_Position = vp * transforms[gl_InstanceIndex] * vec4(vtx.x * factor, vtx.y * factor, vtx.z * factor, 1.0);
-    if (gl_InstanceIndex == 0)
-        color = vec4(1.0, 0.0, 0.0, 1.0);
-    else
-        color = vec4(0.0, 0.0, 1.0, 1.0);
+    // calculate position using factor and instance index
+    gl_Position = vp * transforms[gl_InstanceIndex] * vec4(vtx.x * factor, vtx.y * factor, vtx.z * factor, 1.0);
 }

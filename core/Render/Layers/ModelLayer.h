@@ -24,12 +24,6 @@ private:
     void createDescriptors();
 
 private:
-    struct SelectedTransforms{
-        glm::mat4 mvp = glm::mat4(1.f);
-        glm::mat4 mvpScale = glm::mat4(1.f);
-    };
-
-
     // Buffers
     std::array<UniformBuffer, MAX_FRAMES_IN_FLIGHT> _mvpUniformBuffers{};
     ShaderStorageBuffer _vertices{};
