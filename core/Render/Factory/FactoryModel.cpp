@@ -95,6 +95,30 @@ void FactoryModel::importFromFile(const std::string& path, std::shared_ptr<Scene
     SPDLOG_INFO("Num vertices {}", scene->_vertices.size());
     SPDLOG_INFO("Max index {}", *std::max_element(scene->_indices.begin(), scene->_indices.end()));
 
+    for (uint32_t i = 0; i < _aiScene->mNumMaterials; ++i){
+        Material material{};
+        aiMaterial* aiMaterial = _aiScene->mMaterials[i];
+        aiString name;
+        if (aiMaterial->Get(AI_MATKEY_NAME, name) == AI_SUCCESS) {
+            material.name = name.C_Str();
+            SPDLOG_INFO("Material Name {}", material.name);
+        }
+
+        aiColor3D output;
+        if (aiMaterial->Get(AI_MATKEY_COLOR_AMBIENT, output) == AI_SUCCESS) {
+            material.ambientColor = convertAiColor3D(output);
+            SPDLOG_INFO("Ambient {}", glm::to_string(material.ambientColor));
+        }
+        if (aiMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, output) == AI_SUCCESS) {
+            material.diffuseColor = convertAiColor3D(output);
+            SPDLOG_INFO("diffuse {}", glm::to_string(material.diffuseColor));
+        }
+        if (aiMaterial->Get(AI_MATKEY_COLOR_SPECULAR, output) == AI_SUCCESS) {
+            material.specularColor = convertAiColor3D(output);
+            SPDLOG_INFO("Specular {}", glm::to_string(material.specularColor));
+        }
+    }
+
     // don't forget to reset the cached AiScene
     _aiScene = nullptr;
     _filePath.clear();
@@ -126,6 +150,8 @@ bool FactoryModel::createMeshComponent(int aiMeshIndex, MeshComponent& mc, std::
     if (aiMeshIndex >= _aiScene->mNumMeshes)
         throw std::runtime_error("Index out of range");
     aiMesh* mesh = _aiScene->mMeshes[aiMeshIndex];
+
+    SPDLOG_INFO("Material Index {}", mesh->mMaterialIndex);
 
     // store the mesh first index (will be added to all indices since all indices of all meshes are stored continuously)
     uint32_t meshFirstVertexIndex = scene->_vertices.size();
@@ -175,4 +201,8 @@ std::string FactoryModel::getMeshName(int meshIndex) {
         throw std::runtime_error("Index out of range");
     aiMesh* mesh = _aiScene->mMeshes[meshIndex];
     return {mesh->mName.C_Str()};
+}
+
+glm::vec3 FactoryModel::convertAiColor3D(const aiColor3D& color) {
+    return {color.r, color.g, color.b};
 }

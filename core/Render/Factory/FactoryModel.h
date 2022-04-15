@@ -34,6 +34,7 @@ private:
     static bool createMeshComponent(int aiMeshIndex, MeshComponent& mc, std::shared_ptr<Scene> scene);
     static std::string getMeshName(int meshIndex);
     static glm::mat4 convertAiMat4(const aiMatrix4x4& mat);
+    static glm::vec3 convertAiColor3D(const aiColor3D& color);
 
 
     static inline const aiScene* _aiScene = nullptr; // <cached scene

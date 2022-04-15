@@ -71,7 +71,8 @@ private:
     std::vector<MeshComponent> _meshes;
 
     /// map of node ID to materialID
-    std::unordered_map<int, int> _materials;
+    // std::unordered_map<int, int> _materials; // TODO : remove ? not sure necessary
+    std::vector<Material> _materials;
 
     std::string _name;
 
@@ -79,7 +80,7 @@ private:
 
 
     /// used to only recompute necessary transforms, note : it might be faster/simpler to always recompute all transforms
-    /// in certain case. Profile to get an accurate answer
+    /// in certain case. Profile to get an accurate answer. If done so, the transforms must be sorted by level
     std::array<std::unordered_set<int>, MAX_LEVELS> _changedTransforms;
 
     std::vector<Vertex> _vertices;

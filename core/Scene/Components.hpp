@@ -25,4 +25,13 @@ struct MeshComponent {
     uint32_t firstVertexIndex = 0; ///< Index in the index buffer of the first vertex
     uint32_t indexCount = 0;       ///< Number of indices
     uint32_t meshIndex = 0;        ///< Index of the mesh in the scene
+    uint32_t materialIndex = 0;    ///< Index of the material (assimp)
+};
+
+struct Material {
+    std::string name        = "Nameless material";
+    // TODO : should we init colors at 0 ??
+    glm::vec3 ambientColor  = glm::vec3(1.f);
+    glm::vec3 diffuseColor  = glm::vec3(1.f);
+    glm::vec3 specularColor = glm::vec3(1.f);
 };
