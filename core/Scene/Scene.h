@@ -57,6 +57,7 @@ public:
     const std::vector<glm::mat4>& getMeshTransforms();
 
     const std::vector<MeshComponent>& getMeshes();
+    const std::vector<Material>& getMaterials();
 
 private:
 

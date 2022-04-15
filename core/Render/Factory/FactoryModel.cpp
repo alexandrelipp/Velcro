@@ -88,6 +88,7 @@ void FactoryModel::importFromFile(const std::string& path, std::shared_ptr<Scene
 
     SPDLOG_INFO("Num meshes {}", _aiScene->mNumMeshes);
     _filePath = path;
+    _firstMaterialIndex = scene->_materials.size();
 
     traverseNodeRecursive(_aiScene->mRootNode, -1, 1, scene);
     scene->setDirtyTransform(0);
@@ -95,6 +96,7 @@ void FactoryModel::importFromFile(const std::string& path, std::shared_ptr<Scene
     SPDLOG_INFO("Num vertices {}", scene->_vertices.size());
     SPDLOG_INFO("Max index {}", *std::max_element(scene->_indices.begin(), scene->_indices.end()));
 
+    // add all materials to scene
     for (uint32_t i = 0; i < _aiScene->mNumMaterials; ++i){
         Material material{};
         aiMaterial* aiMaterial = _aiScene->mMaterials[i];
@@ -117,6 +119,7 @@ void FactoryModel::importFromFile(const std::string& path, std::shared_ptr<Scene
             material.specularColor = convertAiColor3D(output);
             SPDLOG_INFO("Specular {}", glm::to_string(material.specularColor));
         }
+        scene->_materials.push_back(material);
     }
 
     // don't forget to reset the cached AiScene
@@ -151,7 +154,8 @@ bool FactoryModel::createMeshComponent(int aiMeshIndex, MeshComponent& mc, std::
         throw std::runtime_error("Index out of range");
     aiMesh* mesh = _aiScene->mMeshes[aiMeshIndex];
 
-    SPDLOG_INFO("Material Index {}", mesh->mMaterialIndex);
+    // add the material index. First material index is relevant if importing multiple models in a scene
+    mc.materialIndex = _firstMaterialIndex + mesh->mMaterialIndex;
 
     // store the mesh first index (will be added to all indices since all indices of all meshes are stored continuously)
     uint32_t meshFirstVertexIndex = scene->_vertices.size();

@@ -37,8 +37,10 @@ private:
     static glm::vec3 convertAiColor3D(const aiColor3D& color);
 
 
-    static inline const aiScene* _aiScene = nullptr; // <cached scene
-    static inline std::string _filePath; //< cached filepath
+    static inline const aiScene* _aiScene = nullptr; ///<cached scene
+    ///< index of the first material in the scene. Relevant if importing multiple models to a scene
+    static inline uint32_t _firstMaterialIndex = 0;
+    static inline std::string _filePath; ///< cached filepath
 };
 
 
