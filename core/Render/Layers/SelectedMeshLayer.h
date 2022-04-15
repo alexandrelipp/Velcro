@@ -57,6 +57,7 @@ private:
     // current operation done with the guizmo (translate, rotate or scale)
     ImGuizmo::OPERATION _operation = ImGuizmo::OPERATION::TRANSLATE;
 
-    static float constexpr MAG_STENCIL_FACTOR = 1.04f;
-
+    // constants
+    static constexpr float  MAG_STENCIL_FACTOR = 1.04f;
+    static constexpr glm::vec4 OUTLINE_COLOR = glm::vec4(1.0f, 1.0f, 0.f, 0.9f);
 };

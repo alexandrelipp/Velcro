@@ -13,8 +13,10 @@
 
 struct ShaderFiles {
     std::optional<std::string> vertex = std::nullopt;
-    std::optional<std::string> geometry = std::nullopt;
+    VkSpecializationInfo* vertexSpec = nullptr;
     std::optional<std::string> fragment = std::nullopt;
+    VkSpecializationInfo* fragmentSpec = nullptr;
+    std::optional<std::string> geometry = std::nullopt;
 };
 
 

@@ -77,10 +77,28 @@ SelectedMeshLayer::SelectedMeshLayer(VkRenderPass renderPass, const Props& props
             .writeMask = 0xffffffff,           // always write
             .reference = 0,
     };
+
+    // set up specialization info to inject outline color in shader (when compiling it). Apparently can only be a scalar so we need 4
+    std::array<VkSpecializationMapEntry, 4> mapEntries{};
+
+    for (uint32_t i = 0; i < mapEntries.size(); ++i) {
+        mapEntries[i].constantID = i;
+        mapEntries[i].offset = i * sizeof(float);
+        mapEntries[i].size = sizeof(float);
+    }
+    VkSpecializationInfo specializationInfo = {
+            .mapEntryCount = mapEntries.size(),
+            .pMapEntries = mapEntries.data(),
+            .dataSize = sizeof(OUTLINE_COLOR),
+            .pData = &OUTLINE_COLOR // TODO : address of constexpr ??
+    };
+
+    // create graphics pipeline
     Factory::GraphicsPipelineProps factoryProps = {
             .shaders =  {
                     .vertex = "SelectedMeshV.spv",
-                    .fragment = "SelectedMeshF.spv"
+                    .fragment = "SelectedMeshF.spv",
+                    .fragmentSpec = &specializationInfo
             },
             .enableDepthTest = VK_FALSE, // depth dest is disabled
             .enableStencilTest = VK_TRUE,

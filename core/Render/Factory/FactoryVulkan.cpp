@@ -233,7 +233,7 @@ namespace Factory {
                 .stage = VK_SHADER_STAGE_VERTEX_BIT,
                 .module = vertModule,
                 .pName = "main",
-                .pSpecializationInfo = nullptr // useful to configure compile time constant
+                .pSpecializationInfo = props.shaders.vertexSpec // useful to configure compile time constant
         };
 
         shadersCI[1] = {
@@ -242,7 +242,7 @@ namespace Factory {
                 .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
                 .module = fragModule,
                 .pName = "main",
-                .pSpecializationInfo = nullptr // useful to configure compile time constant
+                .pSpecializationInfo = props.shaders.fragmentSpec // useful to configure compile time constant
         };
 
         VkPipelineVertexInputStateCreateInfo inputInfo = {
