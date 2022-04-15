@@ -12,7 +12,9 @@
 #include "../../Utils/UtilsMath.h"
 #include "../../events/KeyEvent.h"
 
-// Better way to do this using post processing : http://geoffprewett.com/blog/software/opengl-outline/
+// Alternate/better way to do this using post processing : http://geoffprewett.com/blog/software/opengl-outline/
+// The currently used produces bad results for meshes with transforms not centered at the mesh center. The transform of the mesh
+// could corrected to be at its center : https://github.com/alexandrelipp/Velcro/issues/22
 
 SelectedMeshLayer::SelectedMeshLayer(VkRenderPass renderPass, const Props& props) : _scene(props.scene) {
     // init the uniform buffers
@@ -75,22 +77,24 @@ SelectedMeshLayer::SelectedMeshLayer(VkRenderPass renderPass, const Props& props
             .compareOp = VK_COMPARE_OP_NEVER,  // will be set dynamically
             .compareMask = 0xffffffff,         // compare mask
             .writeMask = 0xffffffff,           // always write
-            .reference = 0,
-    };
+            .reference = 0,                    // Reference used as A in the compare op (after being and`ed with the compare mask)
+    };                                         // Note : B is the stencil value, after being and`ed as well with the compare mask
 
     // set up specialization info to inject outline color in shader (when compiling it). Apparently can only be a scalar so we need 4
     std::array<VkSpecializationMapEntry, 4> mapEntries{};
-
     for (uint32_t i = 0; i < mapEntries.size(); ++i) {
         mapEntries[i].constantID = i;
         mapEntries[i].offset = i * sizeof(float);
         mapEntries[i].size = sizeof(float);
     }
+
+    // add data
     VkSpecializationInfo specializationInfo = {
             .mapEntryCount = mapEntries.size(),
             .pMapEntries = mapEntries.data(),
             .dataSize = sizeof(OUTLINE_COLOR),
-            .pData = &OUTLINE_COLOR // TODO : address of constexpr ??
+            .pData = &OUTLINE_COLOR // seems to work (address of constexpr)
+                    // https://stackoverflow.com/questions/14872240/unique-address-for-constexpr-variable
     };
 
     // create graphics pipeline
@@ -243,37 +247,42 @@ void SelectedMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_
 }
 
 void SelectedMeshLayer::onImGuiRender() {
+    // display the scene hierarchy (starting from the root -> 0)
     ImGui::Begin("Scene");
     displayHierarchy(0);
     ImGui::End();
 
+    // nothing to do if no selected entity
     if (_selectedEntity == -1)
         return;
 
+    // display drag floats to control selected entity transform
     ImGui::Begin("Selected");
-
     auto& transform = _scene->getTransform(_selectedEntity);
     bool needUpdate = false;
     needUpdate |= ImGui::DragFloat3("Position", glm::value_ptr(transform.position), 0.01f);
     needUpdate |= ImGui::DragFloat3("Rotation", glm::value_ptr(transform.rotation), 0.01f);
     needUpdate |= ImGui::DragFloat3("Scale", glm::value_ptr(transform.scale), 0.01f, 0.f);
+
+    // display scale drag (uniform scaling)
     ImGui::SameLine();
     float factor = transform.scale.x;
 
-
-    if (ImGui::DragFloat("##Unifrorm", &factor, 0.01f)){
+    // ## means its only used as a key (uniform won't be visible)
+    if (ImGui::DragFloat("##Uniform", &factor, 0.01f)){
         transform.scale += transform.scale * (factor - transform.scale.x);
         transform.needUpdateModelMatrix = true;
         _scene->setDirtyTransform(_selectedEntity);
     }
 
+    // notify the scene if the selected entity transform has changed
     if (needUpdate) {
         transform.needUpdateModelMatrix = true;
         _scene->setDirtyTransform(_selectedEntity);
     }
-
     ImGui::End();
 
+    // finally, display the guizmo
     displayGuizmo(_selectedEntity);
 }
 
@@ -314,11 +323,13 @@ void SelectedMeshLayer::displayHierarchy(int entity) {
 
     ImGui::PushID((int)entity);
 
+    // set the selected entity if clicked on
     if (ImGui::IsItemClicked()) {
         _selectedEntity = entity;
         setSelectedEntity(_selectedEntity);
     }
 
+    // recursively traverse all the children if the node is opened
     if (opened) {
         for (int e = hc.firstChild; e != -1; e = _scene->getHierarchy(e).nextSibling)
             displayHierarchy(e);

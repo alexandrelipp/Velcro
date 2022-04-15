@@ -2,19 +2,14 @@
 // Created by alexa on 2022-03-26.
 //
 
-
 #include "MultiMeshLayer.h"
 
 #include "../Factory/FactoryVulkan.h"
 #include "../Factory/FactoryModel.h"
-
 #include "../../Utils/UtilsMath.h"
-
 #include "../../Application.h"
 #include "../../events/KeyEvent.h"
 
-
-#include <imgui.h>
 
 MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
     // static assert making sure no padding is added to our struct
@@ -85,14 +80,13 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
     };
     _graphicsPipeline = Factory::createGraphicsPipeline(_vrd->device, _swapchainExtent, renderPass, _pipelineLayout, props);
 
+    // create the selected mesh layer
     SelectedMeshLayer::Props selectedMeshProps = {
         .scene = _scene,
         .vertices = _vertices,
         .indices = _indices,
         .meshTransformBuffers = _meshTransformBuffers
     };
-
-    // create the selected mesh layer
     _selectedMeshLayer = std::make_shared<SelectedMeshLayer>(renderPass, selectedMeshProps);
 }
 
