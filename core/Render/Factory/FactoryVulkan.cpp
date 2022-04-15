@@ -200,7 +200,7 @@ namespace Factory {
 
     VkShaderModule createShaderModule(VkDevice device, const std::string& filename) {
         VkShaderModule shaderModule = nullptr;
-        std::filesystem::path path(R"(..\..\..\core\Assets\Shaders\bin)");
+        std::filesystem::path path(R"(..\..\..\core\Assets\Shaders\SPIR-V)");
         path /= filename;
         VK_ASSERT(utils::fileExists(path), "Shader file does not exist");
 
