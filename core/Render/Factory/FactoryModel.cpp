@@ -83,7 +83,6 @@ void FactoryModel::importFromFile(const std::string& path, std::shared_ptr<Scene
     // TODO : prob want to remove this
     if (_aiScene == nullptr || _aiScene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !_aiScene->mRootNode){
         throw std::exception(importer.GetErrorString());
-        _aiScene = nullptr;
         return;
     }
 

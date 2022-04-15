@@ -28,3 +28,10 @@ RenderLayer::~RenderLayer() {
     if (_graphicsPipeline != nullptr)
         vkDestroyPipeline(_vrd->device, _graphicsPipeline, nullptr);
 }
+
+/// Binds the graphics pipeline and the descriptor set at the given command buffer index
+void RenderLayer::bindPipelineAndDS(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) {
+    vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
+    vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout,
+                            0, 1, &_descriptorSets[commandBufferIndex], 0, nullptr);
+}

@@ -42,7 +42,7 @@ static VKAPI_ATTR VkBool32 VKAPI_CALL VulkanDebugReportCallback
     // https://github.com/zeux/niagara/blob/master/src/device.cpp   [ignoring performance warnings]
     // This silences warnings like "For optimal performance image layout should be VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL instead of GENERAL."
     if (flags & VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT)
-        return VK_FALSE;
+        SPDLOG_TRACE("Debug callback {} : {}", pLayerPrefix, pMessage);
 
     if (flags & VK_DEBUG_REPORT_INFORMATION_BIT_EXT){
         SPDLOG_DEBUG("Debug callback {} : {}", pLayerPrefix, pMessage);
@@ -233,7 +233,7 @@ namespace Factory {
                 .stage = VK_SHADER_STAGE_VERTEX_BIT,
                 .module = vertModule,
                 .pName = "main",
-                .pSpecializationInfo = nullptr // useful to configure compile time constant
+                .pSpecializationInfo = props.shaders.vertexSpec // useful to configure compile time constant
         };
 
         shadersCI[1] = {
@@ -242,7 +242,7 @@ namespace Factory {
                 .stage = VK_SHADER_STAGE_FRAGMENT_BIT,
                 .module = fragModule,
                 .pName = "main",
-                .pSpecializationInfo = nullptr // useful to configure compile time constant
+                .pSpecializationInfo = props.shaders.fragmentSpec // useful to configure compile time constant
         };
 
         VkPipelineVertexInputStateCreateInfo inputInfo = {
@@ -309,14 +309,18 @@ namespace Factory {
                 .sampleShadingEnable = VK_FALSE, // TODO : take as props ? Note : also needs to be enabled in the device features
         };
 
+        // set up depth + stencil state
         VkPipelineDepthStencilStateCreateInfo depthStencilCI = {
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
                 .depthTestEnable = props.enableDepthTest,
                 .depthWriteEnable = props.enableDepthTest, // TODO : do we want to distinct write + enable depth test ?
                 .depthCompareOp = VK_COMPARE_OP_LESS,
                 .depthBoundsTestEnable = VK_FALSE,      // if enabled, depth test will only pass when inside the given bounds
-                .stencilTestEnable = VK_FALSE,
+                .stencilTestEnable = props.enableStencilTest,
         };
+        // add front stencil state if requested
+        if (props.frontStencilState.has_value())
+            depthStencilCI.front = props.frontStencilState.value();
 
         // set up default color blending
         VkPipelineColorBlendAttachmentState colorBlendAttachment = {
@@ -351,6 +355,13 @@ namespace Factory {
                 .blendConstants = {0.f, 0.f, 0.f, 0.f}
         };
 
+        // set up dynamic states with requested dynamic states
+        VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
+                .sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+                .dynamicStateCount = (uint32_t)props.dynamicStates.size(),
+                .pDynamicStates = props.dynamicStates.data()
+        };
+
         VkGraphicsPipelineCreateInfo pipelineCI = {
                 .sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
                 .stageCount = shadersCI.size(),
@@ -362,7 +373,7 @@ namespace Factory {
                 .pMultisampleState = &multisampleCI,
                 .pDepthStencilState = &depthStencilCI,
                 .pColorBlendState = &colorBlendCI,
-                .pDynamicState = nullptr, // not used for now
+                .pDynamicState = &dynamicStateCreateInfo,
                 .layout = pipelineLayout,
                 .renderPass = renderPass,
                 .subpass = 0, // index of subpass where the graphics pipeline willbe used

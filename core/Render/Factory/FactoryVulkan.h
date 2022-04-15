@@ -13,8 +13,10 @@
 
 struct ShaderFiles {
     std::optional<std::string> vertex = std::nullopt;
-    std::optional<std::string> geometry = std::nullopt;
+    VkSpecializationInfo* vertexSpec = nullptr;
     std::optional<std::string> fragment = std::nullopt;
+    VkSpecializationInfo* fragmentSpec = nullptr;
+    std::optional<std::string> geometry = std::nullopt;
 };
 
 
@@ -37,9 +39,12 @@ namespace Factory {
        VkPrimitiveTopology primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
        ShaderFiles shaders;
        VkBool32 enableDepthTest = VK_TRUE;
+       VkBool32 enableStencilTest = VK_FALSE;
+       std::optional<VkStencilOpState> frontStencilState = std::nullopt;
        VkBool32 enableBlending = VK_TRUE;
        VkBool32 enableBackFaceCulling = VK_TRUE;
        VkSampleCountFlagBits sampleCountMSAA = VK_SAMPLE_COUNT_1_BIT;
+       std::vector<VkDynamicState> dynamicStates;
    };
    VkPipeline createGraphicsPipeline(VkDevice device, VkExtent2D& extent, VkRenderPass renderPass,
                                      VkPipelineLayout pipelineLayout, const GraphicsPipelineProps& props);

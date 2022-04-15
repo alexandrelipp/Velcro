@@ -28,7 +28,9 @@ protected:
     explicit RenderLayer();
 
     // Reusable helper methods for render layers
-    // TODO : add bind!!
+
+    /// Binds the graphics pipeline and the descriptor set at the given command buffer index
+    void bindPipelineAndDS(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex);
 
 
 public:

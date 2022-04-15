@@ -2,19 +2,14 @@
 // Created by alexa on 2022-03-26.
 //
 
-
 #include "MultiMeshLayer.h"
 
 #include "../Factory/FactoryVulkan.h"
 #include "../Factory/FactoryModel.h"
-
 #include "../../Utils/UtilsMath.h"
-
 #include "../../Application.h"
 #include "../../events/KeyEvent.h"
 
-
-#include <imgui.h>
 
 MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
     // static assert making sure no padding is added to our struct
@@ -36,8 +31,6 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
 
     auto [vertices, vtxSize] = _scene->getVerticesData();
     auto [indices, idxSize] = _scene->getIndicesData();
-
-
 
     // init the vertices ssbo
     _vertices.init(_vrd->device, _vrd->physicalDevice, vtxSize);
@@ -86,6 +79,15 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
             .sampleCountMSAA = _vrd->sampleCount
     };
     _graphicsPipeline = Factory::createGraphicsPipeline(_vrd->device, _swapchainExtent, renderPass, _pipelineLayout, props);
+
+    // create the selected mesh layer
+    SelectedMeshLayer::Props selectedMeshProps = {
+        .scene = _scene,
+        .vertices = _vertices,
+        .indices = _indices,
+        .meshTransformBuffers = _meshTransformBuffers
+    };
+    _selectedMeshLayer = std::make_shared<SelectedMeshLayer>(renderPass, selectedMeshProps);
 }
 
 MultiMeshLayer::~MultiMeshLayer() {
@@ -129,87 +131,18 @@ void MultiMeshLayer::update(float dt, uint32_t commandBufferIndex, const glm::ma
 }
 
 void MultiMeshLayer::onEvent(Event& event) {
-    switch (event.getType()) {
-        case Event::Type::KEY_PRESSED:{
-            KeyPressedEvent* keyPressedEvent = (KeyPressedEvent*)&event;
-            if (keyPressedEvent->getRepeatCount() != 0)
-                return;
-            switch(keyPressedEvent->getKeyCode()){
-                case KeyCode::D:
-//                    if (isEditing() && Application::getApp()->isKeyPressed(KeyCode::LeftControl)){
-//                        if (SceneEditor::getSelectedEntity() != entt::null){
-//                            _editorScene->duplicateEntity(SceneEditor::getSelectedEntity());
-//                        }
-//                    }
-                    break;
-                case KeyCode::S:
-                    if (!Application::getApp()->isKeyPressed(KeyCode::LeftControl)){
-                        _operation = ImGuizmo::OPERATION::SCALE;
-                        return;
-                    }
-                    break;
-                case KeyCode::G:
-                    _operation = ImGuizmo::OPERATION::TRANSLATE;
-                    break;
-                case KeyCode::R:
-                    _operation = ImGuizmo::OPERATION::ROTATE;
-                    break;
-                default:
-                    break;
-            }
-        }
-        case Event::Type::MOUSE_PRESSED:{
-//            auto mouseButtonPressedEvent = (MouseButtonPressedEvent*)&event;
-//            if (_viewPortHovered && !ImGuizmo::IsOver() && mouseButtonPressedEvent->getMouseButton() == MouseCode::ButtonLeft){
-//                SceneEditor::setSelectedEntity(_hoveredEntity);
-//            }
-            break;
-        }
 
-        default:
-            break;
-    }
 }
 
 void MultiMeshLayer::onImGuiRender() {
-    ImGui::Begin("Scene");
-    displayHierarchy(0);
-    ImGui::End();
+//    ImGui::Begin("Specular");
+//    ImGui::DragFloat("s", &_specularS, 0.1f, 0.f, 10.f);
+//
+//    ImGui::End();
+}
 
-    if (_selectedEntity == -1)
-        return;
-
-    ImGui::Begin("Selected");
-
-    auto& transform = _scene->getTransform(_selectedEntity);
-    bool needUpdate = false;
-    needUpdate |= ImGui::DragFloat3("Position", glm::value_ptr(transform.position), 0.01f);
-    needUpdate |= ImGui::DragFloat3("Rotation", glm::value_ptr(transform.rotation), 0.01f);
-    needUpdate |= ImGui::DragFloat3("Scale", glm::value_ptr(transform.scale), 0.01f, 0.f);
-    ImGui::SameLine();
-    float factor = transform.scale.x;
-
-
-    if (ImGui::DragFloat("##Unifrorm", &factor, 0.01f)){
-        transform.scale += transform.scale * (factor - transform.scale.x);
-        transform.needUpdateModelMatrix = true;
-        _scene->setDirtyTransform(_selectedEntity);
-    }
-
-    if (needUpdate) {
-        transform.needUpdateModelMatrix = true;
-        _scene->setDirtyTransform(_selectedEntity);
-    }
-
-    ImGui::End();
-
-    ImGui::Begin("Specular");
-    ImGui::DragFloat("s", &_specularS, 0.1f, 0.f, 10.f);
-
-
-    ImGui::End();
-
-    displayGuizmo(_selectedEntity);
+std::shared_ptr<SelectedMeshLayer> MultiMeshLayer::getSelectedMeshLayer() {
+    return _selectedMeshLayer;
 }
 
 void MultiMeshLayer::createDescriptors() {
@@ -258,101 +191,4 @@ void MultiMeshLayer::createDescriptors() {
     // create descriptors
     std::tie(_descriptorSetLayout, _pipelineLayout, _descriptorPool, _descriptorSets) =
             Factory::createDescriptorSets(_vrd, descriptors, {_cameraPosPC});
-}
-
-void MultiMeshLayer::displayHierarchy(int entity) {
-    if (entity == -1)
-        return;
-
-    // default flags and additional flag if selected
-    ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth |ImGuiTreeNodeFlags_DefaultOpen;
-    if (entity == _selectedEntity)
-        flags |= ImGuiTreeNodeFlags_Selected | ImGuiTreeNodeFlags_DefaultOpen;
-
-    // get tag and hierarchy
-    HierarchyComponent& hc = _scene->getHierarchy(entity);
-    if (hc.firstChild == -1)
-        flags |= ImGuiTreeNodeFlags_Leaf;
-
-    // check if the node is opened and if it's the selected entity
-    bool opened = ImGui::TreeNodeEx((void*) entity, flags, _scene->getName(entity).c_str());
-
-    ImGui::PushID((int)entity);
-
-    if (ImGui::IsItemClicked())
-        _selectedEntity = entity;
-
-    if (opened) {
-        for (int e = hc.firstChild; e != -1; e = _scene->getHierarchy(e).nextSibling)
-            displayHierarchy(e);
-        ImGui::TreePop();
-    }
-
-    ImGui::PopID();
-}
-
-void MultiMeshLayer::displayGuizmo(int selectedEntity) {
-
-    if(selectedEntity == -1){
-        SPDLOG_ERROR("Cannot display guizmo of null entity or null scene");
-        return;
-    }
-
-    Camera* camera = Application::getApp()->getRenderer()->getCamera();
-
-    // set up imguizmo
-    ImGuizmo::SetOrthographic(false);
-    ImGuizmo::SetRect(0, 0, (float)Application::getApp()->getWindowWidth(), (float)Application::getApp()->getWindowHeight());
-
-    // add optional snapping
-    float* snapValue = nullptr;
-    if (Application::getApp()->isKeyPressed(KeyCode::LeftControl)){
-        // This value could be set in UI
-        float constexpr snapT = 0.25f;
-        static float snap[3] = {snapT, snapT, snapT};
-        snapValue = snap;
-    }
-
-    // get the transform
-    auto& ntc =  _scene->getTransform(selectedEntity);
-    glm::mat4 transform = ntc.worldTransform;
-
-    // the Y is flipped for vulkan (see camera!), but ImGuizmo does not expect it to be flipped, so we flip it back!
-    glm::mat4 projectionMatrix = *(glm::mat4*)camera->getProjectionMatrix();
-    projectionMatrix[1][1] *= -1;
-
-    // we add a snapping value if ctrl is pressed
-    ImGuizmo::Manipulate(camera->getViewMatrix(), glm::value_ptr(projectionMatrix),
-                         _operation, ImGuizmo::MODE::LOCAL, glm::value_ptr(transform), nullptr, snapValue);
-
-
-    if (ImGuizmo::IsUsing()) {
-        auto& hc = _scene->getHierarchy(selectedEntity);
-
-        // updated local transform
-        glm::mat4 localTransform;
-
-        // if we don't have a parent, simply set the updated transform as the local transform
-        if (hc.parent == -1){
-            localTransform = transform;
-        }
-        // if we have a parent, we need to take in count its world transform
-        else {
-            auto& parentH = _scene->getHierarchy(hc.parent);
-            auto& parentTC = _scene->getTransform(hc.parent);
-            localTransform = glm::inverse(parentTC.worldTransform) * transform;
-        }
-
-        // decompose our transform into the position and the scale
-        glm::vec3 rotation;
-        utils::decomposeTransform(localTransform, ntc.position, rotation, ntc.scale);
-
-        // this should prevent gimbal lock
-        glm::vec3 deltaRotation = rotation - ntc.rotation;
-        ntc.rotation += deltaRotation;
-        ntc.needUpdateModelMatrix = true;
-
-        // notify the scene about the change
-        _scene->setDirtyTransform(selectedEntity);
-    }
 }
