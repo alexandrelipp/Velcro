@@ -43,9 +43,10 @@ private:
     ShaderStorageBuffer _vertices{};
     ShaderStorageBuffer _indices{};
     ShaderStorageBuffer _indirectCommandBuffer{};
+    ShaderStorageBuffer _meshMetadata{};
+    ShaderStorageBuffer _materialsSSBO{};
 
     VkPushConstantRange _cameraPosPC;
-    float _specularS = 0.5f;
 
     // Scene
     std::shared_ptr<Scene> _scene = nullptr;

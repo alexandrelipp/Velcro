@@ -11,7 +11,7 @@ class ShaderStorageBuffer {
 public:
     ShaderStorageBuffer() = default;
 
-    // TODO : should just take a VRD
+    // TODO : should just take a VRD, and should have a init setting data!
     void init(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t size,
               bool hostVisible = false, VkBufferUsageFlags additionalUsage = 0);
     void destroy(VkDevice device);

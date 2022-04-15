@@ -74,8 +74,9 @@ private:
     /// map of node ID to materialID
     // std::unordered_map<int, int> _materials; // TODO : remove ? not sure necessary
     std::vector<Material> _materials;
+    std::vector<std::string> _materialsNames;
 
-    std::string _name;
+    std::string _name;          ///< name of the scene
 
     static constexpr uint32_t MAX_LEVELS = 16;
 

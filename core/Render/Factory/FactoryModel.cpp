@@ -101,9 +101,10 @@ void FactoryModel::importFromFile(const std::string& path, std::shared_ptr<Scene
         Material material{};
         aiMaterial* aiMaterial = _aiScene->mMaterials[i];
         aiString name;
+        std::string matName = "No name :(";
         if (aiMaterial->Get(AI_MATKEY_NAME, name) == AI_SUCCESS) {
-            material.name = name.C_Str();
-            SPDLOG_INFO("Material Name {}", material.name);
+            matName = name.C_Str();
+            SPDLOG_INFO("Material Name {}", matName);
         }
 
         aiColor3D output;
@@ -120,6 +121,7 @@ void FactoryModel::importFromFile(const std::string& path, std::shared_ptr<Scene
             SPDLOG_INFO("Specular {}", glm::to_string(material.specularColor));
         }
         scene->_materials.push_back(material);
+        scene->_materialsNames.push_back(matName);
     }
 
     // don't forget to reset the cached AiScene

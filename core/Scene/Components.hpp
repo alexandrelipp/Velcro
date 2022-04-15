@@ -29,8 +29,8 @@ struct MeshComponent {
 };
 
 struct Material {
-    std::string name        = "Nameless material";
-    // TODO : should we init colors at 0 ??
+    //std::string name        = "Nameless material";
+    // TODO : should we init colors at 0 ?? // TODO : min ambient??
     glm::vec3 ambientColor  = glm::vec3(1.f);
     glm::vec3 diffuseColor  = glm::vec3(1.f);
     glm::vec3 specularColor = glm::vec3(1.f);
