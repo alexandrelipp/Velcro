@@ -37,15 +37,11 @@ public:
     void setSelectedEntity(int selectedEntity);
 
 private:
-    // TODO : should this be done in the selected mesh layer ??
+    // Methods to display selected entity
     void displayHierarchy(int entity);
     void displayGuizmo(int selectedEntity);
 
 private:
-//    struct SelectedMeshMVP{
-//        glm::mat4 original = glm::mat4(1.f);
-//        glm::mat4 scaledUp = glm::mat4(1.f);
-//    };
     // Buffers
     std::array<UniformBuffer, MAX_FRAMES_IN_FLIGHT> _vpUniformBuffers{};
     VkPushConstantRange _scaleFactor{};

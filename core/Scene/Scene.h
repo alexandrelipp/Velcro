@@ -29,9 +29,10 @@ public:
 
     std::string& getName(int entity);
 
+    // Note : Maybe this needs to be redesigned. It is unsafe to return a pointer in a vector. If the buffer of the vector
+    // needs to be reallocated and the pointer / reference is used, the program will likely crash or unexpected result
     HierarchyComponent& getHierarchy(int entity);
     TransformComponent& getTransform(int entity);
-
     MeshComponent* getMesh(int entity);
 
     int addSceneNode(int parent, int level, const std::string& name);
