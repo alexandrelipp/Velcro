@@ -5,29 +5,44 @@
 #pragma once
 
 #include <vulkan/vulkan.h>
+#include "../VulkanRenderDevice.hpp"
 
 
 class ShaderStorageBuffer {
-public:
+protected:
     ShaderStorageBuffer() = default;
 
-    // TODO : should just take a VRD, and should have a init setting data!
-    void init(VkDevice device, VkPhysicalDevice physicalDevice, uint32_t size,
-              bool hostVisible = false, VkBufferUsageFlags additionalUsage = 0);
+public:
+    virtual bool setData(VulkanRenderDevice* vrd, void* data, uint32_t size) = 0;
+
+
     void destroy(VkDevice device);
 
     uint32_t getSize() const;
     VkBuffer getBuffer() const;
 
-    // TODO : should just take a VRD
-    bool setData(VkDevice device, VkPhysicalDevice physicalDevice,
-                 VkQueue queue, VkCommandPool commandPool, void* data, uint32_t size);
+protected:
+    // TODO : should just take a VRD, and should have a init setting data!
+    void init(VulkanRenderDevice* vrd, bool hostVisible, uint32_t size,
+              void* data = nullptr, VkBufferUsageFlags additionalUsage = 0);
 
-private:
+protected:
     VkBuffer _buffer = nullptr;
     VkDeviceMemory _bufferMemory = nullptr;
     uint32_t _size = 0;
 
-    // TODO : should be split in two, stupid
-    bool _hostVisible = false;
+};
+
+class HostSSBO : public ShaderStorageBuffer {
+    HostSSBO() = default;
+
+    void init(VulkanRenderDevice* vrd, uint32_t size, void* data = nullptr, VkBufferUsageFlags additionalUsage = 0);
+    virtual bool setData(VulkanRenderDevice* vrd, void* data, uint32_t size) override;
+};
+
+class DeviceSSBO : public ShaderStorageBuffer {
+    DeviceSSBO() = default;
+
+    void init(VulkanRenderDevice* vrd, uint32_t size, void* data = nullptr, VkBufferUsageFlags additionalUsage = 0);
+    virtual bool setData(VulkanRenderDevice* vrd, void* data, uint32_t size) override;
 };
