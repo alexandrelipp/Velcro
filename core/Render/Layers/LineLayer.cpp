@@ -4,6 +4,7 @@
 
 #include "LineLayer.h"
 #include "../Factory/FactoryVulkan.h"
+#include "../../Utils/UtilsTemplate.h"
 
 LineLayer::LineLayer(VkRenderPass renderPass) : RenderLayer() {
 
@@ -12,11 +13,11 @@ LineLayer::LineLayer(VkRenderPass renderPass) : RenderLayer() {
         buffer.init(_vrd->device, _vrd->physicalDevice, sizeof(glm::mat4));
     }
 
+    // add lines to create a plane
     plane3d(glm::vec3(0.f, 0.f, -1.f), {1.f, 0.f, 0.f}, {0.f, 0.f, 1.f}, 10, 10, 3.f, 3.f, glm::vec4(0.7f), glm::vec4(1.f));
 
-    auto size = _lines.size() * sizeof(VertexData);
-    _pointsSSBO.init(_vrd->device, _vrd->physicalDevice, size);
-    _pointsSSBO.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool, _lines.data(), size);
+    // init lines SSBO
+    _pointsSSBO.init(_vrd, utils::vectorSizeByte(_lines), _lines.data());
 
     std::vector<Factory::Descriptor> descriptors = {
             {

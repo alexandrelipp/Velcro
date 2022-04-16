@@ -34,7 +34,7 @@ private:
 
 private:
     // points
-    ShaderStorageBuffer _pointsSSBO{}; // TODO : probably want dynamic buffer
+    DeviceSSBO _pointsSSBO{}; // TODO : probably want dynamic buffer
     std::vector<VertexData> _lines{};
 
     std::array<UniformBuffer, MAX_FRAMES_IN_FLIGHT> _mvpUniformBuffers{};

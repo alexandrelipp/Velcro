@@ -18,9 +18,9 @@ class SelectedMeshLayer : public RenderLayer {
 public:
     struct Props{
         std::shared_ptr<Scene> scene;
-        ShaderStorageBuffer vertices;
-        ShaderStorageBuffer indices;
-        std::array<ShaderStorageBuffer, MAX_FRAMES_IN_FLIGHT> meshTransformBuffers{};
+        DeviceSSBO vertices;
+        DeviceSSBO indices;
+        std::array<HostSSBO, MAX_FRAMES_IN_FLIGHT> meshTransformBuffers{};
     };
 
 public:

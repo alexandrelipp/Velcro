@@ -42,14 +42,10 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
     auto [indices, idxSize] = _scene->getIndicesData();
 
     // init the vertices ssbo
-    _vertices.init(_vrd->device, _vrd->physicalDevice, vtxSize);
-    VK_ASSERT(_vertices.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool,
-                                vertices, vtxSize), "set data failed");
+    _vertices.init(_vrd, vtxSize, vertices);
 
     // init the indices ssbo
-    _indices.init(_vrd->device, _vrd->physicalDevice, idxSize);
-    VK_ASSERT(_indices.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool,
-                               indices, idxSize), "set data failed");
+    _indices.init(_vrd, idxSize, indices);
 
     // vector containing the indices of all meshes
     std::vector<uint32_t> materialIndices;
@@ -76,7 +72,7 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
 
     // init the transform buffers
     for (auto& buffer : _meshTransformBuffers){
-        buffer.init(_vrd->device, _vrd->physicalDevice, meshes.size() * sizeof(glm::mat4), true);
+        buffer.init(_vrd, meshes.size() * sizeof(glm::mat4));
     }
 
     // init the materials buffer
@@ -145,8 +141,7 @@ void MultiMeshLayer::update(float dt, uint32_t commandBufferIndex, const glm::ma
     glm::mat4 nec = pv; // TODO : necessary??
     VK_ASSERT(_vpUniformBuffers[commandBufferIndex].setData(_vrd->device, glm::value_ptr(nec), sizeof(pv)), "Failed to dat");
     const auto& transforms = _scene->getMeshTransforms();
-    _meshTransformBuffers[commandBufferIndex].setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool,
-                                                      (void*)transforms.data(), transforms.size() * sizeof(transforms[0]));
+    _meshTransformBuffers[commandBufferIndex].setData(_vrd, (void*)transforms.data(), utils::vectorSizeByte(transforms));
 }
 
 void MultiMeshLayer::onEvent(Event& event) {

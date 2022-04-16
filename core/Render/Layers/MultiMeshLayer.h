@@ -39,7 +39,7 @@ private:
 
     // Buffers
     std::array<UniformBuffer, MAX_FRAMES_IN_FLIGHT> _vpUniformBuffers{};
-    std::array<ShaderStorageBuffer, MAX_FRAMES_IN_FLIGHT> _meshTransformBuffers{};
+    std::array<HostSSBO, MAX_FRAMES_IN_FLIGHT> _meshTransformBuffers{};
     DeviceSSBO _vertices{};
     DeviceSSBO _indices{};
     DeviceSSBO _indirectCommandBuffer{};

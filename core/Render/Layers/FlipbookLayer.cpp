@@ -44,11 +44,7 @@ FlipbookLayer::FlipbookLayer(VkRenderPass renderPass) {
     // init vertices ssbo
     std::vector<TexVertex2> vertices;
     VK_ASSERT(FactoryModel::createTexturedSquare2(vertices), "Failed to gen vertices");
-
-    uint32_t verticesSize = utils::vectorSizeByte(vertices);
-    _vertices.init(_vrd->device, _vrd->physicalDevice, verticesSize);
-    _vertices.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool, vertices.data(),
-                      verticesSize);
+    _vertices.init(_vrd, utils::vectorSizeByte(vertices), vertices.data());
 
     // create fragment push constant for texture index and animation screen offset
     _pushConstantRange = {

@@ -7,6 +7,7 @@
 #include "../Factory/FactoryModel.h"
 
 #include "../../Application.h"
+#include "../../Utils/UtilsTemplate.h"
 
 ModelLayer::ModelLayer(VkRenderPass renderPass) : RenderLayer() {
     // init the uniform buffers
@@ -20,14 +21,10 @@ ModelLayer::ModelLayer(VkRenderPass renderPass) : RenderLayer() {
     _indexCount = indices.size();
 
     // init the vertices ssbo
-    _vertices.init(_vrd->device, _vrd->physicalDevice, vertices.size() * sizeof(vertices[0]));
-    VK_ASSERT(_vertices.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool,
-                                vertices.data(), vertices.size() * sizeof(vertices[0])), "set data failed");
+    _vertices.init(_vrd, utils::vectorSizeByte(vertices), vertices.data());
 
     // init the indices ssbo
-    _indices.init(_vrd->device, _vrd->physicalDevice, sizeof(indices[0]) * indices.size());
-    VK_ASSERT(_indices.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool,
-                               indices.data(), indices.size() * sizeof(indices[0])), "set data failed");
+    _indices.init(_vrd, utils::vectorSizeByte(indices), indices.data());
 
     // init the statue texture
     _texture.init("../../../core/Assets/Models/duck/textures/Duck_baseColor.png", *_vrd, true);
