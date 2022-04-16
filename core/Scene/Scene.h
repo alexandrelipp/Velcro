@@ -71,8 +71,7 @@ private:
     std::vector<glm::mat4> _meshTransforms; ///< transforms to be uploaded to gpu
     std::vector<MeshComponent> _meshes;
 
-    /// map of node ID to materialID
-    // std::unordered_map<int, int> _materials; // TODO : remove ? not sure necessary
+    ///< vector of material data and material name. Index in vector corresponds to the meshes material index
     std::vector<Material> _materials;
     std::vector<std::string> _materialsNames;
 
