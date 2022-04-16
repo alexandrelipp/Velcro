@@ -20,6 +20,24 @@ ModelLayer::ModelLayer(VkRenderPass renderPass) : RenderLayer() {
     VK_ASSERT(FactoryModel::createDuckModel(vertices, indices), "Failed to create mesh");
     _indexCount = indices.size();
 
+    VkVertexInputBindingDescription bindingDescription = {
+            .binding = 0,
+            .stride = sizeof(Vertex),
+            .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+    };
+
+    std::vector<VkVertexInputAttributeDescription> inputDescriptions(2);
+    inputDescriptions[0].location = 0,
+    inputDescriptions[0].binding = 0,
+    inputDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT,
+    inputDescriptions[0].offset = offsetof(Vertex, position);
+
+    inputDescriptions[0].location = 1,
+    inputDescriptions[0].binding = 0,
+    inputDescriptions[0].format = VK_FORMAT_R32G32_SFLOAT,
+    inputDescriptions[0].offset = offsetof(Vertex, uv);
+
+
     // init the vertices ssbo
     _vertices.init(_vrd, utils::vectorSizeByte(vertices), vertices.data());
 
