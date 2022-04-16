@@ -15,14 +15,12 @@ protected:
 public:
     virtual bool setData(VulkanRenderDevice* vrd, void* data, uint32_t size) = 0;
 
-
     void destroy(VkDevice device);
 
-    uint32_t getSize() const;
-    VkBuffer getBuffer() const;
+    [[nodiscard]] uint32_t getSize() const;
+    [[nodiscard]] VkBuffer getBuffer() const;
 
 protected:
-    // TODO : should just take a VRD, and should have a init setting data!
     void init(VulkanRenderDevice* vrd, bool hostVisible, uint32_t size,
               void* data = nullptr, VkBufferUsageFlags additionalUsage = 0);
 
@@ -30,7 +28,6 @@ protected:
     VkBuffer _buffer = nullptr;
     VkDeviceMemory _bufferMemory = nullptr;
     uint32_t _size = 0;
-
 };
 
 class HostSSBO : public ShaderStorageBuffer {
