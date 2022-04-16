@@ -13,9 +13,10 @@
 
 
 MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
-    // static assert making sure no padding is added to our struct
-    static_assert(sizeof(InstanceData) == sizeof(InstanceData::transform) + sizeof(InstanceData::indexOffset) +
-        sizeof(InstanceData::materialIndex) + sizeof(InstanceData::meshIndex));
+    // static assert making sure no padding is added to our struct, or else SSBO will be wrong (does no expect padding)
+    static_assert(sizeof(Material) ==  sizeof(Material::ambientColor) +
+                                       sizeof(Material::diffuseColor) +
+                                       sizeof(Material::specularColor));
 
     // init the uniform buffers
     for (auto& buffer : _vpUniformBuffers)

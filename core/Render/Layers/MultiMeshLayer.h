@@ -30,13 +30,6 @@ private:
     void createDescriptors();
 
 private:
-    struct InstanceData{
-        glm::mat4 transform;
-        uint32_t meshIndex;
-        uint32_t materialIndex;
-        uint32_t indexOffset;
-    };
-
     // Buffers
     std::array<UniformBuffer, MAX_FRAMES_IN_FLIGHT> _vpUniformBuffers{};
     std::array<HostSSBO, MAX_FRAMES_IN_FLIGHT> _meshTransformBuffers{};
@@ -46,7 +39,7 @@ private:
     DeviceSSBO _meshMetadata{};
     DeviceSSBO _materialsSSBO{};
 
-    VkPushConstantRange _cameraPosPC;
+    VkPushConstantRange _cameraPosPC{};
 
     // Scene
     std::shared_ptr<Scene> _scene = nullptr;
