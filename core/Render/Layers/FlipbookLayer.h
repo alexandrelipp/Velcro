@@ -32,7 +32,7 @@ private:
     std::optional<Animation> _animation;
 
     std::vector<Texture> _textures;
-    ShaderStorageBuffer _vertices;
+    DeviceSSBO _vertices;
     VkPushConstantRange _pushConstantRange;
     VkSampler _sampler = nullptr;
 };

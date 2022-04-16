@@ -57,6 +57,7 @@ public:
     const std::vector<glm::mat4>& getMeshTransforms();
 
     const std::vector<MeshComponent>& getMeshes();
+    const std::vector<Material>& getMaterials();
 
 private:
 
@@ -70,16 +71,17 @@ private:
     std::vector<glm::mat4> _meshTransforms; ///< transforms to be uploaded to gpu
     std::vector<MeshComponent> _meshes;
 
-    /// map of node ID to materialID
-    std::unordered_map<int, int> _materials;
+    ///< vector of material data and material name. Index in vector corresponds to the meshes material index
+    std::vector<Material> _materials;
+    std::vector<std::string> _materialsNames;
 
-    std::string _name;
+    std::string _name;          ///< name of the scene
 
     static constexpr uint32_t MAX_LEVELS = 16;
 
 
     /// used to only recompute necessary transforms, note : it might be faster/simpler to always recompute all transforms
-    /// in certain case. Profile to get an accurate answer
+    /// in certain case. Profile to get an accurate answer. If done so, the transforms must be sorted by level
     std::array<std::unordered_set<int>, MAX_LEVELS> _changedTransforms;
 
     std::vector<Vertex> _vertices;

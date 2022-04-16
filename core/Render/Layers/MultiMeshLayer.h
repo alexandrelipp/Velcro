@@ -39,13 +39,14 @@ private:
 
     // Buffers
     std::array<UniformBuffer, MAX_FRAMES_IN_FLIGHT> _vpUniformBuffers{};
-    std::array<ShaderStorageBuffer, MAX_FRAMES_IN_FLIGHT> _meshTransformBuffers{};
-    ShaderStorageBuffer _vertices{};
-    ShaderStorageBuffer _indices{};
-    ShaderStorageBuffer _indirectCommandBuffer{};
+    std::array<HostSSBO, MAX_FRAMES_IN_FLIGHT> _meshTransformBuffers{};
+    DeviceSSBO _vertices{};
+    DeviceSSBO _indices{};
+    DeviceSSBO _indirectCommandBuffer{};
+    DeviceSSBO _meshMetadata{};
+    DeviceSSBO _materialsSSBO{};
 
     VkPushConstantRange _cameraPosPC;
-    float _specularS = 0.5f;
 
     // Scene
     std::shared_ptr<Scene> _scene = nullptr;

@@ -26,8 +26,8 @@ private:
 private:
     // Buffers
     std::array<UniformBuffer, MAX_FRAMES_IN_FLIGHT> _mvpUniformBuffers{};
-    ShaderStorageBuffer _vertices{};
-    ShaderStorageBuffer _indices{};
+    DeviceSSBO _vertices{};
+    DeviceSSBO _indices{};
     uint32_t _indexCount = 0;
 
     Texture _texture{};

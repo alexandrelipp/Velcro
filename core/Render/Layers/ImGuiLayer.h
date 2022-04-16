@@ -20,8 +20,4 @@ public:
 
     void begin();
     void end();
-
-
-
-
 };

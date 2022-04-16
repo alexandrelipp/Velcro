@@ -34,11 +34,16 @@ private:
     static bool createMeshComponent(int aiMeshIndex, MeshComponent& mc, std::shared_ptr<Scene> scene);
     static std::string getMeshName(int meshIndex);
     static glm::mat4 convertAiMat4(const aiMatrix4x4& mat);
+    static glm::vec3 convertAiColor3D(const aiColor3D& color);
 
 
-    static inline const aiScene* _aiScene = nullptr; // <cached scene
-    static inline std::string _filePath; //< cached filepath
+    static inline const aiScene* _aiScene = nullptr; ///<cached scene
+    ///< index of the first material in the scene. Relevant if importing multiple models to a scene
+    static inline uint32_t _firstMaterialIndex = 0;
+    static inline std::string _filePath; ///< cached filepath
+
+    // constants
+    ///< Minimum ambient color of a material. Necessary because a lot of assimp materials have 0 as ambient color.
+    /// Note: we could also have a maximum ambient color
+    static constexpr glm::vec3 MATERIAL_MIN_AMBIENT = glm::vec3(0.1f);
 };
-
-
-

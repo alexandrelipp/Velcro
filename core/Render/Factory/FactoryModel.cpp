@@ -88,12 +88,53 @@ void FactoryModel::importFromFile(const std::string& path, std::shared_ptr<Scene
 
     SPDLOG_INFO("Num meshes {}", _aiScene->mNumMeshes);
     _filePath = path;
+    _firstMaterialIndex = scene->_materials.size();
 
     traverseNodeRecursive(_aiScene->mRootNode, -1, 1, scene);
     scene->setDirtyTransform(0);
 
     SPDLOG_INFO("Num vertices {}", scene->_vertices.size());
     SPDLOG_INFO("Max index {}", *std::max_element(scene->_indices.begin(), scene->_indices.end()));
+
+    // add all materials to scene
+    for (uint32_t i = 0; i < _aiScene->mNumMaterials; ++i){
+        Material material{};
+        aiMaterial* aiMaterial = _aiScene->mMaterials[i];
+
+        // get name of material
+        aiString name;
+        std::string matName = "No name :(";
+        if (aiMaterial->Get(AI_MATKEY_NAME, name) == AI_SUCCESS) {
+            matName = name.C_Str();
+            SPDLOG_INFO("Material Name {}", matName);
+        }
+
+        aiColor3D output{};
+
+        // the ambient color corresponds to the max between MIN_AMBIENT, ambient and emmisive
+        material.ambientColor = MATERIAL_MIN_AMBIENT;
+        if (aiMaterial->Get(AI_MATKEY_COLOR_AMBIENT, output) == AI_SUCCESS) {
+            material.ambientColor = glm::max(MATERIAL_MIN_AMBIENT, convertAiColor3D(output));
+        }
+        if (aiMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, output) == AI_SUCCESS) {
+            material.ambientColor = glm::max(MATERIAL_MIN_AMBIENT, convertAiColor3D(output));
+        }
+        SPDLOG_INFO("Ambient {}", glm::to_string(material.ambientColor));
+
+        // get the diffuse and the specular color
+        if (aiMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, output) == AI_SUCCESS) {
+            material.diffuseColor = convertAiColor3D(output);
+            SPDLOG_INFO("diffuse {}", glm::to_string(material.diffuseColor));
+        }
+        if (aiMaterial->Get(AI_MATKEY_COLOR_SPECULAR, output) == AI_SUCCESS) {
+            material.specularColor = convertAiColor3D(output);
+            SPDLOG_INFO("Specular {}", glm::to_string(material.specularColor));
+        }
+
+        // add material and its name to scene
+        scene->_materials.push_back(material);
+        scene->_materialsNames.push_back(matName);
+    }
 
     // don't forget to reset the cached AiScene
     _aiScene = nullptr;
@@ -126,6 +167,9 @@ bool FactoryModel::createMeshComponent(int aiMeshIndex, MeshComponent& mc, std::
     if (aiMeshIndex >= _aiScene->mNumMeshes)
         throw std::runtime_error("Index out of range");
     aiMesh* mesh = _aiScene->mMeshes[aiMeshIndex];
+
+    // add the material index. First material index is relevant if importing multiple models in a scene
+    mc.materialIndex = _firstMaterialIndex + mesh->mMaterialIndex;
 
     // store the mesh first index (will be added to all indices since all indices of all meshes are stored continuously)
     uint32_t meshFirstVertexIndex = scene->_vertices.size();
@@ -175,4 +219,8 @@ std::string FactoryModel::getMeshName(int meshIndex) {
         throw std::runtime_error("Index out of range");
     aiMesh* mesh = _aiScene->mMeshes[meshIndex];
     return {mesh->mName.C_Str()};
+}
+
+glm::vec3 FactoryModel::convertAiColor3D(const aiColor3D& color) {
+    return {color.r, color.g, color.b};
 }

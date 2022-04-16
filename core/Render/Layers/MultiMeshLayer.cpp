@@ -9,6 +9,7 @@
 #include "../../Utils/UtilsMath.h"
 #include "../../Application.h"
 #include "../../events/KeyEvent.h"
+#include "../../Utils/UtilsTemplate.h"
 
 
 MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
@@ -24,6 +25,17 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
     //FactoryModel::importFromFile("../../../core/Assets/Models/Nano/nanosuit.obj", _scene);
     //FactoryModel::importFromFile("../../../core/Assets/Models/utahTeapot.fbx", _scene);
     //FactoryModel::importFromFile("../../../core/Assets/Models/engine.fbx", _scene);
+    // https://sketchfab.com/3d-models/low-poly-truck-car-drifter-f3750246b6564607afbefc61cb1683b1
+#define DRIFTER
+#ifdef DRIFTER
+    FactoryModel::importFromFile("../../../core/Assets/Models/Drifter/source/Jeep_done.fbx", _scene);
+    // nice little model but the default scale is stupid
+    auto& rootTransform = _scene->getTransform(1);
+    rootTransform.scale *= 0.01f;
+    rootTransform.needUpdateModelMatrix = true;
+    _scene->setDirtyTransform(1);
+#endif
+
     FactoryModel::importFromFile("../../../core/Assets/Models/Bell Huey.fbx", _scene);
     //FactoryModel::importFromFile("../../../core/Assets/Models/duck/scene.gltf", _scene);
 
@@ -33,15 +45,13 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
     auto [indices, idxSize] = _scene->getIndicesData();
 
     // init the vertices ssbo
-    _vertices.init(_vrd->device, _vrd->physicalDevice, vtxSize);
-    VK_ASSERT(_vertices.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool,
-                                vertices, vtxSize), "set data failed");
+    _vertices.init(_vrd, vtxSize, vertices);
 
     // init the indices ssbo
-    _indices.init(_vrd->device, _vrd->physicalDevice, idxSize);
-    VK_ASSERT(_indices.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool,
-                               indices, idxSize), "set data failed");
+    _indices.init(_vrd, idxSize, indices);
 
+    // vector containing the indices of all meshes
+    std::vector<uint32_t> materialIndices;
 
     // add all meshes as indirect commands
     std::vector<VkDrawIndirectCommand> indirectCommands;
@@ -53,18 +63,24 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
                .firstVertex = meshes[i].firstVertexIndex,
                .firstInstance = i
        });
+        materialIndices.push_back(meshes[i].materialIndex);
     }
 
     // set the commands in the command buffer
-    _indirectCommandBuffer.init(_vrd->device, _vrd->physicalDevice, indirectCommands.size() * sizeof(indirectCommands[0]),
-                                false, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
-    VK_ASSERT(_indirectCommandBuffer.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool,
-                      indirectCommands.data(), indirectCommands.size() * sizeof(indirectCommands[0])), "set data failed");
+    _indirectCommandBuffer.init(_vrd, utils::vectorSizeByte(indirectCommands),
+                                indirectCommands.data(), VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
+
+    // init the mesh metadata buffer
+    _meshMetadata.init(_vrd, utils::vectorSizeByte(materialIndices), materialIndices.data());
 
     // init the transform buffers
     for (auto& buffer : _meshTransformBuffers){
-        buffer.init(_vrd->device, _vrd->physicalDevice, meshes.size() * sizeof(glm::mat4), true);
+        buffer.init(_vrd, meshes.size() * sizeof(glm::mat4));
     }
+
+    // init the materials buffer
+    const auto& materials = _scene->getMaterials();
+    _materialsSSBO.init(_vrd, utils::vectorSizeByte(materials), (void*)materials.data());
 
     // init the statue texture
     //_texture.init("../../../core/Assets/Models/duck/textures/Duck_baseColor.png", _vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool);
@@ -101,6 +117,8 @@ MultiMeshLayer::~MultiMeshLayer() {
     _indirectCommandBuffer.destroy(_vrd->device);
     _vertices.destroy(_vrd->device);
     _indices.destroy(_vrd->device);
+    _meshMetadata.destroy(_vrd->device);
+    _materialsSSBO.destroy(_vrd->device);
 
     //_texture.destroy(_vrd->device);
 }
@@ -110,9 +128,9 @@ void MultiMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t c
     // bind pipeline
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
 
-    glm::vec4 value = glm::vec4(*camera->getPosition(), _specularS);
     // push the camera pos and bind descriptor sets
-    vkCmdPushConstants(commandBuffer, _pipelineLayout, _cameraPosPC.stageFlags, _cameraPosPC.offset, _cameraPosPC.size, &value);
+    vkCmdPushConstants(commandBuffer, _pipelineLayout, _cameraPosPC.stageFlags, _cameraPosPC.offset, _cameraPosPC.size,
+                       camera->getPosition());
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout,
                             0, 1, &_descriptorSets[commandBufferIndex], 0, nullptr);
 
@@ -126,8 +144,7 @@ void MultiMeshLayer::update(float dt, uint32_t commandBufferIndex, const glm::ma
     glm::mat4 nec = pv; // TODO : necessary??
     VK_ASSERT(_vpUniformBuffers[commandBufferIndex].setData(_vrd->device, glm::value_ptr(nec), sizeof(pv)), "Failed to dat");
     const auto& transforms = _scene->getMeshTransforms();
-    _meshTransformBuffers[commandBufferIndex].setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool,
-                                                      (void*)transforms.data(), transforms.size() * sizeof(transforms[0]));
+    _meshTransformBuffers[commandBufferIndex].setData(_vrd, (void*)transforms.data(), utils::vectorSizeByte(transforms));
 }
 
 void MultiMeshLayer::onEvent(Event& event) {
@@ -179,13 +196,29 @@ void MultiMeshLayer::createDescriptors() {
                             VkDescriptorBufferInfo {_meshTransformBuffers[1].getBuffer(), 0, _meshTransformBuffers[1].getSize()},
                     }
             },
+            {
+                    .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                    .shaderStage = VK_SHADER_STAGE_VERTEX_BIT,
+                    .info = std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>{
+                            VkDescriptorBufferInfo {_meshMetadata.getBuffer(), 0, _meshMetadata.getSize()},
+                            VkDescriptorBufferInfo {_meshMetadata.getBuffer(), 0, _meshMetadata.getSize()},
+                    }
+            },
+            {
+                    .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                    .shaderStage = VK_SHADER_STAGE_FRAGMENT_BIT,
+                    .info = std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>{
+                            VkDescriptorBufferInfo {_materialsSSBO.getBuffer(), 0, _materialsSSBO.getSize()},
+                            VkDescriptorBufferInfo {_materialsSSBO.getBuffer(), 0, _materialsSSBO.getSize()},
+                    }
+            },
     };
 
     // create fragment push constant for camera pos
     _cameraPosPC = {
             .stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT,
             .offset = 0,               // must be multiple of 4 (offset into push constant block)
-            .size = sizeof(glm::vec3) + sizeof(_specularS), // must be multiple of 4
+            .size = sizeof(glm::vec3), // must be multiple of 4
     };
 
     // create descriptors

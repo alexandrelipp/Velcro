@@ -3,6 +3,7 @@
 layout(location = 0) out vec2 uv;
 layout(location = 1) out vec3 normal;
 layout(location = 2) out vec3 worldPos;
+layout(location = 3) out flat uint materialIndex;
 
 layout(binding = 0) uniform UniformBuffer{
     mat4 vp;
@@ -31,6 +32,10 @@ layout(binding = 3) readonly buffer Xforms{
     mat4 transforms[];
 };
 
+layout(binding = 4) readonly buffer MaterialIndices{
+    uint materialIndices[];
+};
+
 void main() {
     // get vertex using PVP
     uint idx = indices[gl_VertexIndex];
@@ -38,6 +43,7 @@ void main() {
 
     // get model transform using baseInstance (defined in VK_DRAW_INDIRECT)
     mat4 model = transforms[gl_BaseInstance];
+    materialIndex = materialIndices[gl_BaseInstance];
 
     // calculate normal (transpose + inverse for non uniform scale)
     // mat3 test = inverse(transpose(mat3(model))); // Is this better ??

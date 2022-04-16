@@ -197,3 +197,7 @@ const std::vector<MeshComponent>& Scene::getMeshes() {
 const std::vector<glm::mat4>& Scene::getMeshTransforms() {
     return _meshTransforms;
 }
+
+const std::vector<Material>& Scene::getMaterials() {
+    return _materials;
+}
