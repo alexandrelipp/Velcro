@@ -41,7 +41,9 @@ private:
     ///< index of the first material in the scene. Relevant if importing multiple models to a scene
     static inline uint32_t _firstMaterialIndex = 0;
     static inline std::string _filePath; ///< cached filepath
+
+    // constants
+    ///< Minimum ambient color of a material. Necessary because a lot of assimp materials have 0 as ambient color.
+    /// Note: we could also have a maximum ambient color
+    static constexpr glm::vec3 MATERIAL_MIN_AMBIENT = glm::vec3(0.1f);
 };
-
-
-

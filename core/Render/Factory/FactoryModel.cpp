@@ -100,6 +100,8 @@ void FactoryModel::importFromFile(const std::string& path, std::shared_ptr<Scene
     for (uint32_t i = 0; i < _aiScene->mNumMaterials; ++i){
         Material material{};
         aiMaterial* aiMaterial = _aiScene->mMaterials[i];
+
+        // get name of material
         aiString name;
         std::string matName = "No name :(";
         if (aiMaterial->Get(AI_MATKEY_NAME, name) == AI_SUCCESS) {
@@ -107,11 +109,18 @@ void FactoryModel::importFromFile(const std::string& path, std::shared_ptr<Scene
             SPDLOG_INFO("Material Name {}", matName);
         }
 
-        aiColor3D output;
+        aiColor3D output{};
+
+        // the ambient color corresponds to the max between MIN_AMBIENT, ambient and emmisive
         if (aiMaterial->Get(AI_MATKEY_COLOR_AMBIENT, output) == AI_SUCCESS) {
-            material.ambientColor = convertAiColor3D(output);
-            SPDLOG_INFO("Ambient {}", glm::to_string(material.ambientColor));
+            material.ambientColor = glm::max(MATERIAL_MIN_AMBIENT, convertAiColor3D(output));
         }
+        if (aiMaterial->Get(AI_MATKEY_COLOR_EMISSIVE, output) == AI_SUCCESS) {
+            material.ambientColor = glm::max(MATERIAL_MIN_AMBIENT, convertAiColor3D(output));
+        }
+        SPDLOG_INFO("Ambient {}", glm::to_string(material.ambientColor));
+
+        // get the diffuse and the specular color
         if (aiMaterial->Get(AI_MATKEY_COLOR_DIFFUSE, output) == AI_SUCCESS) {
             material.diffuseColor = convertAiColor3D(output);
             SPDLOG_INFO("diffuse {}", glm::to_string(material.diffuseColor));
@@ -120,6 +129,8 @@ void FactoryModel::importFromFile(const std::string& path, std::shared_ptr<Scene
             material.specularColor = convertAiColor3D(output);
             SPDLOG_INFO("Specular {}", glm::to_string(material.specularColor));
         }
+
+        // add material and its name to scene
         scene->_materials.push_back(material);
         scene->_materialsNames.push_back(matName);
     }

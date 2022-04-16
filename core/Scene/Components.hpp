@@ -29,7 +29,6 @@ struct MeshComponent {
 };
 
 struct Material {
-    // TODO : should we init colors at 0 ?? // TODO : min ambient??
     glm::vec3 ambientColor  = glm::vec3(0.f);
     glm::vec3 diffuseColor  = glm::vec3(0.f);
     glm::vec3 specularColor = glm::vec3(0.f);
