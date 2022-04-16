@@ -17,9 +17,14 @@ VertexBuffer::~VertexBuffer() {
 void VertexBuffer::init(VulkanRenderDevice* vrd, void* data, uint32_t size) {
     // create buffer and memory
     std::tie(_buffer, _deviceMemory) = Factory::createBuffer(vrd->device, vrd->physicalDevice, size,
-                                                             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                                                             VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT,
                                                              VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     // copy vertex data to it
     VK_ASSERT(utils::copyToDeviceLocalBuffer(vrd, _buffer, data, size), "Failed to copy data");
+}
+
+void VertexBuffer::bind(VkCommandBuffer commandBuffer) {
+    VkDeviceSize offset = 0;
+    vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_buffer, &offset);
 }

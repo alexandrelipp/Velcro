@@ -4,7 +4,7 @@
 
 #pragma once
 
-#include <vulkan/vulkan_core.h>
+#include <vulkan/vulkan.h>
 #include "../VulkanRenderDevice.hpp"
 
 
@@ -14,6 +14,8 @@ public:
     ~VertexBuffer();
 
     void init(VulkanRenderDevice* vrd, void* data, uint32_t size);
+
+    void bind(VkCommandBuffer commandBuffer);
 
 private:
     VkBuffer _buffer = nullptr;
