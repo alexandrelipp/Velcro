@@ -112,6 +112,7 @@ void FactoryModel::importFromFile(const std::string& path, std::shared_ptr<Scene
         aiColor3D output{};
 
         // the ambient color corresponds to the max between MIN_AMBIENT, ambient and emmisive
+        material.ambientColor = MATERIAL_MIN_AMBIENT;
         if (aiMaterial->Get(AI_MATKEY_COLOR_AMBIENT, output) == AI_SUCCESS) {
             material.ambientColor = glm::max(MATERIAL_MIN_AMBIENT, convertAiColor3D(output));
         }
