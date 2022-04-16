@@ -40,11 +40,11 @@ private:
     // Buffers
     std::array<UniformBuffer, MAX_FRAMES_IN_FLIGHT> _vpUniformBuffers{};
     std::array<ShaderStorageBuffer, MAX_FRAMES_IN_FLIGHT> _meshTransformBuffers{};
-    ShaderStorageBuffer _vertices{};
-    ShaderStorageBuffer _indices{};
-    ShaderStorageBuffer _indirectCommandBuffer{};
-    ShaderStorageBuffer _meshMetadata{};
-    ShaderStorageBuffer _materialsSSBO{};
+    DeviceSSBO _vertices{};
+    DeviceSSBO _indices{};
+    DeviceSSBO _indirectCommandBuffer{};
+    DeviceSSBO _meshMetadata{};
+    DeviceSSBO _materialsSSBO{};
 
     VkPushConstantRange _cameraPosPC;
 

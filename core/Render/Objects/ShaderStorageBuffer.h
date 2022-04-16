@@ -34,6 +34,7 @@ protected:
 };
 
 class HostSSBO : public ShaderStorageBuffer {
+public:
     HostSSBO() = default;
 
     void init(VulkanRenderDevice* vrd, uint32_t size, void* data = nullptr, VkBufferUsageFlags additionalUsage = 0);
@@ -41,6 +42,7 @@ class HostSSBO : public ShaderStorageBuffer {
 };
 
 class DeviceSSBO : public ShaderStorageBuffer {
+public:
     DeviceSSBO() = default;
 
     void init(VulkanRenderDevice* vrd, uint32_t size, void* data = nullptr, VkBufferUsageFlags additionalUsage = 0);

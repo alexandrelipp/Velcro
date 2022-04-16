@@ -68,15 +68,11 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
     }
 
     // set the commands in the command buffer
-    _indirectCommandBuffer.init(_vrd->device, _vrd->physicalDevice, indirectCommands.size() * sizeof(indirectCommands[0]),
-                                false, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
-    VK_ASSERT(_indirectCommandBuffer.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool,
-                      indirectCommands.data(), indirectCommands.size() * sizeof(indirectCommands[0])), "set data failed");
+    _indirectCommandBuffer.init(_vrd, utils::vectorSizeByte(indirectCommands),
+                                indirectCommands.data(), VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
 
     // init the mesh metadata buffer
-    _meshMetadata.init(_vrd->device, _vrd->physicalDevice, utils::vectorSizeByte(materialIndices), false);
-    _meshMetadata.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool, materialIndices.data(),
-                          utils::vectorSizeByte(materialIndices));
+    _meshMetadata.init(_vrd, utils::vectorSizeByte(materialIndices), materialIndices.data());
 
     // init the transform buffers
     for (auto& buffer : _meshTransformBuffers){
@@ -85,9 +81,7 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
 
     // init the materials buffer
     const auto& materials = _scene->getMaterials();
-    _materialsSSBO.init(_vrd->device, _vrd->physicalDevice, utils::vectorSizeByte(materials), false);
-    _materialsSSBO.setData(_vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool, (void*)materials.data(),
-                           utils::vectorSizeByte(materials));
+    _materialsSSBO.init(_vrd, utils::vectorSizeByte(materials), (void*)materials.data());
 
     // init the statue texture
     //_texture.init("../../../core/Assets/Models/duck/textures/Duck_baseColor.png", _vrd->device, _vrd->physicalDevice, _vrd->graphicsQueue, _vrd->commandPool);
