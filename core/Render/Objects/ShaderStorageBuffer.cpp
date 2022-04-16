@@ -64,6 +64,7 @@ bool DeviceSSBO::setData(VulkanRenderDevice* vrd, void* data, uint32_t size) {
     if (size > _size)
         return false;
 
+    // TODO : use utils!!
     auto stagingBuffer = Factory::createBuffer(vrd->device, vrd->physicalDevice, size,
                                                VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
                                                VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT );
