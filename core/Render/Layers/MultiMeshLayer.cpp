@@ -26,12 +26,15 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
     //FactoryModel::importFromFile("../../../core/Assets/Models/utahTeapot.fbx", _scene);
     //FactoryModel::importFromFile("../../../core/Assets/Models/engine.fbx", _scene);
     // https://sketchfab.com/3d-models/low-poly-truck-car-drifter-f3750246b6564607afbefc61cb1683b1
+#define DRIFTER
+#ifdef DRIFTER
     FactoryModel::importFromFile("../../../core/Assets/Models/Drifter/source/Jeep_done.fbx", _scene);
     // nice little model but the default scale is stupid
     auto& rootTransform = _scene->getTransform(1);
     rootTransform.scale *= 0.01f;
     rootTransform.needUpdateModelMatrix = true;
     _scene->setDirtyTransform(1);
+#endif
 
     FactoryModel::importFromFile("../../../core/Assets/Models/Bell Huey.fbx", _scene);
     //FactoryModel::importFromFile("../../../core/Assets/Models/duck/scene.gltf", _scene);
