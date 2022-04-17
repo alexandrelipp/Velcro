@@ -3,6 +3,7 @@
 //
 
 #include "UtilsVulkan.h"
+#include "../Render/Factory/FactoryVulkan.h"
 
 namespace utils {
     bool isInstanceExtensionSupported(const char* extension) {
@@ -285,6 +286,39 @@ namespace utils {
 
         VK_ASSERT(false, "Failed to find a memory type");
         return 0;
+    }
+
+    bool copyToDeviceLocalBuffer(VulkanRenderDevice* vrd, VkBuffer buffer, void* data, uint32_t size) {
+        if (data == nullptr || size == 0)
+            return false;
+
+        // create staging buffet to transfer
+        auto stagingBuffer = Factory::createBuffer(vrd->device, vrd->physicalDevice, size,
+                                                   VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+                                                   VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT );
+
+        // copy from data -> staging buffer
+        void *dst;
+        VK_CHECK(vkMapMemory(vrd->device, stagingBuffer.second, 0, size, 0u, &dst));
+        memcpy(dst, data, size);
+        vkUnmapMemory(vrd->device, stagingBuffer.second);
+
+
+        // copy from staging buffer -> device local buffer
+        utils::executeOnQueueSync(vrd->graphicsQueue, vrd->device, vrd->commandPool, [=](VkCommandBuffer commandBuffer){
+            VkBufferCopy bufferCopy = {
+                    .srcOffset = 0,
+                    .dstOffset = 0,
+                    .size = size
+            };
+            vkCmdCopyBuffer(commandBuffer, stagingBuffer.first, buffer, 1, &bufferCopy);
+        });
+
+        // destroy staging buffer
+        vkFreeMemory(vrd->device, stagingBuffer.second, nullptr);
+        vkDestroyBuffer(vrd->device, stagingBuffer.first, nullptr);
+
+        return true;
     }
 
     VkFormat findSupportedFormat(VkPhysicalDevice physicalDevice, const std::vector<VkFormat>& candidates, VkImageTiling tiling,

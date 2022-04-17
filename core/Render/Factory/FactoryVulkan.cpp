@@ -249,10 +249,11 @@ namespace Factory {
                 .sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
                 .pNext = nullptr,
                 .flags = 0u,
-                .vertexBindingDescriptionCount = 0u,
-                .pVertexBindingDescriptions = nullptr,
-                .vertexAttributeDescriptionCount = 0u,
-                .pVertexAttributeDescriptions = nullptr,
+                .vertexBindingDescriptionCount = props.vertexInputBinding == nullptr ? 0u : 1u,
+                .pVertexBindingDescriptions = props.vertexInputBinding,
+                .vertexAttributeDescriptionCount = (uint32_t)props.vertexInputAttributes.size(),
+                .pVertexAttributeDescriptions = props.vertexInputAttributes.empty() ?  nullptr :
+                                                                                       props.vertexInputAttributes.data(),
         };
 
         VkPipelineInputAssemblyStateCreateInfo assemblyInfo = {

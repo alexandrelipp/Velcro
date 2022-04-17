@@ -64,29 +64,6 @@ bool DeviceSSBO::setData(VulkanRenderDevice* vrd, void* data, uint32_t size) {
     if (size > _size)
         return false;
 
-    auto stagingBuffer = Factory::createBuffer(vrd->device, vrd->physicalDevice, size,
-                                               VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
-                                               VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT );
-
-    // copy from data -> staging buffer
-    void *dst;
-    VK_CHECK(vkMapMemory(vrd->device, stagingBuffer.second, 0, _size, 0u, &dst));
-    memcpy(dst, data, size);
-    vkUnmapMemory(vrd->device, stagingBuffer.second);
-
-
-    // copy from staging buffer -> buffer
-    utils::executeOnQueueSync(vrd->graphicsQueue, vrd->device, vrd->commandPool, [=, this](VkCommandBuffer commandBuffer){
-        VkBufferCopy bufferCopy = {
-                .srcOffset = 0,
-                .dstOffset = 0,
-                .size = size
-        };
-        vkCmdCopyBuffer(commandBuffer, stagingBuffer.first, _buffer, 1, &bufferCopy);
-    });
-
-    // destroy staging buffer
-    vkFreeMemory(vrd->device, stagingBuffer.second, nullptr);
-    vkDestroyBuffer(vrd->device, stagingBuffer.first, nullptr);
-    return true;
+    // use a staging buffer to copy to device local buffer
+    return utils::copyToDeviceLocalBuffer(vrd, _buffer, data, size);
 }

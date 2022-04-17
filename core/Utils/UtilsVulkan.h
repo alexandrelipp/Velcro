@@ -7,6 +7,7 @@
 #include <vulkan/vulkan.h>
 #include <functional>
 #include <vector>
+#include "../Render/VulkanRenderDevice.hpp"
 
 namespace utils {
     bool isInstanceExtensionSupported(const char* extension);
@@ -35,6 +36,7 @@ namespace utils {
 
     // Memory
     uint32_t findMemoryType(VkPhysicalDevice physicalDevice, uint32_t typeFilter, VkMemoryPropertyFlags properties);
+    bool copyToDeviceLocalBuffer(VulkanRenderDevice* vrd, VkBuffer buffer, void* data, uint32_t size);
 
     // format
     /// from the given candidates, returns the first supporting the given tiling and formatFeatures

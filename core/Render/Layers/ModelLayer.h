@@ -8,6 +8,8 @@
 #include "../Objects/UniformBuffer.h"
 #include "../Objects/ShaderStorageBuffer.h"
 #include "../Objects/Texture.h"
+#include "../Objects/VertexBuffer.h"
+#include "../Objects/IndexBuffer.h"
 
 
 class ModelLayer : public RenderLayer {
@@ -26,9 +28,8 @@ private:
 private:
     // Buffers
     std::array<UniformBuffer, MAX_FRAMES_IN_FLIGHT> _mvpUniformBuffers{};
-    DeviceSSBO _vertices{};
-    DeviceSSBO _indices{};
-    uint32_t _indexCount = 0;
+    VertexBuffer _vertexBuffer{};
+    IndexBuffer  _indexBuffer{};
 
     Texture _texture{};
 };

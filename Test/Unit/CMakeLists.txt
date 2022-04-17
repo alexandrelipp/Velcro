@@ -16,7 +16,7 @@ FetchContent_MakeAvailable(Catch2)
 add_executable(${PROJECT_NAME}
         TestUtils.cpp
         TestScene.cpp
-        )
+        TestVertexBuffer.cpp)
 
 target_link_libraries(${PROJECT_NAME} PRIVATE Catch2::Catch2WithMain)
 

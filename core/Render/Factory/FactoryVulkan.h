@@ -36,14 +36,20 @@ namespace Factory {
    VkShaderModule createShaderModule(VkDevice device, const std::string& filename);
 
    struct GraphicsPipelineProps{
+       // vertex input
        VkPrimitiveTopology primitiveTopology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+       VkVertexInputBindingDescription* vertexInputBinding = nullptr;
+       std::vector<VkVertexInputAttributeDescription> vertexInputAttributes;
        ShaderFiles shaders;
+
+       // fragment operations
        VkBool32 enableDepthTest = VK_TRUE;
        VkBool32 enableStencilTest = VK_FALSE;
        std::optional<VkStencilOpState> frontStencilState = std::nullopt;
        VkBool32 enableBlending = VK_TRUE;
        VkBool32 enableBackFaceCulling = VK_TRUE;
        VkSampleCountFlagBits sampleCountMSAA = VK_SAMPLE_COUNT_1_BIT;
+
        std::vector<VkDynamicState> dynamicStates;
    };
    VkPipeline createGraphicsPipeline(VkDevice device, VkExtent2D& extent, VkRenderPass renderPass,

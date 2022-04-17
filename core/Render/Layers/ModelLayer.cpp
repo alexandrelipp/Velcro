@@ -18,21 +18,31 @@ ModelLayer::ModelLayer(VkRenderPass renderPass) : RenderLayer() {
     std::vector<TexVertex> vertices;
     std::vector<uint32_t> indices;
     VK_ASSERT(FactoryModel::createDuckModel(vertices, indices), "Failed to create mesh");
-    _indexCount = indices.size();
 
-    // init the vertices ssbo
-    _vertices.init(_vrd, utils::vectorSizeByte(vertices), vertices.data());
+    // describe attribute input
+    VkVertexInputBindingDescription bindingDescription = {
+            .binding = 0,
+            .stride = sizeof(TexVertex),
+            .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+    };
+    std::vector<VkVertexInputAttributeDescription> inputDescriptions = VertexBuffer::inputAttributeDescriptions({
+            {.offset = (uint32_t)offsetof(TexVertex, position), .format = typeToFormat<decltype(TexVertex::position)>()},
+            {.offset = (uint32_t)offsetof(TexVertex, uv),       .format = typeToFormat<decltype(TexVertex::uv)>()},
+        });
 
-    // init the indices ssbo
-    _indices.init(_vrd, utils::vectorSizeByte(indices), indices.data());
+    // init vertex and index buffer
+    _vertexBuffer.init(_vrd, vertices.data(), utils::vectorSizeByte(vertices));
+    _indexBuffer.init(_vrd, VK_INDEX_TYPE_UINT32, indices.data(), indices.size());
 
     // init the statue texture
     _texture.init("../../../core/Assets/Models/duck/textures/Duck_baseColor.png", *_vrd, true);
     createDescriptors();
     Factory::GraphicsPipelineProps props = {
+            .vertexInputBinding = &bindingDescription,
+            .vertexInputAttributes = inputDescriptions,
             .shaders =  {
-                    .vertex = "vert.spv",
-                    .fragment = "frag.spv"
+                    .vertex = "modelV.spv",
+                    .fragment = "modelF.spv"
             },
             .sampleCountMSAA = _vrd->sampleCount
     };
@@ -43,8 +53,6 @@ ModelLayer::~ModelLayer() {
     // destroy the buffers
     for (auto& buffer : _mvpUniformBuffers)
         buffer.destroy(_vrd->device);
-    _vertices.destroy(_vrd->device);
-    _indices.destroy(_vrd->device);
 
     _texture.destroy(_vrd->device);
 }
@@ -69,7 +77,9 @@ void ModelLayer::onEvent(Event& event) {}
 void ModelLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) {
     // bind pipeline and render
     bindPipelineAndDS(commandBuffer, commandBufferIndex);
-    vkCmdDraw(_vrd->commandBuffers[commandBufferIndex], _indexCount, 1, 0, 0);
+    _vertexBuffer.bind(commandBuffer);
+    _indexBuffer.bind(commandBuffer);
+    vkCmdDrawIndexed(commandBuffer, _indexBuffer.getIndexCount(), 1, 0, 0, 0);
 }
 
 void ModelLayer::onImGuiRender() {
@@ -88,22 +98,6 @@ void ModelLayer::createDescriptors() {
                 .info = std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>{
                     VkDescriptorBufferInfo {_mvpUniformBuffers[0].getBuffer(), 0, _mvpUniformBuffers[0].getSize()},
                     VkDescriptorBufferInfo {_mvpUniformBuffers[1].getBuffer(), 0, _mvpUniformBuffers[1].getSize()},
-                }
-            },
-            {
-                .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                .shaderStage = VK_SHADER_STAGE_VERTEX_BIT,
-                .info = std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>{
-                        VkDescriptorBufferInfo {_vertices.getBuffer(), 0, _vertices.getSize()},
-                        VkDescriptorBufferInfo {_vertices.getBuffer(), 0, _vertices.getSize()},
-                }
-            },
-            {
-                .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                .shaderStage = VK_SHADER_STAGE_VERTEX_BIT,
-                .info = std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>{
-                        VkDescriptorBufferInfo {_indices.getBuffer(), 0, _indices.getSize()},
-                        VkDescriptorBufferInfo {_indices.getBuffer(), 0, _indices.getSize()},
                 }
             },
             {
