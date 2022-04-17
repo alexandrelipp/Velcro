@@ -2,6 +2,9 @@
 // Created by alexa on 2022-04-16.
 //
 
+// Potential optimization : might be more memory friendly to store vertices and indices in one contiguous buffer,
+// as described in https://developer.nvidia.com/vulkan-memory-management
+
 #pragma once
 
 #include <vulkan/vulkan.h>

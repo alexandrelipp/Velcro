@@ -8,6 +8,9 @@
 #include "../../Utils/UtilsVulkan.h"
 #include "../../Application.h"
 
+// Potential optimization : might be more memory friendly to store vertices and indices in one contiguous buffer,
+// as described in https://developer.nvidia.com/vulkan-memory-management
+
 IndexBuffer::~IndexBuffer() {
     VulkanRenderDevice* vrd = Application::getApp()->getRenderer()->getRenderDevice();
     vkFreeMemory(vrd->device, _deviceMemory, nullptr);
