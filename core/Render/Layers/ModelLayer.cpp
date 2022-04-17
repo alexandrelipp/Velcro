@@ -18,41 +18,21 @@ ModelLayer::ModelLayer(VkRenderPass renderPass) : RenderLayer() {
     std::vector<TexVertex> vertices;
     std::vector<uint32_t> indices;
     VK_ASSERT(FactoryModel::createDuckModel(vertices, indices), "Failed to create mesh");
-    //_indexCount = indices.size();
-    //_vertexCount = vertices.size();
 
+    // describe attribute input
     VkVertexInputBindingDescription bindingDescription = {
             .binding = 0,
             .stride = sizeof(TexVertex),
             .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
     };
-
     std::vector<VkVertexInputAttributeDescription> inputDescriptions = VertexBuffer::inputAttributeDescriptions({
             {.offset = (uint32_t)offsetof(TexVertex, position), .format = typeToFormat<decltype(TexVertex::position)>()},
-            {.offset = (uint32_t)offsetof(TexVertex, uv), .format = typeToFormat<decltype(TexVertex::uv)>()},
+            {.offset = (uint32_t)offsetof(TexVertex, uv),       .format = typeToFormat<decltype(TexVertex::uv)>()},
         });
 
-//    auto format = typeToFormat<glm::vec2>();
-//
-//    std::vector<VkVertexInputAttributeDescription> inputDescriptions(2);
-//    inputDescriptions[0].location = 0,
-//    inputDescriptions[0].binding = 0,
-//    inputDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT,
-//    inputDescriptions[0].offset = offsetof(TexVertex, position);
-//
-//    inputDescriptions[1].location = 1,
-//    inputDescriptions[1].binding = 0,
-//    inputDescriptions[1].format = VK_FORMAT_R32G32_SFLOAT,
-//    inputDescriptions[1].offset = offsetof(TexVertex, uv);
-
-
+    // init vertex and index buffer
     _vertexBuffer.init(_vrd, vertices.data(), utils::vectorSizeByte(vertices));
     _indexBuffer.init(_vrd, VK_INDEX_TYPE_UINT32, indices.data(), indices.size());
-    // init the vertices ssbo
-    //_vertices.init(_vrd, utils::vectorSizeByte(vertices), vertices.data());
-
-    // init the indices ssbo
-    //_indices.init(_vrd, utils::vectorSizeByte(indices), indices.data());
 
     // init the statue texture
     _texture.init("../../../core/Assets/Models/duck/textures/Duck_baseColor.png", *_vrd, true);
@@ -73,8 +53,6 @@ ModelLayer::~ModelLayer() {
     // destroy the buffers
     for (auto& buffer : _mvpUniformBuffers)
         buffer.destroy(_vrd->device);
-    //_vertices.destroy(_vrd->device);
-    //_indices.destroy(_vrd->device);
 
     _texture.destroy(_vrd->device);
 }
@@ -102,7 +80,6 @@ void ModelLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t comma
     _vertexBuffer.bind(commandBuffer);
     _indexBuffer.bind(commandBuffer);
     vkCmdDrawIndexed(commandBuffer, _indexBuffer.getIndexCount(), 1, 0, 0, 0);
-    //vkCmdDraw(commandBuffer, _indexCount, 1, 0, 0);
 }
 
 void ModelLayer::onImGuiRender() {
@@ -123,22 +100,6 @@ void ModelLayer::createDescriptors() {
                     VkDescriptorBufferInfo {_mvpUniformBuffers[1].getBuffer(), 0, _mvpUniformBuffers[1].getSize()},
                 }
             },
-//            {
-//                .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-//                .shaderStage = VK_SHADER_STAGE_VERTEX_BIT,
-//                .info = std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>{
-//                        VkDescriptorBufferInfo {_vertices.getBuffer(), 0, _vertices.getSize()},
-//                        VkDescriptorBufferInfo {_vertices.getBuffer(), 0, _vertices.getSize()},
-//                }
-//            },
-//            {
-//                .type = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-//                .shaderStage = VK_SHADER_STAGE_VERTEX_BIT,
-//                .info = std::array<VkDescriptorBufferInfo, MAX_FRAMES_IN_FLIGHT>{
-//                        VkDescriptorBufferInfo {_indices.getBuffer(), 0, _indices.getSize()},
-//                        VkDescriptorBufferInfo {_indices.getBuffer(), 0, _indices.getSize()},
-//                }
-//            },
             {
                 .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                 .shaderStage = VK_SHADER_STAGE_FRAGMENT_BIT,
