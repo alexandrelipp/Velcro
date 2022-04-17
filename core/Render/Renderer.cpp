@@ -225,15 +225,14 @@ Camera* Renderer::getCamera() {
     return &_camera;
 }
 
-void Renderer::update(float dt) {
-    _fpsCounter.tick(dt, true); // TODO : remove hard coded true!
+void Renderer::draw(float dt) {
+    OPTICK_EVENT();
+
+    // TODO : remove hard coded true!
+    _fpsCounter.tick(dt, true);
     if (!_imguiFocus)
         _camera.update(dt);
-}
 
-
-void Renderer::draw() {
-    OPTICK_EVENT();
     // wait until the fence is signaled (ready to use)
     VK_CHECK(vkWaitForFences(_vrd.device, 1, &_renderFinishedFence, VK_TRUE, UINT64_MAX));
 
@@ -244,12 +243,9 @@ void Renderer::draw() {
     VK_CHECK(vkAcquireNextImageKHR(_vrd.device, _swapchain, UINT64_MAX, _imageAvailSpres[_currentFiFIndex], nullptr, &imageIndex));
 
     // update render layers with delta time
-    static double time = 0.f, lastFrame = 0.f;
-    time = glfwGetTime();
     glm::mat4 pv = *_camera.getPVMatrix();
     for (auto layer : _renderLayers)
-        layer->update(time - lastFrame, _currentFiFIndex, pv);
-    lastFrame = time;
+        layer->update(dt, _currentFiFIndex, pv);
 
     _imGuiLayer->begin();
     onImGuiRender();

@@ -26,8 +26,7 @@ public:
     VulkanRenderDevice* getRenderDevice();
     VkExtent2D getSwapchainExtent();
 
-    void update(float dt);
-    void draw();
+    void draw(float dt);
     void onEvent(Event& e);
 
     Camera* getCamera();

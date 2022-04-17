@@ -169,15 +169,14 @@ bool Application::init(){
 
 void Application::run() {
     double currentFrame = 0, lastFrame = 0;
-    while (!glfwWindowShouldClose(_window))
-    {
+    while (!glfwWindowShouldClose(_window)) {
         OPTICK_FRAME("MainThread");
-         //update layer stack with delta time
+
+        // perform render with dt
         currentFrame = glfwGetTime();
-        _renderer.update(currentFrame - lastFrame);
+        _renderer.draw(currentFrame - lastFrame);
         lastFrame = currentFrame;
 
-        _renderer.draw();
         glfwPollEvents();
     }
 }
