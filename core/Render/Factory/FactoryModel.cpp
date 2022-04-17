@@ -14,8 +14,7 @@ bool FactoryModel::createDuckModel(std::vector<TexVertex>& vertices, std::vector
     Assimp::Importer importer;
     const aiScene* scene = importer.ReadFile("../../../core/Assets/Models/duck/scene.gltf",
                                              aiProcess_Triangulate |
-                                             aiProcess_JoinIdenticalVertices
-                                             );
+                                             aiProcess_JoinIdenticalVertices);
     if (scene == nullptr || scene->mRootNode == nullptr)
         return false;
 

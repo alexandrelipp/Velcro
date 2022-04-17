@@ -25,16 +25,12 @@ public:
         uint32_t offset = 0;
         VkFormat format = VK_FORMAT_UNDEFINED;
     };
-    // TODO : use init list??
+    /// Creates a vector of vkInputDesc with the given vertex attributes
     static std::vector<VkVertexInputAttributeDescription> inputAttributeDescriptions(const std::vector<VertexAttribute>& attributes);
 
 private:
     VkBuffer _buffer = nullptr;
     VkDeviceMemory _deviceMemory = nullptr;
-
-public:
-
-
 };
 
 // templates are mysterious :

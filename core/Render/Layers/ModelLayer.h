@@ -29,11 +29,7 @@ private:
     // Buffers
     std::array<UniformBuffer, MAX_FRAMES_IN_FLIGHT> _mvpUniformBuffers{};
     VertexBuffer _vertexBuffer{};
-    IndexBuffer _indexBuffer{};
-    //DeviceSSBO _vertices{};
-    //DeviceSSBO _indices{};
-    //uint32_t _indexCount = 0;  // TODO : remove : store in index buffer
-    //uint32_t _vertexCount = 0; // TODO : remove!!
+    IndexBuffer  _indexBuffer{};
 
     Texture _texture{};
 };

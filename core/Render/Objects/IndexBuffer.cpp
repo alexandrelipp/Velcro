@@ -37,6 +37,10 @@ void IndexBuffer::bind(VkCommandBuffer commandBuffer) {
     vkCmdBindIndexBuffer(commandBuffer, _buffer, 0, _indexType);
 }
 
+uint32_t IndexBuffer::getIndexCount() const {
+    return _indexCount;
+}
+
 /// Returns number of bytes for given index type
 constexpr uint32_t IndexBuffer::indexTypeSize(VkIndexType type) {
     switch (type) {
@@ -51,8 +55,3 @@ constexpr uint32_t IndexBuffer::indexTypeSize(VkIndexType type) {
     }
     return 0;
 }
-
-uint32_t IndexBuffer::getIndexCount() const {
-    return _indexCount;
-}
-
