@@ -27,18 +27,23 @@ ModelLayer::ModelLayer(VkRenderPass renderPass) : RenderLayer() {
             .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
     };
 
-    auto format = typeToFormat<glm::vec2>();
+    std::vector<VkVertexInputAttributeDescription> inputDescriptions = VertexBuffer::inputAttributeDescriptions({
+            {.offset = (uint32_t)offsetof(TexVertex, position), .format = typeToFormat<decltype(TexVertex::position)>()},
+            {.offset = (uint32_t)offsetof(TexVertex, uv), .format = typeToFormat<decltype(TexVertex::uv)>()},
+        });
 
-    std::vector<VkVertexInputAttributeDescription> inputDescriptions(2);
-    inputDescriptions[0].location = 0,
-    inputDescriptions[0].binding = 0,
-    inputDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT,
-    inputDescriptions[0].offset = offsetof(TexVertex, position);
-
-    inputDescriptions[1].location = 1,
-    inputDescriptions[1].binding = 0,
-    inputDescriptions[1].format = VK_FORMAT_R32G32_SFLOAT,
-    inputDescriptions[1].offset = offsetof(TexVertex, uv);
+//    auto format = typeToFormat<glm::vec2>();
+//
+//    std::vector<VkVertexInputAttributeDescription> inputDescriptions(2);
+//    inputDescriptions[0].location = 0,
+//    inputDescriptions[0].binding = 0,
+//    inputDescriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT,
+//    inputDescriptions[0].offset = offsetof(TexVertex, position);
+//
+//    inputDescriptions[1].location = 1,
+//    inputDescriptions[1].binding = 0,
+//    inputDescriptions[1].format = VK_FORMAT_R32G32_SFLOAT,
+//    inputDescriptions[1].offset = offsetof(TexVertex, uv);
 
 
     _vertexBuffer.init(_vrd, vertices.data(), utils::vectorSizeByte(vertices));
