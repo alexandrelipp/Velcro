@@ -28,3 +28,21 @@ void VertexBuffer::bind(VkCommandBuffer commandBuffer) {
     VkDeviceSize offset = 0;
     vkCmdBindVertexBuffers(commandBuffer, 0, 1, &_buffer, &offset);
 }
+
+std::vector<VkVertexInputAttributeDescription>
+VertexBuffer::inputAttributeDescriptions(const std::vector<VertexAttribute>& attributes) {
+    // create output using the size of given attributes vector
+    std::vector<VkVertexInputAttributeDescription> output(attributes.size());
+
+    // set all attributes, with incrementing location
+    for (uint32_t i = 0; i < attributes.size(); ++i){
+        output[i] = {
+                .location = i,
+                .binding = 0,
+                .format = attributes[i].format,
+                .offset = attributes[i].offset
+        };
+    }
+    return output;
+}
+

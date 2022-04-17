@@ -17,7 +17,44 @@ public:
 
     void bind(VkCommandBuffer commandBuffer);
 
+public:
+    struct VertexAttribute{
+        uint32_t offset = 0;
+        VkFormat format = VK_FORMAT_UNDEFINED;
+    };
+    // TODO : use init list??
+    static std::vector<VkVertexInputAttributeDescription> inputAttributeDescriptions(const std::vector<VertexAttribute>& attributes);
+
 private:
     VkBuffer _buffer = nullptr;
     VkDeviceMemory _deviceMemory = nullptr;
+
+public:
+
+
 };
+
+// templates are mysterious :
+// https://stackoverflow.com/questions/11773960/do-template-specialisations-belong-into-the-header-or-source-file
+
+/// Return type vulkan format associated with a given class. Must be specialized
+template<typename T>
+VkFormat typeToFormat(){
+    // if this occurs, you must add the type down below (don't forget the inline)
+    VK_ASSERT(false, "Must be specialized");
+}
+
+template<>
+inline VkFormat typeToFormat<glm::vec4>(){
+    return VK_FORMAT_R32G32B32A32_SFLOAT;
+}
+
+template<>
+inline VkFormat typeToFormat<glm::vec3>(){
+    return VK_FORMAT_R32G32B32_SFLOAT;
+}
+
+template<>
+inline VkFormat typeToFormat<glm::vec2>(){
+    return VK_FORMAT_R32G32_SFLOAT;
+}

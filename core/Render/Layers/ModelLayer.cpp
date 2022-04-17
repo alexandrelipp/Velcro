@@ -18,14 +18,16 @@ ModelLayer::ModelLayer(VkRenderPass renderPass) : RenderLayer() {
     std::vector<TexVertex> vertices;
     std::vector<uint32_t> indices;
     VK_ASSERT(FactoryModel::createDuckModel(vertices, indices), "Failed to create mesh");
-    _indexCount = indices.size();
-    _vertexCount = vertices.size();
+    //_indexCount = indices.size();
+    //_vertexCount = vertices.size();
 
     VkVertexInputBindingDescription bindingDescription = {
             .binding = 0,
             .stride = sizeof(TexVertex),
             .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
     };
+
+    auto format = typeToFormat<glm::vec2>();
 
     std::vector<VkVertexInputAttributeDescription> inputDescriptions(2);
     inputDescriptions[0].location = 0,
@@ -40,6 +42,7 @@ ModelLayer::ModelLayer(VkRenderPass renderPass) : RenderLayer() {
 
 
     _vertexBuffer.init(_vrd, vertices.data(), utils::vectorSizeByte(vertices));
+    _indexBuffer.init(_vrd, VK_INDEX_TYPE_UINT32, indices.data(), indices.size());
     // init the vertices ssbo
     //_vertices.init(_vrd, utils::vectorSizeByte(vertices), vertices.data());
 
@@ -92,7 +95,9 @@ void ModelLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t comma
     // bind pipeline and render
     bindPipelineAndDS(commandBuffer, commandBufferIndex);
     _vertexBuffer.bind(commandBuffer);
-    vkCmdDraw(commandBuffer, _indexCount, 1, 0, 0);
+    _indexBuffer.bind(commandBuffer);
+    vkCmdDrawIndexed(commandBuffer, _indexBuffer.getIndexCount(), 1, 0, 0, 0);
+    //vkCmdDraw(commandBuffer, _indexCount, 1, 0, 0);
 }
 
 void ModelLayer::onImGuiRender() {

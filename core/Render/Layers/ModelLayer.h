@@ -9,6 +9,7 @@
 #include "../Objects/ShaderStorageBuffer.h"
 #include "../Objects/Texture.h"
 #include "../Objects/VertexBuffer.h"
+#include "../Objects/IndexBuffer.h"
 
 
 class ModelLayer : public RenderLayer {
@@ -28,10 +29,11 @@ private:
     // Buffers
     std::array<UniformBuffer, MAX_FRAMES_IN_FLIGHT> _mvpUniformBuffers{};
     VertexBuffer _vertexBuffer{};
+    IndexBuffer _indexBuffer{};
     //DeviceSSBO _vertices{};
     //DeviceSSBO _indices{};
-    uint32_t _indexCount = 0;  // TODO : remove : store in index buffer
-    uint32_t _vertexCount = 0; // TODO : remove!!
+    //uint32_t _indexCount = 0;  // TODO : remove : store in index buffer
+    //uint32_t _vertexCount = 0; // TODO : remove!!
 
     Texture _texture{};
 };
