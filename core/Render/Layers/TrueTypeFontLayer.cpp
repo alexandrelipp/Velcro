@@ -5,7 +5,6 @@
 #include "TrueTypeFontLayer.h"
 
 
-#define __cplusplus
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
