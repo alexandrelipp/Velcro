@@ -38,6 +38,12 @@ TrueTypeFontLayer::TrueTypeFontLayer(VkRenderPass renderPass) {
 
     // init the statue texture
     _texture.init("../../../core/Assets/Textures/statue.jpg", *_vrd, true);
+
+    error = FT_Load_Glyph(face, index, FT_LOAD_RENDER);
+    VK_ASSERT(!error, "Failed to load glyph");
+
+    face->glyph->glyph_index = index;
+    face->glyph->bitmap->;
 }
 
 TrueTypeFontLayer::~TrueTypeFontLayer() {
