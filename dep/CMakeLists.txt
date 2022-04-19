@@ -72,6 +72,7 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/assimp" libAssimp)
 
 set(BUILD_SHARED_LIBS TRUE)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/freetype" libFreetype)
+set(BUILD_SHARED_LIBS FALSE)
 
 
 target_include_directories(${PROJECT_NAME} PUBLIC
