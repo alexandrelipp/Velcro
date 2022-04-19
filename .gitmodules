@@ -19,3 +19,6 @@
 [submodule "dep/ImGuizmo"]
 	path = dep/ImGuizmo
 	url = https://github.com/CedricGuillemet/ImGuizmo.git
+[submodule "dep/freetype"]
+	path = dep/freetype
+	url = https://github.com/alexandrelipp/freetype.git

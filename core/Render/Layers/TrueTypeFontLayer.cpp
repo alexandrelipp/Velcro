@@ -8,10 +8,13 @@
 #include FT_FREETYPE_H
 
 TrueTypeFontLayer::TrueTypeFontLayer(VkRenderPass renderPass) {
-    //FT_Library library;
-    //auto error = FT_Init_FreeType(&library);
-    //if (error)
-      //  SPDLOG_INFO("You suck");
+    FT_Library library;
+    auto error = FT_Init_FreeType(&library);
+    if (error)
+        SPDLOG_INFO("You suck");
+    else
+        SPDLOG_INFO("We did it");
+
 }
 
 TrueTypeFontLayer::~TrueTypeFontLayer() {
