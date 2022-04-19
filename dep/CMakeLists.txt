@@ -70,8 +70,17 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/glm" libGLM)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/spdlog" libSpdlog)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/assimp" libAssimp)
 
+# we build freetype dynamically to solve the following problems:
+# 1. Both Assimp and free type depend on zlib. If we link both statically we will get duplicated symbol link error (LNK 2005)
+# 2. Both Assimp and free type made small changes to zlib meaning we can't make both link with the same zlib
+# 3. It is probably possible to link statically, but would probably require to fork assimp and free type (their might be an easier way)
+
+# Building one of the two library dynamically solves all of our problems
+
+# set the flag to build as DLL
 set(BUILD_SHARED_LIBS TRUE)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/freetype" libFreetype)
+# unset the flag for potential other usage
 set(BUILD_SHARED_LIBS FALSE)
 
 
