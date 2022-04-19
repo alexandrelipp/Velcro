@@ -4,8 +4,11 @@
 
 #pragma once
 
-
 #include "RenderLayer.h"
+#include "../Objects/Texture.h"
+
+
+#include <imgui.h>
 
 class TrueTypeFontLayer : public RenderLayer{
 public:
@@ -20,6 +23,8 @@ public:
     virtual void onImGuiRender() override;
 
 private:
+    Texture _texture{};
+    ImTextureID _textureId = nullptr;
 
 };
 
