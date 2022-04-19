@@ -69,7 +69,10 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/glfw" libGLFW)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/glm" libGLM)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/spdlog" libSpdlog)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/assimp" libAssimp)
+
+set(BUILD_SHARED_LIBS TRUE)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/freetype" libFreetype)
+
 
 target_include_directories(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/glfw/include"
