@@ -8,6 +8,7 @@
 #include "../../Utils/UtilsFile.h"
 #include "../../Utils/UtilsVulkan.h"
 
+// TODO : extact in file!
 #define STB_IMAGE_IMPLEMENTATION
 #include <stbi_image.h>
 

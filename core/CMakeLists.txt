@@ -56,6 +56,8 @@ target_sources(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/SelectedMeshLayer.h"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/ImGuiLayer.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/ImGuiLayer.h"
+        "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/TrueTypeFontLayer.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/TrueTypeFontLayer.h"
 
         # CAMERA
         "${CMAKE_CURRENT_LIST_DIR}/Render/Camera/InterfaceCamera.h"
