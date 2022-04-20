@@ -31,7 +31,7 @@ TrueTypeFontLayer::TrueTypeFontLayer(VkRenderPass renderPass) {
     VK_ASSERT(!error, "Error when loading font");
 
     // set the pixel size. TODO : test with SET_CHAR_SIZE (does it automatically)
-    error = FT_Set_Pixel_Sizes(face, 0, 256);
+    error = FT_Set_Pixel_Sizes(face, 0, 16);
     VK_ASSERT(!error, "Failed to set pixel size");
 
     // get the glyph index. Note that if the given char has no glyph in the face, 0 is returned. This is known as the missing
@@ -140,6 +140,10 @@ TrueTypeFontLayer::TrueTypeFontLayer(VkRenderPass renderPass) {
 
     // init the statue texture
     //_texture.init("../../../core/Assets/Textures/statue.jpg", *_vrd, true);
+
+
+    FT_Done_Face(face);
+    FT_Done_FreeType(library);
 }
 
 TrueTypeFontLayer::~TrueTypeFontLayer() {
