@@ -53,6 +53,7 @@ TrueTypeFontLayer::TrueTypeFontLayer(VkRenderPass renderPass) {
             .height = face->glyph->bitmap.rows,
             .imageFormat = VK_FORMAT_R8_SRGB,
     };
+    // TODO SRGB is wrong!! only one component!!
 
 
     desc.data = std::vector<char>(face->glyph->bitmap.buffer, face->glyph->bitmap.buffer + desc.width * desc.height);
