@@ -53,6 +53,8 @@ ModelLayer::~ModelLayer() {
     // destroy the buffers
     for (auto& buffer : _mvpUniformBuffers)
         buffer.destroy(_vrd->device);
+
+    _texture.destroy(_vrd->device);
 }
 
 void ModelLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) {

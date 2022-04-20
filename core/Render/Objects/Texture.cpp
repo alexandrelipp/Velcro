@@ -7,31 +7,10 @@
 #include "../Factory/FactoryVulkan.h"
 #include "../../Utils/UtilsFile.h"
 #include "../../Utils/UtilsVulkan.h"
-#include "../../Application.h"
 
 // TODO : extract in file!
 #define STB_IMAGE_IMPLEMENTATION
 #include <stbi_image.h>
-
-
-Texture::~Texture() {
-    SPDLOG_INFO("Descriptor called");
-    VkDevice device = Application::getApp()->getRenderer()->getRenderDevice()->device;
-    if (_sampler != nullptr)
-        vkDestroySampler(device, _sampler, nullptr);
-    if (_imageView != nullptr)
-        vkDestroyImageView(device, _imageView, nullptr);
-    if (_imageMemory != nullptr)
-    vkFreeMemory(device, _imageMemory, nullptr);
-
-    if (_image != nullptr)
-        vkDestroyImage(device, _image, nullptr);
-
-    _sampler = nullptr;
-    _imageView = nullptr;
-    _imageMemory = nullptr;
-    _image = nullptr;
-}
 
 
 void Texture::init(const Texture::TextureDesc& desc, VulkanRenderDevice& renderDevice, bool createSampler) {
@@ -245,6 +224,19 @@ void Texture::init(const std::string& filePath, VulkanRenderDevice& renderDevice
 
     VK_CHECK(vkCreateSampler(renderDevice.device, &samplerCreateInfo, nullptr, &_sampler));
 
+}
+
+void Texture::destroy(VkDevice device) {
+    if (_sampler != nullptr)
+        vkDestroySampler(device, _sampler, nullptr);
+    vkDestroyImageView(device, _imageView, nullptr);
+    vkFreeMemory(device, _imageMemory, nullptr);
+    vkDestroyImage(device, _image, nullptr);
+
+    _sampler = nullptr;
+    _imageView = nullptr;
+    _imageMemory = nullptr;
+    _image = nullptr;
 }
 
 VkSampler Texture::getSampler() {

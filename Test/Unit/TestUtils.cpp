@@ -24,7 +24,7 @@ TEST_CASE( "Almost Equal", "[UtilsMath]") {
 
 TEST_CASE( "IsFeaturesSupported", "[UtilsVulkan]") {
     // test with device + requested features all to false (defaults)
-    VkPhysicalDeviceFeatures deviceFeatures, requestedFeatures;
+    VkPhysicalDeviceFeatures deviceFeatures{}, requestedFeatures{};
     REQUIRE(utils::isFeaturesSupported(deviceFeatures, requestedFeatures));
 
     // one feature not supported

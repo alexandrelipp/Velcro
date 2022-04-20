@@ -10,6 +10,7 @@
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#include "../../Application.h"
 
 
 TrueTypeFontLayer::TrueTypeFontLayer(VkRenderPass renderPass) {
@@ -88,7 +89,8 @@ TrueTypeFontLayer::TrueTypeFontLayer(VkRenderPass renderPass) {
 }
 
 TrueTypeFontLayer::~TrueTypeFontLayer() {
-
+    VkDevice device = Application::getApp()->getRenderer()->getRenderDevice()->device;
+    _texture.destroy(device);
 }
 
 void TrueTypeFontLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) {

@@ -14,8 +14,6 @@ class Texture {
 public:
     Texture() = default;
 
-    ~Texture();
-
     struct TextureDesc{
         uint32_t width       = 0;
         uint32_t height      = 0;
@@ -24,6 +22,8 @@ public:
     };
     void init(const TextureDesc& desc,     VulkanRenderDevice& renderDevice, bool createSampler);
     void init(const std::string& filePath, VulkanRenderDevice& renderDevice, bool createSampler);
+
+    void destroy(VkDevice device);
 
     VkSampler getSampler();
     VkImageView getImageView();
