@@ -257,6 +257,7 @@ uint32_t Texture::formatToSize(VkFormat format) {
             return 4;
         case VK_FORMAT_R8_SRGB:
         case VK_FORMAT_R8_UINT:
+        case VK_FORMAT_R8_UNORM:
             return 1;
         default:
             VK_ASSERT(false, "Format ot supported");
