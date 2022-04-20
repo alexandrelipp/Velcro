@@ -6,6 +6,7 @@
 
 #include "RenderLayer.h"
 #include "../Objects/Texture.h"
+#include "../Objects/VertexBuffer.h"
 
 
 #include <imgui.h>
@@ -23,6 +24,7 @@ public:
     virtual void onImGuiRender() override;
 
 private:
+    VertexBuffer _vertexBuffer{};
     Texture _texture{};
     ImTextureID _textureId = nullptr;
 

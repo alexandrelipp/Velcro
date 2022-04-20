@@ -119,6 +119,9 @@ void Texture::init(const std::string& filePath, VulkanRenderDevice& renderDevice
     VK_ASSERT(pixels != nullptr, "failed to load texture image!");
 
     // range construct vector
+    std::vector<unsigned char> test(pixels, pixels + imageSize);
+
+    // range construct vector
     std::vector<char> data(pixels, pixels + imageSize);
 
     // free pixels after copy

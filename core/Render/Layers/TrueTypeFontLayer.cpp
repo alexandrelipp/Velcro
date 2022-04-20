@@ -11,6 +11,8 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include "../../Application.h"
+#include "../Factory/FactoryModel.h"
+#include "../../Utils/UtilsTemplate.h"
 
 
 TrueTypeFontLayer::TrueTypeFontLayer(VkRenderPass renderPass) {
@@ -52,8 +54,59 @@ TrueTypeFontLayer::TrueTypeFontLayer(VkRenderPass renderPass) {
             .imageFormat = VK_FORMAT_R8_SRGB,
     };
 
+
     desc.data = std::vector<char>(face->glyph->bitmap.buffer, face->glyph->bitmap.buffer + desc.width * desc.height);
+
     _texture.init(desc, *_vrd, true);
+
+    std::vector<TexVertex2> vertices;
+    FactoryModel::createTexturedSquare2(vertices);
+    _vertexBuffer.init(_vrd, vertices.data(), utils::vectorSizeByte(vertices));
+
+    // describe
+    std::vector<Factory::Descriptor> descriptors = {
+            {
+                    .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                    .shaderStage = VK_SHADER_STAGE_FRAGMENT_BIT,
+                    .info = std::vector<VkDescriptorImageInfo>{
+                            VkDescriptorImageInfo{
+                                    .sampler = _texture.getSampler(),
+                                    .imageView = _texture.getImageView(),
+                                    .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                            }
+                    }
+            }
+    };
+
+    /// create descriptor sets
+    std::tie(_descriptorSetLayout, _pipelineLayout, _descriptorPool, _descriptorSets) =
+            Factory::createDescriptorSets(_vrd, descriptors, {});
+
+    // describe attribute input
+    VkVertexInputBindingDescription bindingDescription = {
+            .binding = 0,
+            .stride = sizeof(TexVertex2),
+            .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+    };
+    std::vector<VkVertexInputAttributeDescription> inputDescriptions = VertexBuffer::inputAttributeDescriptions({
+        {.offset = (uint32_t)offsetof(TexVertex2, position), .format = typeToFormat<decltype(TexVertex2::position)>()},
+        {.offset = (uint32_t)offsetof(TexVertex2, uv),       .format = typeToFormat<decltype(TexVertex2::uv)>()},
+    });
+
+    Factory::GraphicsPipelineProps props = {
+            .vertexInputBinding = &bindingDescription,
+            .vertexInputAttributes = inputDescriptions,
+            .shaders =  {
+                    .vertex = "TTFV.spv",
+                    .fragment = "TTFF.spv"
+            },
+            .enableDepthTest = VK_FALSE,
+            .sampleCountMSAA = _vrd->sampleCount
+    };
+    _graphicsPipeline = Factory::createGraphicsPipeline(_vrd->device, _swapchainExtent, renderPass, _pipelineLayout, props);
+
+
+
 
 #if 0
 
@@ -105,7 +158,9 @@ void TrueTypeFontLayer::onEvent(Event& event) {
 }
 
 void TrueTypeFontLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) {
-
+    bindPipelineAndDS(commandBuffer, commandBufferIndex);
+    _vertexBuffer.bind(commandBuffer);
+    vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 }
 
 void TrueTypeFontLayer::onImGuiRender() {
