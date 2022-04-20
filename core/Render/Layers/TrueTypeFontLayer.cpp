@@ -36,14 +36,55 @@ TrueTypeFontLayer::TrueTypeFontLayer(VkRenderPass renderPass) {
     uint32_t index = FT_Get_Char_Index(face, 0x0042);
     SPDLOG_INFO("Index {}", index);
 
+    // load the glyph image into the slot
+    error = FT_Load_Glyph( face , index , FT_LOAD_DEFAULT );
+    VK_ASSERT(!error, "Error when loading font");
+
+    error = FT_Render_Glyph(face->glyph, FT_RENDER_MODE_NORMAL);
+    VK_ASSERT(!error, "Error when rendering font");
+
+    SPDLOG_INFO("Current IndexP{} ", face->glyph->glyph_index);
+
+    Texture::TextureDesc desc = {
+            .width = face->glyph->bitmap.width,
+            .height = face->glyph->bitmap.rows,
+            .imageFormat = VK_FORMAT_R8_SRGB,
+    };
+
+    desc.data = std::vector<char>(face->glyph->bitmap.buffer, face->glyph->bitmap.buffer + desc.width * desc.height);
+    _texture.init(desc, *_vrd, true);
+
+#if 0
+
+    // we need to find the character that goes below the baseline by the biggest value
+    int maxUnderBaseline = 0, glyphIndex;
+    for ( int i = 32 ; i < 127 ; ++i )
+    {
+        // get the glyph index from character code
+        glyphIndex = FT_Get_Char_Index( face , i );
+
+        // load the glyph image into the slot
+        error = FT_Load_Glyph( face , glyphIndex , FT_LOAD_DEFAULT );
+        if ( error )
+        {
+            std::cout << "BitmapFontGenerator > failed to load glyph, error code: " << error << std::endl;
+        }
+
+        // get the glyph metrics
+        const FT_Glyph_Metrics& glyphMetrics = face->glyph->metrics;
+
+        // find the character that reaches below the baseline by the biggest value
+        int glyphHang = (glyphMetrics.horiBearingY- glyphMetrics.height)/64;
+        if( glyphHang < maxUnderBaseline )
+        {
+            maxUnderBaseline = glyphHang;
+        }
+    }
+#endif
+
+
     // init the statue texture
-    _texture.init("../../../core/Assets/Textures/statue.jpg", *_vrd, true);
-
-    error = FT_Load_Glyph(face, index, FT_LOAD_RENDER);
-    VK_ASSERT(!error, "Failed to load glyph");
-
-    face->glyph->glyph_index = index;
-    face->glyph->bitmap->;
+    //_texture.init("../../../core/Assets/Textures/statue.jpg", *_vrd, true);
 }
 
 TrueTypeFontLayer::~TrueTypeFontLayer() {

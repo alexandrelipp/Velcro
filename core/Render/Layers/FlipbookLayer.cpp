@@ -99,8 +99,6 @@ FlipbookLayer::FlipbookLayer(VkRenderPass renderPass) {
 
 FlipbookLayer::~FlipbookLayer() {
     vkDestroySampler(_vrd->device, _sampler, nullptr);
-    for (auto& texture : _textures)
-        texture.destroy(_vrd->device);
     _vertices.destroy(_vrd->device);
 }
 
