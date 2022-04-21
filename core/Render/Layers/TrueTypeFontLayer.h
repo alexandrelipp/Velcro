@@ -24,6 +24,8 @@ public:
     virtual void onImGuiRender() override;
 
 private:
+    Texture::TextureDesc createCustom();
+    Texture::TextureDesc createBitmapFont();
     VertexBuffer _vertexBuffer{};
     Texture _texture{};
     ImTextureID _textureId = nullptr;
