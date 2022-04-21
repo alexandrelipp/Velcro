@@ -14,6 +14,13 @@ class Texture {
 public:
     Texture() = default;
 
+    struct TextureDesc{
+        uint32_t width       = 0;
+        uint32_t height      = 0;
+        VkFormat imageFormat = VK_FORMAT_UNDEFINED;
+        std::vector<char> data;
+    };
+    void init(const TextureDesc& desc,     VulkanRenderDevice& renderDevice, bool createSampler);
     void init(const std::string& filePath, VulkanRenderDevice& renderDevice, bool createSampler);
 
     void destroy(VkDevice device);
@@ -22,6 +29,7 @@ public:
     VkImageView getImageView();
 
 private:
+    static uint32_t formatToSize(VkFormat format);
     VkImage _image = nullptr;
     VkImageView _imageView = nullptr;
     VkDeviceMemory _imageMemory = nullptr;
