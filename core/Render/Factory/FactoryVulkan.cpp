@@ -339,6 +339,8 @@ namespace Factory {
             // finalColor.rgb = newAlpha * newColor + (1 - newAlpha) * oldColor;
             // finalColor.a = newAlpha.a;
             colorBlendAttachment.blendEnable = VK_TRUE;
+            // Note : Setting srcColorBlendFactor to SRC_COLOR amplifies the colors, but messup blending (less white).
+            // TODO : add as prop option when not caring about blending anyway?
             colorBlendAttachment.srcColorBlendFactor = VK_BLEND_FACTOR_SRC_ALPHA; // FIXME : why with SRC_COLOR looks way better
             colorBlendAttachment.dstColorBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
             colorBlendAttachment.colorBlendOp = VK_BLEND_OP_ADD;

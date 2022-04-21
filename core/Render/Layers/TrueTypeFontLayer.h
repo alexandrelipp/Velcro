@@ -26,11 +26,9 @@ public:
 private:
     Texture::TextureDesc createCustom();
     Texture::TextureDesc createBitmapFont();
+
+private:
     VertexBuffer _vertexBuffer{};
     Texture _texture{};
     ImTextureID _textureId = nullptr;
-
 };
-
-
-
