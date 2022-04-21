@@ -14,6 +14,7 @@
 #include "Layers/MultiMeshLayer.h"
 #include "Layers/FlipbookLayer.h"
 #include "Layers/TrueTypeFontLayer.h"
+#include "Layers/TextLayer.h"
 
 #include <imgui/imgui.h>
 
@@ -173,7 +174,7 @@ bool Renderer::init() {
     _renderLayers.push_back(multiMeshLayer);
     _renderLayers.push_back(multiMeshLayer->getSelectedMeshLayer());
 
-    _renderLayers.push_back(std::make_shared<TrueTypeFontLayer>(_renderPass));
+    _renderLayers.push_back(std::make_shared<TextLayer>(_renderPass));
 
     // push flipbook layer before last to make it in front of models
     _renderLayers.push_back(std::make_shared<FlipbookLayer>(_renderPass));
