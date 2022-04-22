@@ -10,10 +10,6 @@
 
 using namespace msdf_atlas;
 
-static bool generateAtlas(const char *fontFilename) {
-
-}
-
 TextLayer::TextLayer(VkRenderPass renderPass) {
     std::string filePath = "../../../core/Assets/Fonts/OpenSans/OpenSans-Regular.ttf";
     VK_ASSERT(utils::fileExists(filePath), "Font file does not exist");
@@ -103,10 +99,6 @@ bool TextLayer::generateAtlas(const std::string& fontFilename) {
             const auto bitmap = (const msdfgen::Bitmap<unsigned char, 1>&)atlasStorage;
 
             auto data = (const unsigned char*)bitmap;
-
-            std::vector<float> datafl(data, data + height * width);
-            for (auto d : datafl)
-                SPDLOG_INFO("Pixel {}", d);
 
             Texture::TextureDesc desc = {
                     .width = (uint32_t)bitmap.width(),
