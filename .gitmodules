@@ -22,3 +22,6 @@
 [submodule "dep/freetype"]
 	path = dep/freetype
 	url = https://github.com/freetype/freetype.git
+[submodule "dep/msdf-atlas-gen"]
+	path = dep/msdf-atlas-gen
+	url = https://github.com/alexandrelipp/msdf-atlas-gen.git

@@ -16,7 +16,6 @@
 
 
 TrueTypeFontLayer::TrueTypeFontLayer(VkRenderPass renderPass) {
-
     Texture::TextureDesc desc = createBitmapFont();
 
     _texture.init(desc, *_vrd, true);
