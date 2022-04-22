@@ -5,6 +5,8 @@
 #include "TextLayer.h"
 #include "../../Utils/UtilsFile.h"
 #include "backends/imgui_impl_vulkan.h"
+#include "../Factory/FactoryModel.h"
+#include "../../Utils/UtilsTemplate.h"
 
 #include <msdf-atlas-gen/msdf-atlas-gen.h>
 
@@ -14,7 +16,54 @@ TextLayer::TextLayer(VkRenderPass renderPass) {
     std::string filePath = "../../../core/Assets/Fonts/OpenSans/OpenSans-Regular.ttf";
     VK_ASSERT(utils::fileExists(filePath), "Font file does not exist");
 
-    generateAtlas(filePath.c_str());
+    generateAtlas(filePath);
+
+    std::vector<TexVertex2> vertices;
+    FactoryModel::createTexturedSquare2(vertices);
+    _vertexBuffer.init(_vrd, vertices.data(), utils::vectorSizeByte(vertices));
+
+    // describe
+    std::vector<Factory::Descriptor> descriptors = {
+            {
+                    .type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                    .shaderStage = VK_SHADER_STAGE_FRAGMENT_BIT,
+                    .info = std::vector<VkDescriptorImageInfo>{
+                            VkDescriptorImageInfo{
+                                    .sampler = _texture.getSampler(),
+                                    .imageView = _texture.getImageView(),
+                                    .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+                            }
+                    }
+            }
+    };
+
+    /// create descriptor sets
+    std::tie(_descriptorSetLayout, _pipelineLayout, _descriptorPool, _descriptorSets) =
+            Factory::createDescriptorSets(_vrd, descriptors, {});
+
+    // describe attribute input
+    VkVertexInputBindingDescription bindingDescription = {
+            .binding = 0,
+            .stride = sizeof(TexVertex2),
+            .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+    };
+    std::vector<VkVertexInputAttributeDescription> inputDescriptions = VertexBuffer::inputAttributeDescriptions({
+        {.offset = (uint32_t)offsetof(TexVertex2, position), .format = typeToFormat<decltype(TexVertex2::position)>()},
+        {.offset = (uint32_t)offsetof(TexVertex2, uv),       .format = typeToFormat<decltype(TexVertex2::uv)>()},
+                                                                                                                });
+
+    Factory::GraphicsPipelineProps props = {
+            .vertexInputBinding = &bindingDescription,
+            .vertexInputAttributes = inputDescriptions,
+            .shaders =  {
+                    .vertex = "TTFV.spv",
+                    .fragment = "TTFF.spv"
+            },
+            .enableDepthTest = VK_FALSE,
+            .sampleCountMSAA = _vrd->sampleCount
+    };
+    _graphicsPipeline = Factory::createGraphicsPipeline(_vrd->device, _swapchainExtent, renderPass, _pipelineLayout, props);
+
 }
 
 TextLayer::~TextLayer() {

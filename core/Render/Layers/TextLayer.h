@@ -27,7 +27,7 @@ private:
     bool generateAtlas(const std::string& fontFilename);
 
 private:
-
+    VertexBuffer _vertexBuffer{};
     Texture _texture{};
     ImTextureID _textureId = nullptr;
 };

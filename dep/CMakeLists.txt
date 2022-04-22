@@ -117,6 +117,3 @@ endif()
 
 message("Linking with ${Vulkan_LIBRARIES}")
 target_link_libraries(${PROJECT_NAME} PUBLIC ${Vulkan_LIBRARIES})
-
-#include("${CMAKE_CURRENT_LIST_DIR}/msdf-atlas-gen/CMakeLists.txt")
-
