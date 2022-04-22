@@ -6,6 +6,8 @@
 #include "../Objects/Texture.h"
 #include "../Objects/VertexBuffer.h"
 
+#include <imgui.h>
+
 
 class TextLayer : public RenderLayer {
 public:
@@ -21,5 +23,12 @@ public:
     virtual void onImGuiRender() override;
 
 private:
+
+    bool generateAtlas(const std::string& fontFilename);
+
+private:
+
+    Texture _texture{};
+    ImTextureID _textureId = nullptr;
 };
 
