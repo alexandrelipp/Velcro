@@ -56,8 +56,8 @@ TextLayer::TextLayer(VkRenderPass renderPass) {
             .vertexInputBinding = &bindingDescription,
             .vertexInputAttributes = inputDescriptions,
             .shaders =  {
-                    .vertex = "TTFV.spv",
-                    .fragment = "TTFF.spv"
+                    .vertex = "TextV.spv",
+                    .fragment = "TextF.spv"
             },
             .enableDepthTest = VK_FALSE,
             .sampleCountMSAA = _vrd->sampleCount
@@ -71,9 +71,6 @@ TextLayer::~TextLayer() {
 }
 
 void TextLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) {
-    if (_textureId == nullptr)
-        _textureId = (ImTextureID)ImGui_ImplVulkan_AddTexture(_texture.getSampler(), _texture.getImageView(),
-                                                              VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL);
 }
 
 void TextLayer::onEvent(Event& event) {
@@ -81,14 +78,13 @@ void TextLayer::onEvent(Event& event) {
 }
 
 void TextLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) {
-
+    bindPipelineAndDS(commandBuffer, commandBufferIndex);
+    _vertexBuffer.bind(commandBuffer);
+    vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 }
 
 void TextLayer::onImGuiRender() {
-    ImGui::Begin("Texture");
 
-    ImGui::Image(_textureId, {500.f, 500.f});
-    ImGui::End();
 }
 
 bool TextLayer::generateAtlas(const std::string& fontFilename) {

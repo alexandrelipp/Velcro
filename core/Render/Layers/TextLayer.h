@@ -29,6 +29,5 @@ private:
 private:
     VertexBuffer _vertexBuffer{};
     Texture _texture{};
-    ImTextureID _textureId = nullptr;
 };
 
