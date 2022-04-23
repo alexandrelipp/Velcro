@@ -29,5 +29,11 @@ private:
 private:
     VertexBuffer _vertexBuffer{};
     Texture _texture{};
+    ImTextureID _textureId = nullptr;
+    ImVec2 _textureSize{};
+
+    float _minimumScale = 24.0;
+    float _pixelRange = 5.0;
+    float _miterLimit = 2.0;
 };
 
