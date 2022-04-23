@@ -35,5 +35,8 @@ private:
     float _minimumScale = 24.0;
     float _pixelRange = 5.0;
     float _miterLimit = 2.0;
+
+    glm::vec3 _atlasTransform = glm::vec3(0.f, 0.f, 1.f);
+    VkPushConstantRange _atlasPushConstant{};
 };
 

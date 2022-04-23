@@ -22,6 +22,12 @@ TextLayer::TextLayer(VkRenderPass renderPass) {
     FactoryModel::createTexturedSquare2(vertices);
     _vertexBuffer.init(_vrd, vertices.data(), utils::vectorSizeByte(vertices));
 
+    _atlasPushConstant = {
+            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
+            .offset = 0,
+            .size = sizeof(_atlasTransform)
+    };
+
     // describe
     std::vector<Factory::Descriptor> descriptors = {
             {
@@ -39,7 +45,7 @@ TextLayer::TextLayer(VkRenderPass renderPass) {
 
     /// create descriptor sets
     std::tie(_descriptorSetLayout, _pipelineLayout, _descriptorPool, _descriptorSets) =
-            Factory::createDescriptorSets(_vrd, descriptors, {});
+            Factory::createDescriptorSets(_vrd, descriptors, {_atlasPushConstant});
 
     // describe attribute input
     VkVertexInputBindingDescription bindingDescription = {
@@ -82,6 +88,8 @@ void TextLayer::onEvent(Event& event) {
 
 void TextLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) {
     bindPipelineAndDS(commandBuffer, commandBufferIndex);
+    vkCmdPushConstants(commandBuffer, _pipelineLayout, _atlasPushConstant.stageFlags, _atlasPushConstant.offset,
+                       _atlasPushConstant.size, glm::value_ptr(_atlasTransform));
     _vertexBuffer.bind(commandBuffer);
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 }
@@ -123,6 +131,9 @@ void TextLayer::onImGuiRender() {
                                                               VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL);
     }
     ImGui::Image(_textureId, _textureSize);
+
+    ImGui::DragFloat2("Position", glm::value_ptr(_atlasTransform), 0.25f);
+    ImGui::DragFloat("Scale", glm::value_ptr(_atlasTransform) + 2, 0.1f);
     ImGui::End();
 }
 
@@ -145,9 +156,9 @@ bool TextLayer::generateAtlas(const std::string& fontFilename) {
 
             // Apply MSDF edge coloring. See edge-coloring.h for other coloring strategies.
             // TODO : renable??
-//            const double maxCornerAngle = 3.0;
-//            for (GlyphGeometry &glyph : glyphs)
-//                glyph.edgeColoring(&msdfgen::edgeColoringInkTrap, maxCornerAngle, 0);
+            const double maxCornerAngle = 3.0;
+            for (GlyphGeometry &glyph : glyphs)
+                glyph.edgeColoring(&msdfgen::edgeColoringInkTrap, maxCornerAngle, 0);
 
             // TightAtlasPacker class computes the layout of the atlas.
             TightAtlasPacker packer;
