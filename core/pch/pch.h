@@ -59,7 +59,6 @@ SPDLOG_CRITICAL("Check success failed with code {}", magic_enum::enum_name(resul
 #define VK_ASSERT(result, mes) result
 #endif
 
-#define _USE_MATH_DEFINES
 //#define GLM_FORCE_RADIANS
 // perspective matrix ranges from -1 to 1 by default. Vulkan range is 0 to 1
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE

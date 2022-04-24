@@ -33,46 +33,16 @@ TextLayer::TextLayer(VkRenderPass renderPass) : _renderPass(renderPass) {
             1, 0, 2, 2, 0, 3
     };
 
-    //FactoryModel::createTexturedSquare2(vertices);
     _vertexBuffer.init(_vrd, vertices.data(), utils::vectorSizeByte(vertices));
     _indexBuffer.init(_vrd, VK_INDEX_TYPE_UINT16, indices.data(), indices.size());
 
-//    std::vector<glm::vec2> coords = {
-//            glm::vec2(0.f, 0.f),// top left
-//            glm::vec2(1.f, 0.f), // top right
-//            glm::vec2(1.f, 1.f), // bottom right
-//            glm::vec2(0.f, 1.f), // bottom left
-//    };
 
-
-
-
-    auto rect = _charMap['.'];
-    glm::vec2 topLeft = {rect.x/_textureSize.x, (_textureSize.y - rect.h - rect.y)/_textureSize.y};
-
-    glm::vec2 size = {rect.w / _textureSize.x, rect.h / _textureSize.y};
-
-    std::vector<glm::vec2> coords = {
-            topLeft,                            // top left
-            {topLeft.x + size.x, topLeft.y}, // top right
-                topLeft + size,             // bottom right
-            {topLeft.x, topLeft.y + size.y},    // bottom left
-    };
 
     for (auto& buffer : _charMVPs){
         buffer.init(_vrd, sizeof(glm::mat4) * MAX_CHAR, nullptr);
     }
 
     _chars = {'a', 'b'};
-
-    SPDLOG_INFO("Top left {}", glm::to_string(topLeft));
-    SPDLOG_INFO("Size {}", glm::to_string(size));
-
-
-
-//    std::vector<glm::vec2> test(vertices.size());
-//    for (int i = 0 ; i < vertices.size(); ++i)
-//        test[i] = vertices[i].uv;
 
     for (auto& buffer : _texCoords)
         buffer.init(_vrd, MAX_CHAR * sizeof(glm::vec2) * 4, nullptr);
@@ -129,11 +99,15 @@ void TextLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& p
         _textureId = (ImTextureID)ImGui_ImplVulkan_AddTexture(_texture.getSampler(), _texture.getImageView(),
                                                               VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL);
 
+    // nothing to do if not chars
+    if(_chars.empty())
+        return;
+
     std::vector<glm::vec2> coords(_chars.size() * 4);
     std::vector<glm::mat4> mvps(_chars.size());
     float offset = 0.f;
     for(uint32_t i = 0; i < _chars.size(); ++i){
-        auto rect = _charMap[_chars[i]];
+        auto rect = _charMap[_chars[i]].getBoxRect();
         // half a pixel added to prevent atlas bleeding
         glm::vec2 topLeft = {(rect.x + 0.5f)/_textureSize.x, (_textureSize.y - rect.h - rect.y + 0.5f)/_textureSize.y};
 
@@ -145,10 +119,22 @@ void TextLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& p
         coords[i * 4 + 2] =  topLeft + size;                    // bottom right
         coords[i * 4 + 3] = {topLeft.x, topLeft.y + size.y};    // bottom left
 
-        mvps[i] = pv * glm::scale(glm::translate(glm::mat4(1.f), {offset, 0.f, 0.f}), glm::vec3(_scale * size.x, _scale * size.y, 1));
+        double l,b,r,t;
+        _charMap[_chars[i]].getQuadPlaneBounds(l,b,r,t);
+
+        auto& glyph = _charMap[_chars[i]];
+
+
+        //_charMap[_chars[i]].getBoxTranslate()
+
+        //mvps[i] = pv * glm::scale(glm::translate(glm::mat4(1.f), {offset + l, (b * size.y), 0.f}), glm::vec3(_scale * size.x, _scale * size.y, 1));
+        //mvps[i] = pv * glm::scale(glm::translate(glm::mat4(1.f), {offset, b, 0.f}), glm::vec3(rect.w, rect.h, 1));
+        double test = t - b;
+        mvps[i] = pv * glm::scale(glm::translate(glm::mat4(1.f), {offset, test * 10, 0.f}), glm::vec3(rect.w, rect.h, 1));
         //mvps[i] = pv * glm::translate(glm::mat4(1.f), {offset, 0.f, 0.f});
         // TODO : use size instead!
-        offset += _scale * size.x;
+        //offset += _scale * size.x;
+        offset += _scale * rect.w;
     }
     _texCoords[commandBufferIndex].setData(_vrd, coords.data(), utils::vectorSizeByte(coords));
     _charMVPs[commandBufferIndex].setData(_vrd, mvps.data(), utils::vectorSizeByte(mvps));
@@ -159,6 +145,9 @@ void TextLayer::onEvent(Event& event) {
 }
 
 void TextLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) {
+    // nothing to do if not chars
+    if(_chars.empty())
+        return;
     bindPipelineAndDS(commandBuffer, commandBufferIndex);
     _vertexBuffer.bind(commandBuffer);
     _indexBuffer.bind(commandBuffer);
@@ -378,7 +367,7 @@ bool TextLayer::generateAtlasMSDF(const std::string& fontFilename) {
                 glyph.edgeColoring(&msdfgen::edgeColoringInkTrap, maxCornerAngle, 0);
             // TightAtlasPacker class computes the layout of the atlas.
             TightAtlasPacker packer;
-            // Set atlas parameters:
+
             // setDimensions or setDimensionsConstraint to find the best value
             packer.setDimensionsConstraint(TightAtlasPacker::DimensionsConstraint::SQUARE);
             // setScale for a fixed size or setMinimumScale to use the largest that fits
@@ -386,11 +375,14 @@ bool TextLayer::generateAtlasMSDF(const std::string& fontFilename) {
             // setPixelRange or setUnitRange
             packer.setPixelRange(_pixelRange);
             packer.setMiterLimit(_miterLimit);
+
             // Compute atlas layout - pack glyphs
             packer.pack(glyphs.data(), glyphs.size());
+
             // Get final atlas dimensions
             int width = 0, height = 0;
             packer.getDimensions(width, height);
+
             // The ImmediateAtlasGenerator class facilitates the generation of the atlas bitmap.
             ImmediateAtlasGenerator<
                     float, // pixel type of buffer for individual glyphs depends on generator function
@@ -406,9 +398,19 @@ bool TextLayer::generateAtlasMSDF(const std::string& fontFilename) {
             // Generate atlas bitmap
             generator.generate(glyphs.data(), glyphs.size());
 
+            auto& metrics = fontGeometry.getMetrics();
+            //metrics.
+
 
             for (auto& glyph : glyphs){
-                _charMap[glyph.getCodepoint()] = glyph.getBoxRect();
+                _charMap[glyph.getCodepoint()] = glyph;
+                double l,b,r,t;
+                glyph.getQuadPlaneBounds(l,b,r,t);
+                float x = l, y = b, w = r, z = t;
+                char c = glyph.getCodepoint();
+                auto tr = glyph.getBoxTranslate();
+                SPDLOG_INFO("Char {} bound l {:03.2f} b {:03.2f} r {:03.2f} t {:03.2f} Translate {:03.2f} t {:03.2f} ", c, x, y, w, z, tr.x, tr.y);
+                //SPDLOG_INFO("Char {} Rect  {:03.2f}  {:03.2f} r {:03.2f} t {:03.2f} Translate {:03.2f} t {:03.2f} ", c, glyph.getBoxRect().x
             }
             auto test = glyphs[40];
             auto rect = test.getBoxRect();
@@ -441,12 +443,12 @@ bool TextLayer::generateAtlasMSDF(const std::string& fontFilename) {
                     .width = (uint32_t)bitmap.width(),
                     .height = (uint32_t)bitmap.height(),
                     .imageFormat = VK_FORMAT_R8G8B8A8_UNORM,
-                    //.imageFormat = VK_FORMAT_R8G8B8A8_SRGB,
                     .data = *(std::vector<char>*)&pixels4, //std::vector<char>(data, data + height * width)
             };
             _texture.init(desc, *_vrd, true);
 
             _textureSize = {(float)bitmap.width(), (float)bitmap.height()};
+            _fontMetrics = fontGeometry.getMetrics();
 
             //msdfgen::savePng(storage, "atlasMulti.png");
 
