@@ -12,6 +12,8 @@
 // as described in https://developer.nvidia.com/vulkan-memory-management
 
 IndexBuffer::~IndexBuffer() {
+    // NOTE : This destructor does not obey the rule of 3 : The destructor frees resources not created by the constructor.
+    // DO NOT use this class in container like the vector. Reallocation of the buffer will destroy GPU resources still in use
     VulkanRenderDevice* vrd = Application::getApp()->getRenderer()->getRenderDevice();
     vkFreeMemory(vrd->device, _deviceMemory, nullptr);
     vkDestroyBuffer(vrd->device, _buffer, nullptr);

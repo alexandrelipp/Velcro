@@ -22,6 +22,7 @@ class FactoryModel {
 public:
     static bool createDuckModel(std::vector<TexVertex>& vertices, std::vector<uint32_t>& indices);
 
+    // NOTE : These 2 methods will work badly if in 3d space, where y axis is from bottom top top. Don't use with projections!
     static bool createTexturedSquare(std::vector<TexVertex>& vertices, std::vector<uint32_t>& indices);
     static bool createTexturedSquare2(std::vector<TexVertex2>& vertices);
 

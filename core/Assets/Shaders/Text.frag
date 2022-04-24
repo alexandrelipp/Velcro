@@ -29,9 +29,11 @@ void main(){
     vec3 msd = texture(msdf, texCoord).rgb;
     float sd = median(msd.r, msd.g, msd.b);
 
+    #if 0
+    float alpha = smoothstep(0.48, 0.52, sd);
     //float alpha = step(0.5, sd);
-    //color = vec4(1.0, 1.0, 1.0, alpha);
-    #if 1
+    color = vec4(1.0, 1.0, 1.0, alpha);
+    #else
     float screenPxDistance = screenPxRange()*(sd - 0.5);
     float opacity = clamp(screenPxDistance + 0.5, 0.0, 1.0);
     //float alpha = smoothstep(0.3, 0.7, screenPxDistance);

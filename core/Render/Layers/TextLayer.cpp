@@ -20,11 +20,13 @@ TextLayer::TextLayer(VkRenderPass renderPass) {
     //generateAtlasSDF(filePath);
     generateAtlasMSDF(filePath);
 
+    // NOTE. The y axis is cartesian (since the camera pv inverts the y axis). This works because the text is rendered
+    // in 3d space. If the text was rendered as an overlay the y axis would need to be from the vulkan coordinate system
     std::vector<glm::vec2> vertices = {
-            {-0.5f, -0.5f},   // top left
-            { 0.5f, -0.5f},   // top right
-            { 0.5f,  0.5f, }, // bottom right
-            {-0.5f,  0.5f,},  // bottom left
+            {-0.5f,   0.5f},   // top left
+            { 0.5f,   0.5f},   // top right
+            { 0.5f,  -0.5f, }, // bottom right
+            {-0.5f,  -0.5f,},  // bottom left
     };
 
     std::vector<uint16_t> indices = {
@@ -133,7 +135,8 @@ TextLayer::TextLayer(VkRenderPass renderPass) {
                     .vertex = "TextV.spv",
                     .fragment = "TextF.spv"
             },
-            .enableDepthTest = VK_FALSE,
+            //.enableDepthTest = VK_FALSE, // TODO  : enable!
+            //.enableBackFaceCulling = VK_FALSE, // TODO  : renable!
             .sampleCountMSAA = _vrd->sampleCount
     };
     _graphicsPipeline = Factory::createGraphicsPipeline(_vrd->device, _swapchainExtent, renderPass, _pipelineLayout, props);
@@ -141,8 +144,12 @@ TextLayer::TextLayer(VkRenderPass renderPass) {
 }
 
 TextLayer::~TextLayer() {
-    _texture.destroy(_vrd->device);
-    //_texCoords.destroy(_vrd->device);
+    VkDevice device = _vrd->device;
+    _texture.destroy(device);
+    for (auto& buffer : _texCoords)
+        buffer.destroy(device);
+    for (auto& buffer : _charMVPs)
+        buffer.destroy(device);
 }
 
 void TextLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) {
@@ -157,14 +164,14 @@ void TextLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& p
         auto rect = _charMap[_chars[i]];
         glm::vec2 topLeft = {rect.x/_textureSize.x, (_textureSize.y - rect.h - rect.y)/_textureSize.y};
 
-        glm::vec2 size = {rect.w / _textureSize.x, rect.h / _textureSize.y};
+        glm::vec2 size = {(rect.w - 1)/ _textureSize.x, (rect.h -1) / _textureSize.y};
 
         coords[i * 4 + 0] =  topLeft;                            // top left
         coords[i * 4 + 1]= {topLeft.x + size.x, topLeft.y};     // top right
         coords[i * 4 + 2] =  topLeft + size;                    // bottom right
         coords[i * 4 + 3] = {topLeft.x, topLeft.y + size.y};    // bottom left
         // TODO : add PV!!
-        mvps[i] = glm::translate(glm::mat4(1.f), {offset, 0.f, 0.f});
+        mvps[i] = pv * glm::translate(glm::mat4(1.f), {offset, 0.f, 0.f});
         // TODO : use size instead!
         offset += 0.5f;
     }
