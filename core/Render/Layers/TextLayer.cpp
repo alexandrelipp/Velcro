@@ -134,8 +134,10 @@ void TextLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& p
     float offset = 0.f;
     for(uint32_t i = 0; i < _chars.size(); ++i){
         auto rect = _charMap[_chars[i]];
+        // half a pixel added to prevent atlas bleeding
         glm::vec2 topLeft = {(rect.x + 0.5f)/_textureSize.x, (_textureSize.y - rect.h - rect.y + 0.5f)/_textureSize.y};
 
+        // one pixel removed to prevent atlas bleeding
         glm::vec2 size = {(rect.w - 1)/ _textureSize.x, (rect.h -1) / _textureSize.y};
 
         coords[i * 4 + 0] =  topLeft;                            // top left
