@@ -134,7 +134,7 @@ void TextLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& p
     float offset = 0.f;
     for(uint32_t i = 0; i < _chars.size(); ++i){
         auto rect = _charMap[_chars[i]];
-        glm::vec2 topLeft = {rect.x/_textureSize.x, (_textureSize.y - rect.h - rect.y)/_textureSize.y};
+        glm::vec2 topLeft = {(rect.x + 0.5f)/_textureSize.x, (_textureSize.y - rect.h - rect.y + 0.5f)/_textureSize.y};
 
         glm::vec2 size = {(rect.w - 1)/ _textureSize.x, (rect.h -1) / _textureSize.y};
 
@@ -143,10 +143,10 @@ void TextLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& p
         coords[i * 4 + 2] =  topLeft + size;                    // bottom right
         coords[i * 4 + 3] = {topLeft.x, topLeft.y + size.y};    // bottom left
 
-        mvps[i] = pv * glm::scale(glm::translate(glm::mat4(1.f), {offset, 0.f, 0.f}), glm::vec3(_scale));
+        mvps[i] = pv * glm::scale(glm::translate(glm::mat4(1.f), {offset, 0.f, 0.f}), glm::vec3(_scale * size.x, _scale * size.y, 1));
         //mvps[i] = pv * glm::translate(glm::mat4(1.f), {offset, 0.f, 0.f});
         // TODO : use size instead!
-        offset += _scale;
+        offset += _scale * size.x;
     }
     _texCoords[commandBufferIndex].setData(_vrd, coords.data(), utils::vectorSizeByte(coords));
     _charMVPs[commandBufferIndex].setData(_vrd, mvps.data(), utils::vectorSizeByte(mvps));
@@ -158,8 +158,6 @@ void TextLayer::onEvent(Event& event) {
 
 void TextLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) {
     bindPipelineAndDS(commandBuffer, commandBufferIndex);
-    //vkCmdPushConstants(commandBuffer, _pipelineLayout, _atlasPushConstant.stageFlags, _atlasPushConstant.offset,
-      //                 _atlasPushConstant.size, glm::value_ptr(_atlasTransform));
     _vertexBuffer.bind(commandBuffer);
     _indexBuffer.bind(commandBuffer);
     vkCmdDrawIndexed(commandBuffer, 6, _chars.size(), 0, 0, 0);
@@ -167,10 +165,26 @@ void TextLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t comman
 
 void TextLayer::onImGuiRender() {
     ImGui::Begin("Atlas Setting");
-    bool change = false;
-    change |= ImGui::DragFloat("Minimum Scale", &_minimumScale, 0.5f, 1.f, 100.f);
-    change |= ImGui::DragFloat("Pixel range", &_pixelRange, 0.25f, 1.f, 20.f);
-    change |= ImGui::DragFloat("Miter limit", &_miterLimit, 0.25f, 1.f, 20.f);
+    static char buffer[256];
+    memset(buffer, 0, sizeof(buffer));
+    // FIXME : won't work with unicode?
+    for (uint32_t i = 0; i < _chars.size(); ++i){
+        buffer[i] = _chars[i];
+    }
+    if (ImGui::InputText("Text", buffer, sizeof(buffer))){
+        auto size = strlen(buffer);
+        _chars.clear();
+        for (uint32_t i = 0; i < size; ++i){
+            _chars.push_back(buffer[i]);
+        }
+    }
+
+
+    ImGui::DragFloat("Scale", &_scale, 0.1f);
+
+    ImGui::DragFloat("Minimum Scale", &_minimumScale, 0.5f, 1.f, 100.f);
+    ImGui::DragFloat("Pixel range", &_pixelRange, 0.25f, 1.f, 20.f);
+    ImGui::DragFloat("Miter limit", &_miterLimit, 0.25f, 1.f, 20.f);
 
     if (ImGui::Button("Apply")){
         SPDLOG_INFO("Updating texture info");
@@ -208,7 +222,6 @@ void TextLayer::onImGuiRender() {
     ImGui::Image(_textureId, *(ImVec2*)&_textureSize);
 
     //ImGui::DragFloat2("Position", glm::value_ptr(_atlasTransform), 0.01f);
-    ImGui::DragFloat("Scale", &_scale, 0.1f);
     ImGui::End();
 }
 
