@@ -1,5 +1,8 @@
 #version 460
 
+layout (constant_id = 0) const float UNIT_RANGE_X = 0.0;
+layout (constant_id = 1) const float UNIT_RANGE_Y = 0.0;
+
 layout(location = 0) in vec2 texCoord;
 layout(location = 0) out vec4 color;
 
@@ -9,13 +12,19 @@ float median(vec3 col) {
     return max(min(col.r, col.g), min(max(col.r, col.g), col.b));
 }
 
-float median(float r, float g, float b) {
-    return max(min(r, g), min(max(r, g), b));
-}
+/*
+TAKEN from https://github.com/Chlumsky/msdfgen
+ Here, screenPxRange() represents the distance field range in output screen pixels. For example, if the pixel range was set to 2
+ when generating a 32x32 distance field, and it is used to draw a quad that is 72x72 pixels on the screen, it should return 4.5
+ (because 72/32 * 2 = 4.5). For 2D rendering, this can generally be replaced by a precomputed uniform value.
 
+ For rendering in a 3D perspective only, where the texture scale varies across the screen, you may want to implement this
+ function with fragment derivatives in the following way. I would suggest precomputing unitRange as a uniform variable
+ instead of pxRange for better performance.*/
 float screenPxRange() {
     float pxRange = 5.0;
-    vec2 unitRange = vec2(pxRange)/vec2(textureSize(msdf, 0));
+    //vec2 unitRange = vec2(pxRange)/vec2(textureSize(msdf, 0));
+    const vec2 unitRange = vec2(UNIT_RANGE_X, UNIT_RANGE_Y);
     vec2 screenTexSize = vec2(1.0)/fwidth(texCoord);
     return max(0.5*dot(unitRange, screenTexSize), 1.0);
 }
@@ -23,11 +32,8 @@ float screenPxRange() {
 vec3 colorD = vec3(0.0);
 
 void main(){
-    vec4 bgColor = vec4(0.0);
-    vec4 fgColor = vec4(1.0);
-
     vec3 msd = texture(msdf, texCoord).rgb;
-    float sd = median(msd.r, msd.g, msd.b);
+    float sd = median(msd);
 
     #if 0
     float alpha = smoothstep(0.48, 0.52, sd);
@@ -36,36 +42,6 @@ void main(){
     #else
     float screenPxDistance = screenPxRange()*(sd - 0.5);
     float opacity = clamp(screenPxDistance + 0.5, 0.0, 1.0);
-    //float alpha = smoothstep(0.3, 0.7, screenPxDistance);
-    //color = vec4(1.0, 1.0, 1.0, alpha);
-    color = mix(bgColor, fgColor, opacity);
+    color = vec4(1.0, 1.0, 1.0, opacity);
     #endif
-
-
-//    vec3 msd = texture(texSampler, uv).rgb;
-//    //float sd = median(texture(texSampler, uv).rgb);
-//    float sd = median(msd.r, msd.g, msd.b);
-//    float alpha = smoothstep(0.47, 0.53, sd);
-//    color = vec4(1.0, 1.0, 1.0, alpha);
-//        if (sd < 0.5)
-//            discard;
-//
-//
-//
-//        color = vec4(1.0, 1.0, 1.0, 1.0);
-//    float screenPxDistance = screenPxRange()*(sd - 0.5);
-//    float opacity  = clamp(screenPxDistance + 0.5, 0.0, 1.0);
-//    float alpha = smoothstep(0.47, 0.53, opacity);
-//    color = vec4(1.0, 1.0, 1.0, alpha);
-    //color = texture(texSampler, uv).rgba;
-
-//    float alpha = smoothstep(0.47, 0.53, value);
-//    color = vec4(1.0, 1.0, 1.0, alpha);
-    // TODO : set as 0 prob better
-//    if (alpha < 0.5)
-//        discard;
-//
-//
-//    //color = vec4(vec3(texture(texSampler, uv).x), 1.0);
-//    color = vec4(1.0, 1.0, 1.0, 1.0);
 }

@@ -12,7 +12,7 @@
 // TODO : remove!
 using namespace msdf_atlas;
 
-TextLayer::TextLayer(VkRenderPass renderPass) {
+TextLayer::TextLayer(VkRenderPass renderPass) : _renderPass(renderPass) {
     std::string filePath = "../../../core/Assets/Fonts/Roboto/Roboto-Regular.ttf";
     VK_ASSERT(utils::fileExists(filePath), "Font file does not exist");
 
@@ -77,12 +77,6 @@ TextLayer::TextLayer(VkRenderPass renderPass) {
     for (auto& buffer : _texCoords)
         buffer.init(_vrd, MAX_CHAR * sizeof(glm::vec2) * 4, nullptr);
 
-    _atlasPushConstant = {
-            .stageFlags = VK_SHADER_STAGE_VERTEX_BIT,
-            .offset = 0,
-            .size = sizeof(_atlasTransform)
-    };
-
     // describe
     std::vector<Factory::Descriptor> descriptors = {
             {
@@ -116,31 +110,9 @@ TextLayer::TextLayer(VkRenderPass renderPass) {
 
     /// create descriptor sets
     std::tie(_descriptorSetLayout, _pipelineLayout, _descriptorPool, _descriptorSets) =
-            Factory::createDescriptorSets(_vrd, descriptors, {_atlasPushConstant});
+            Factory::createDescriptorSets(_vrd, descriptors, {});
 
-    // describe attribute input
-    VkVertexInputBindingDescription bindingDescription = {
-            .binding = 0,
-            .stride = sizeof(glm::vec2),
-            .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
-    };
-    std::vector<VkVertexInputAttributeDescription> inputDescriptions = VertexBuffer::inputAttributeDescriptions({
-        {.offset = 0, .format = typeToFormat<glm::vec2>()},
-        });
-
-    Factory::GraphicsPipelineProps props = {
-            .vertexInputBinding = &bindingDescription,
-            .vertexInputAttributes = inputDescriptions,
-            .shaders =  {
-                    .vertex = "TextV.spv",
-                    .fragment = "TextF.spv"
-            },
-            //.enableDepthTest = VK_FALSE, // TODO  : enable!
-            //.enableBackFaceCulling = VK_FALSE, // TODO  : renable!
-            .sampleCountMSAA = _vrd->sampleCount
-    };
-    _graphicsPipeline = Factory::createGraphicsPipeline(_vrd->device, _swapchainExtent, renderPass, _pipelineLayout, props);
-
+    createGraphicsPipeline();
 }
 
 TextLayer::~TextLayer() {
@@ -170,10 +142,11 @@ void TextLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& p
         coords[i * 4 + 1]= {topLeft.x + size.x, topLeft.y};     // top right
         coords[i * 4 + 2] =  topLeft + size;                    // bottom right
         coords[i * 4 + 3] = {topLeft.x, topLeft.y + size.y};    // bottom left
-        // TODO : add PV!!
-        mvps[i] = pv * glm::translate(glm::mat4(1.f), {offset, 0.f, 0.f});
+
+        mvps[i] = pv * glm::scale(glm::translate(glm::mat4(1.f), {offset, 0.f, 0.f}), glm::vec3(_scale));
+        //mvps[i] = pv * glm::translate(glm::mat4(1.f), {offset, 0.f, 0.f});
         // TODO : use size instead!
-        offset += 0.5f;
+        offset += _scale;
     }
     _texCoords[commandBufferIndex].setData(_vrd, coords.data(), utils::vectorSizeByte(coords));
     _charMVPs[commandBufferIndex].setData(_vrd, mvps.data(), utils::vectorSizeByte(mvps));
@@ -185,12 +158,11 @@ void TextLayer::onEvent(Event& event) {
 
 void TextLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) {
     bindPipelineAndDS(commandBuffer, commandBufferIndex);
-    vkCmdPushConstants(commandBuffer, _pipelineLayout, _atlasPushConstant.stageFlags, _atlasPushConstant.offset,
-                       _atlasPushConstant.size, glm::value_ptr(_atlasTransform));
+    //vkCmdPushConstants(commandBuffer, _pipelineLayout, _atlasPushConstant.stageFlags, _atlasPushConstant.offset,
+      //                 _atlasPushConstant.size, glm::value_ptr(_atlasTransform));
     _vertexBuffer.bind(commandBuffer);
     _indexBuffer.bind(commandBuffer);
     vkCmdDrawIndexed(commandBuffer, 6, _chars.size(), 0, 0, 0);
-    //vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 }
 
 void TextLayer::onImGuiRender() {
@@ -216,7 +188,7 @@ void TextLayer::onImGuiRender() {
             VkWriteDescriptorSet writeDescriptorSet = {
                     .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
                     .dstSet = descriptorSet,
-                    .dstBinding = 0,
+                    .dstBinding = 2,
                     .dstArrayElement = 0,
                     .descriptorCount = 1,
                     .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -228,13 +200,63 @@ void TextLayer::onImGuiRender() {
         // FIXME : This is a memory leak. The older descriptor never gets deallocated. Would probably require an imgui fix
         _textureId = (ImTextureID)ImGui_ImplVulkan_AddTexture(_texture.getSampler(), _texture.getImageView(),
                                                               VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL);
-    }
-    ImGui::Image(_textureId, _textureSize);
 
-    ImGui::DragFloat2("Position", glm::value_ptr(_atlasTransform), 0.01f);
-    ImGui::DragFloat("Scale", glm::value_ptr(_atlasTransform) + 2, 0.1f);
+        // destroy pipeline and create a new one
+        vkDestroyPipeline(_vrd->device, _graphicsPipeline, nullptr);
+        createGraphicsPipeline();
+    }
+    ImGui::Image(_textureId, *(ImVec2*)&_textureSize);
+
+    //ImGui::DragFloat2("Position", glm::value_ptr(_atlasTransform), 0.01f);
+    ImGui::DragFloat("Scale", &_scale, 0.1f);
     ImGui::End();
 }
+
+
+void TextLayer::createGraphicsPipeline() {
+    // describe attribute input
+    VkVertexInputBindingDescription bindingDescription = {
+            .binding = 0,
+            .stride = sizeof(glm::vec2),
+            .inputRate = VK_VERTEX_INPUT_RATE_VERTEX
+    };
+    std::vector<VkVertexInputAttributeDescription> inputDescriptions = VertexBuffer::inputAttributeDescriptions({
+            {.offset = 0, .format = typeToFormat<glm::vec2>()},
+    });
+
+    // set up specialization info to inject unit range in shader (when compiling it)
+    std::array<VkSpecializationMapEntry, 2> mapEntries{};
+    for (uint32_t i = 0; i < mapEntries.size(); ++i) {
+        mapEntries[i].constantID = i;
+        mapEntries[i].offset = i * sizeof(float);
+        mapEntries[i].size = sizeof(float);
+    }
+
+    glm::vec2 unitRange = glm::vec2(_pixelRange)/_textureSize;
+
+    // add data
+    VkSpecializationInfo specializationInfo = {
+            .mapEntryCount = mapEntries.size(),
+            .pMapEntries = mapEntries.data(),
+            .dataSize = sizeof(unitRange),
+            .pData = &unitRange
+    };
+
+    Factory::GraphicsPipelineProps props = {
+            .vertexInputBinding = &bindingDescription,
+            .vertexInputAttributes = inputDescriptions,
+            .shaders =  {
+                    .vertex = "TextV.spv",
+                    .fragment = "TextF.spv",
+                    .fragmentSpec = &specializationInfo
+            },
+            //.enableDepthTest = VK_FALSE, // TODO  : enable!
+            //.enableBackFaceCulling = VK_FALSE, // TODO  : renable!
+            .sampleCountMSAA = _vrd->sampleCount
+    };
+    _graphicsPipeline = Factory::createGraphicsPipeline(_vrd->device, _swapchainExtent, _renderPass, _pipelineLayout, props);
+}
+
 
 bool TextLayer::generateAtlasSDF(const std::string& fontFilename) {
     bool success = false;
@@ -254,7 +276,6 @@ bool TextLayer::generateAtlasSDF(const std::string& fontFilename) {
             fontGeometry.loadCharset(font, 1.0, Charset::ASCII);
 
             // Apply MSDF edge coloring. See edge-coloring.h for other coloring strategies.
-            // TODO : renable??
             const double maxCornerAngle = 3.0;
             for (GlyphGeometry &glyph : glyphs)
                 glyph.edgeColoring(&msdfgen::edgeColoringInkTrap, maxCornerAngle, 0);
@@ -303,7 +324,6 @@ bool TextLayer::generateAtlasSDF(const std::string& fontFilename) {
                     .width = (uint32_t)bitmap.width(),
                     .height = (uint32_t)bitmap.height(),
                     .imageFormat = VK_FORMAT_R8_UNORM,
-                    //.imageFormat = VK_FORMAT_R8G8B8A8_SRGB,
                     .data = *(std::vector<char>*)&pixels, //std::vector<char>(data, data + height * width)
             };
             _texture.init(desc, *_vrd, true);
@@ -311,18 +331,6 @@ bool TextLayer::generateAtlasSDF(const std::string& fontFilename) {
             _textureSize = {(float)bitmap.width(), (float)bitmap.height()};
 
 
-            //msdfgen::savePng(wtf, "atlas.png");
-
-            //saveImage(wtf, ImageFormat::PNG, (const char*)"atlas", YDirection::BOTTOM_UP);
-
-
-
-            SPDLOG_INFO("Bitmap size {} {}", bitmap.width(), bitmap.height());
-
-            // The atlas bitmap can now be retrieved via atlasStorage as a BitmapConstRef.
-            // The glyphs array (or fontGeometry) contains positioning data for typesetting text.
-            //success = myProject::submitAtlasBitmapAndLayout(generator.atlasStorage(), glyphs);
-            // Cleanup
             msdfgen::destroyFont(font);
             success = true;
 
@@ -437,62 +445,4 @@ bool TextLayer::generateAtlasMSDF(const std::string& fontFilename) {
         msdfgen::deinitializeFreetype(ft);
     }
     return success;
-}
-
-bool TextLayer::generateMSDF(const std::string& fontFilename) {
-
-    using namespace msdfgen;
-    FreetypeHandle *ft = initializeFreetype();
-    if (ft) {
-        FontHandle *font = loadFont(ft, fontFilename.c_str());
-        if (font) {
-            Shape shape;
-            if (loadGlyph(shape, font, 'B')) {
-                shape.normalize();
-                //                      max. angle
-                edgeColoringSimple(shape, 3.0);
-                //           image width, height
-                Bitmap<float, 3> bitmap(32, 32);
-                //                     range, scale, translation
-                msdfgen::generateMSDF(bitmap, shape, 4.0, 1.0, Vector2(4.0, 4.0));
-                savePng(bitmap, "output.png");
-
-                std::vector<byte> pixels3(3*bitmap.width()*bitmap.height());
-                auto it = pixels3.begin();
-                for (int y = bitmap.height()-1; y >= 0; --y)
-                    for (int x = 0; x < bitmap.width(); ++x) {
-                        *it++ = pixelFloatToByte(bitmap(x, y)[0]);
-                        *it++ = pixelFloatToByte(bitmap(x, y)[1]);
-                        *it++ = pixelFloatToByte(bitmap(x, y)[2]);
-                    }
-
-
-                std::vector<byte> pixels4(4 * bitmap.width() * bitmap.height());
-                int counter = 0;
-                int i = 0;
-                for (auto pixel : pixels3){
-                    pixels4[i++] = pixel;
-                    counter++;
-                    if (counter == 3){
-                        counter = 0;
-                        pixels4[i++] = 255;
-                    }
-                }
-
-                Texture::TextureDesc desc = {
-                        .width = (uint32_t)bitmap.width(),
-                        .height = (uint32_t)bitmap.height(),
-                        .imageFormat = VK_FORMAT_R8G8B8A8_UNORM,
-                        //.imageFormat = VK_FORMAT_R8G8B8A8_SRGB,
-                        .data = *(std::vector<char>*)&pixels4, //std::vector<char>(data, data + height * width)
-                };
-                _texture.init(desc, *_vrd, true);
-
-                _textureSize = {(float)bitmap.width(), (float)bitmap.height()};
-            }
-            destroyFont(font);
-        }
-        deinitializeFreetype(ft);
-    }
-    return 0;
 }
