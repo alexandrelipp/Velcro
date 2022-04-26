@@ -165,7 +165,6 @@ uint32_t Texture::formatToSize(VkFormat format) {
         case VK_FORMAT_R8_SRGB:
         case VK_FORMAT_R8_UINT:
         case VK_FORMAT_R8_UNORM:
-        case   VK_FORMAT_R32_SFLOAT: // TODO : change to 4 or rename method to num components
             return 1;
         default:
             VK_ASSERT(false, "Format ot supported");
