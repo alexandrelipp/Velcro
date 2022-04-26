@@ -22,7 +22,7 @@ TAKEN from https://github.com/Chlumsky/msdfgen
  function with fragment derivatives in the following way. I would suggest precomputing unitRange as a uniform variable
  instead of pxRange for better performance.*/
 float screenPxRange() {
-    float pxRange = 5.0;
+    // float pxRange = 5.0;
     //vec2 unitRange = vec2(pxRange)/vec2(textureSize(msdf, 0));
     const vec2 unitRange = vec2(UNIT_RANGE_X, UNIT_RANGE_Y);
     vec2 screenTexSize = vec2(1.0)/fwidth(texCoord);
@@ -35,16 +35,19 @@ void main(){
     vec3 msd = texture(msdf, texCoord).rgb;
     float sd = median(msd);
 
-    #if 1
-    //float alpha = smoothstep(0.48, 0.52, sd);
-    //float alpha = step(0.5, sd);
-    //color = vec4(1.0, 1.0, 1.0, alpha);
+#if 0
+    float alpha = smoothstep(0.48, 0.52, sd);
+    color = vec4(1.0, 1.0, 1.0, alpha);
     color = vec4(1.0);
-    #else
+#else
     float screenPxDistance = screenPxRange()*(sd - 0.5);
     float opacity = clamp(screenPxDistance + 0.5, 0.0, 1.0);
+
+    // discard if alpha 0 to prevent writing to depth buffer
     if (opacity == 0.0)
         discard;
+
+    // TODO : take color as uniform
     color = vec4(1.0, 1.0, 1.0, opacity);
-    #endif
+#endif
 }

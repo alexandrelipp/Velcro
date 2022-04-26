@@ -166,18 +166,18 @@ bool Renderer::init() {
     createRenderPass(surfaceFormat.format);
 
     // push all layers
-    //_renderLayers.push_back(std::make_shared<ModelLayer>(_renderPass));
-    //_renderLayers.push_back(std::make_shared<LineLayer>(_renderPass));
+    _renderLayers.push_back(std::make_shared<ModelLayer>(_renderPass));
+    _renderLayers.push_back(std::make_shared<LineLayer>(_renderPass));
 
     // push mesh layers
     std::shared_ptr<MultiMeshLayer> multiMeshLayer = std::make_shared<MultiMeshLayer>(_renderPass);
-    //_renderLayers.push_back(multiMeshLayer);
-    //_renderLayers.push_back(multiMeshLayer->getSelectedMeshLayer());
+    _renderLayers.push_back(multiMeshLayer);
+    _renderLayers.push_back(multiMeshLayer->getSelectedMeshLayer());
 
     _renderLayers.push_back(std::make_shared<TextLayer>(_renderPass));
 
     // push flipbook layer before last to make it in front of models
-    //_renderLayers.push_back(std::make_shared<FlipbookLayer>(_renderPass));
+    _renderLayers.push_back(std::make_shared<FlipbookLayer>(_renderPass));
 
     // finish with imgui layer (overlay)
     _imGuiLayer = std::make_shared<ImGuiLayer>(_renderPass);

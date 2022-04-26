@@ -34,32 +34,40 @@ private:
 
 private:
     static constexpr uint32_t MAX_CHAR = 200;
+    static constexpr char FONT_FILENAME[] = "../../../core/Assets/Fonts/Roboto/Roboto-Regular.ttf";
 
 private:
     VkRenderPass _renderPass = nullptr; ///< cached render pass for pipeline recreation
-    // TODO : device?
+    ///< Tex coords of all the chars. NOTE:  Could be on device and no recomputed every frame
     std::array<HostSSBO, MAX_FRAMES_IN_FLIGHT> _texCoords{};
-    VertexBuffer _vertexBuffer{};
-    IndexBuffer _indexBuffer{};
-    Texture _texture{};
-    ImTextureID _textureId = nullptr;
-    glm::vec2 _textureSize{};
+    std::array<HostSSBO, MAX_FRAMES_IN_FLIGHT> _charMVPs{}; ///< MVP's of all chars (1 / char)
 
+    // renderer objects
+    VertexBuffer  _vertexBuffer{};
+    IndexBuffer   _indexBuffer{};
+    Texture       _texture{};
+
+    // multi-channel signed distance field settings
     float _minimumScale = 56.0;
     float _pixelRange = 5.0f;
     float _miterLimit = 1.0f;
+    ImTextureID _textureId = nullptr;
+    glm::vec2 _textureSize{};
 
+    float _scale = 0.05f; ///< scale of the text
 
-    float _scale = 1.f;
-
-    // TODO :make vector also prob not neccesary to store glyp?
-    std::unordered_map<msdfgen::unicode_t, msdf_atlas::GlyphGeometry> _charMap;
+    ///< utf8 code of all the chars. Is it bad to store all utf8 chars as 4 bytes (uint32_t) ?. Save as string??
     std::vector<msdfgen::unicode_t> _chars{};
 
-    std::array<HostSSBO, MAX_FRAMES_IN_FLIGHT> _charMVPs{};
+    struct GlyphData{
+        ///< glyph box in the atlas. TODO : precompute coords!
+        msdf_atlas::Rectangle rect{};
+        ///< Quad plane bounds. Only b is used for now
+        double l = 0.0, b = 0.0, r = 0.0 ,t = 0.0;
+    };
 
-    msdfgen::FontMetrics _fontMetrics{};
-
-
+    ///< map of unicode -> glyph Data. Could be a vector if all glyphs unicode are continuous and starting from 0 (not the case)
+    std::unordered_map<msdfgen::unicode_t, GlyphData> _charMap;
+    msdfgen::FontMetrics _fontMetrics{}; ///< Metrics about the font. Not currently used. Remove?
 };
 
