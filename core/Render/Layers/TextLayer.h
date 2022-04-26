@@ -22,15 +22,16 @@ public:
     virtual void update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) override;
     virtual void onEvent(Event& event) override;
 
-
     virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) override;
     virtual void onImGuiRender() override;
 
 private:
     void createGraphicsPipeline();
 
-    bool generateAtlasSDF(const std::string& fontFilename);
+    /// Generates a multi-channel signed distance field using the given filename and the atlas params
     bool generateAtlasMSDF(const std::string& fontFilename);
+
+    bool generateAtlasSDF(const std::string& fontFilename);
 
 private:
     static constexpr uint32_t MAX_CHAR = 200;
@@ -49,8 +50,8 @@ private:
 
     // multi-channel signed distance field settings
     float _minimumScale = 56.0;
-    float _pixelRange = 5.0f;
-    float _miterLimit = 1.0f;
+    float _pixelRange   = 5.0f;
+    float _miterLimit   = 1.0f;
     ImTextureID _textureId = nullptr;
     glm::vec2 _textureSize{};
 

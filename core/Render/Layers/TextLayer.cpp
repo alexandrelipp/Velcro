@@ -181,7 +181,7 @@ void TextLayer::onImGuiRender() {
         _texture.destroy(_vrd->device);
 
         // generate a new atlas with updated params (will recreate the texture)
-        generateAtlasMSDF("../../../core/Assets/Fonts/Roboto/Roboto-Regular.ttf");
+        generateAtlasMSDF(FONT_FILENAME);
 
         // update descriptors with new texture
         VkDescriptorImageInfo imageInfo = {
