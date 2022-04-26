@@ -58,6 +58,8 @@ target_sources(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/ImGuiLayer.h"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/TrueTypeFontLayer.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/TrueTypeFontLayer.h"
+        "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/TextLayer.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/Render/Layers/TextLayer.h"
 
         # CAMERA
         "${CMAKE_CURRENT_LIST_DIR}/Render/Camera/InterfaceCamera.h"

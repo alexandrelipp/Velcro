@@ -69,6 +69,7 @@ add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/glfw" libGLFW)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/glm" libGLM)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/spdlog" libSpdlog)
 add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/assimp" libAssimp)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/msdf-atlas-gen" libMsdf)
 
 # we build freetype dynamically to solve the following problems:
 # 1. Both Assimp and free type depend on zlib. If we link both statically we will get duplicated symbol link error (LNK 2005)
@@ -93,6 +94,7 @@ target_include_directories(${PROJECT_NAME} PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/stbi"
         "${CMAKE_CURRENT_LIST_DIR}/assimp/include"
         "${CMAKE_CURRENT_LIST_DIR}/freetype/include"
+        "${CMAKE_CURRENT_LIST_DIR}/msdf-atlas-gen"
         "${CMAKE_CURRENT_LIST_DIR}"
         "${CMAKE_CURRENT_LIST_DIR}/imgui"
     )
@@ -102,6 +104,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
         spdlog
         assimp
         freetype
+        msdf-atlas-gen
     )
 
 # we could also use the findVulkan cmake command
@@ -114,4 +117,3 @@ endif()
 
 message("Linking with ${Vulkan_LIBRARIES}")
 target_link_libraries(${PROJECT_NAME} PUBLIC ${Vulkan_LIBRARIES})
-

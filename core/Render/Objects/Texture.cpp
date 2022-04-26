@@ -157,8 +157,11 @@ VkImageView Texture::getImageView() {
 
 uint32_t Texture::formatToSize(VkFormat format) {
     switch (format) {
+        case VK_FORMAT_R8G8B8A8_UNORM:
         case VK_FORMAT_R8G8B8A8_SRGB:
             return 4;
+        case VK_FORMAT_R8G8B8_SRGB:
+            return 3;
         case VK_FORMAT_R8_SRGB:
         case VK_FORMAT_R8_UINT:
         case VK_FORMAT_R8_UNORM:
