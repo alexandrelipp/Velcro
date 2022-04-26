@@ -63,7 +63,7 @@ private:
     struct GlyphData{
         ///< glyph box in the atlas. TODO : precompute coords!
         msdf_atlas::Rectangle rect{};
-        ///< Quad plane bounds. Only b is used for now
+        ///< Quad plane bounds. Only b is used for now TODO : probably want to use the other bounds as well. Fix Tf per example
         double l = 0.0, b = 0.0, r = 0.0 ,t = 0.0;
     };
 
