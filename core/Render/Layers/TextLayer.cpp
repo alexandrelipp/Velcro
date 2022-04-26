@@ -92,6 +92,7 @@ void TextLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& p
     if(_chars.empty())
         return;
 
+    // no need to recompute coords every frame. SSBO should also be on device memory
     std::vector<glm::vec2> coords(_chars.size() * 4);
     std::vector<glm::mat4> mvps(_chars.size());
     float offset = 0.f;
@@ -133,9 +134,7 @@ void TextLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& p
     _charMVPs[commandBufferIndex].setData(_vrd, mvps.data(), utils::vectorSizeByte(mvps));
 }
 
-void TextLayer::onEvent(Event& event) {
-
-}
+void TextLayer::onEvent(Event& event) {}
 
 void TextLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) {
     // nothing to do if not chars
@@ -144,6 +143,7 @@ void TextLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t comman
     bindPipelineAndDS(commandBuffer, commandBufferIndex);
     _vertexBuffer.bind(commandBuffer);
     _indexBuffer.bind(commandBuffer);
+    // draw instance (1 instance/char)
     vkCmdDrawIndexed(commandBuffer, 6, _chars.size(), 0, 0, 0);
 }
 
@@ -360,12 +360,12 @@ bool TextLayer::generateAtlasMSDF(const std::string& fontFilename) {
         return false;
     }
 
-
     // Storage for glyph geometry and their coordinates in the atlas
     std::vector<GlyphGeometry> glyphs;
     // FontGeometry is a helper class that loads a set of glyphs from a single font.
     // It can also be used to get additional font metrics, kerning information, etc.
     FontGeometry fontGeometry(&glyphs);
+
     // Load a set of character glyphs:
     // The second argument can be ignored unless you mix different font sizes in one atlas.
     // In the last argument, you can specify a charset other than ASCII.
@@ -376,6 +376,7 @@ bool TextLayer::generateAtlasMSDF(const std::string& fontFilename) {
     const double maxCornerAngle = 3.0;
     for (GlyphGeometry &glyph : glyphs)
         glyph.edgeColoring(&msdfgen::edgeColoringInkTrap, maxCornerAngle, 0);
+
     // TightAtlasPacker class computes the layout of the atlas.
     TightAtlasPacker packer;
 
@@ -401,10 +402,12 @@ bool TextLayer::generateAtlasMSDF(const std::string& fontFilename) {
             BitmapAtlasStorage<byte, 3> // class that stores the atlas bitmap
             // For example, a custom atlas storage class that stores it in VRAM can be used.
     > generator(width, height);
+
     // GeneratorAttributes can be modified to change the generator's default settings.
     GeneratorAttributes attributes;
     generator.setAttributes(attributes);
     generator.setThreadCount(4);
+
     // Generate atlas bitmap
     generator.generate(glyphs.data(), glyphs.size());
 

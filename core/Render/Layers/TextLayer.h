@@ -40,8 +40,8 @@ private:
 private:
     VkRenderPass _renderPass = nullptr; ///< cached render pass for pipeline recreation
     ///< Tex coords of all the chars. NOTE:  Could be on device and no recomputed every frame
-    std::array<HostSSBO, MAX_FRAMES_IN_FLIGHT> _texCoords{};
-    std::array<HostSSBO, MAX_FRAMES_IN_FLIGHT> _charMVPs{}; ///< MVP's of all chars (1 / char)
+    std::array<HostSSBO, MAX_FRAMES_IN_FLIGHT> _texCoords{}; ///< Coords of all char (4 / char)
+    std::array<HostSSBO, MAX_FRAMES_IN_FLIGHT> _charMVPs{};  ///< MVP's of all chars (1 / char)
 
     // renderer objects
     VertexBuffer  _vertexBuffer{};
