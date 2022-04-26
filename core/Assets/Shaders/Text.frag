@@ -29,17 +29,16 @@ float screenPxRange() {
     return max(0.5*dot(unitRange, screenTexSize), 1.0);
 }
 
-vec3 colorD = vec3(0.0);
-
 void main(){
+    // get the distance as the median of the first 3 channel of the texture
     vec3 msd = texture(msdf, texCoord).rgb;
     float sd = median(msd);
-
 #if 0
     float alpha = smoothstep(0.48, 0.52, sd);
     color = vec4(1.0, 1.0, 1.0, alpha);
     color = vec4(1.0);
 #else
+    // TODO : understand what's going on!
     float screenPxDistance = screenPxRange()*(sd - 0.5);
     float opacity = clamp(screenPxDistance + 0.5, 0.0, 1.0);
 
