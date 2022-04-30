@@ -19,7 +19,7 @@
 #include <imgui/imgui.h>
 
 
-Renderer::Renderer() : _camera(1.f),
+Renderer::Renderer(float initialAspectRatio) : _camera(initialAspectRatio),
                        _fpsCounter(0.5f){}
 
 Renderer::~Renderer() {
@@ -218,8 +218,11 @@ VkExtent2D Renderer::getSwapchainExtent() {
 }
 
 void Renderer::onEvent(Event& e) {
-    if (!_imguiFocus)
-        _camera.onEvent(e);
+    // events are not propagated to camera and layers if imgui wants focus
+    if (_imguiFocus)
+        return;
+
+    _camera.onEvent(e);
     for (auto layer : _renderLayers)
         layer->onEvent(e);
 }
