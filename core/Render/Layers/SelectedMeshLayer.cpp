@@ -162,6 +162,7 @@ void SelectedMeshLayer::onEvent(Event& event) {
         }
 
         case Event::Type::MOUSE_PRESSED:
+            // unselect selected entity. TODO : selected mouse hovered entity (if one)
             _selectedEntity = -1;
             break;
 
