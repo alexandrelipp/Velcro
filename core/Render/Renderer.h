@@ -19,7 +19,7 @@
 
 class Renderer {
 public:
-    Renderer();
+    Renderer(float initialAspectRatio);
     ~Renderer();
     bool init();
 

@@ -9,10 +9,9 @@
 #include <imgui.h>
 
 
-Application::Application() {
-    if (_instance != nullptr){
-        throw std::runtime_error("There is already an instance of application");
-    }
+Application::Application() : _renderer(getAspectRatio()){
+    VK_ASSERT(_instance == nullptr, "There is already an instance of the application");
+
     // bind the window event callback to this->onEvent
     _windowData.eventCallback = [this](Event& e) { onEvent(e); };
     if (!init())
@@ -20,11 +19,6 @@ Application::Application() {
     _instance = this;
 
     _renderer.init();
-
-    //_imGuiLayer = new ImGuiLayer();
-    //_layerStack.addLayer(_imGuiLayer);
-    //_editorLayer = new MainLayer();
-    //_layerStack.addLayer(_editorLayer);
 }
 
 

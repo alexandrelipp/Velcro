@@ -158,14 +158,13 @@ void SelectedMeshLayer::onEvent(Event& event) {
                 default:
                     break;
             }
-        }
-        case Event::Type::MOUSE_PRESSED:{
-//            auto mouseButtonPressedEvent = (MouseButtonPressedEvent*)&event;
-//            if (_viewPortHovered && !ImGuizmo::IsOver() && mouseButtonPressedEvent->getMouseButton() == MouseCode::ButtonLeft){
-//                SceneEditor::setSelectedEntity(_hoveredEntity);
-//            }
             break;
         }
+
+        case Event::Type::MOUSE_PRESSED:
+            // unselect selected entity. TODO : selected mouse hovered entity (if one)
+            _selectedEntity = -1;
+            break;
 
         default:
             break;
