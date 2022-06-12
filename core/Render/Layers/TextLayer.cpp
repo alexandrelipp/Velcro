@@ -161,7 +161,10 @@ void TextLayer::onImGuiRender() {
 
     if (ImGui::InputText("Text", buffer, sizeof(buffer))){
         _chars.clear();
+        // decode buffer into unicode vector
         msdf_atlas::utf8Decode(_chars, buffer);
+
+        // regenerate atlas if char is not present
         bool needRegen = false;
         for (auto c : _chars){
             if (!_charMap.contains(c)) {
