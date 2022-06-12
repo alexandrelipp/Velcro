@@ -95,8 +95,8 @@ MeshComponent& Scene::createMesh(int entityID){
         return _meshes[meshesMap[entityID]];
     }
     // create new mesh
-    int newMeshID = _meshTransforms.size();
-    _meshTransforms.emplace_back(1.f);
+    int newMeshID = _meshes.size();
+    _worldTransforms[(uint32_t)RenderNode::MESH].emplace_back(1.f);
     _meshes.emplace_back();
     _meshes.back().meshIndex = newMeshID;
 
@@ -162,10 +162,13 @@ void Scene::propagateTransforms() {
             // compute world transform using parent
             tc.worldTransform = _transforms[hie.parent].worldTransform * tc.localTransform;
 
-            // update the mesh transform at well if it exists
-            auto it = _renderNodesMap[(uint32_t)RenderNode::MESH].find(entity);
-            if (it != _renderNodesMap[(uint32_t)RenderNode::MESH].end()){
-                _meshTransforms[it->second] = tc.worldTransform;
+            // update the world transform at well if it exists
+            for (uint32_t i = 0; i < (uint32_t)RenderNode::COUNT; ++i){
+                auto it = _renderNodesMap[i].find(entity);
+                if (it != _renderNodesMap[i].end()){
+                    _worldTransforms[i][it->second] = tc.worldTransform;
+                    break;
+                }
             }
         }
         _changedTransforms[i].clear();
@@ -196,9 +199,11 @@ const std::vector<MeshComponent>& Scene::getMeshes() {
     return _meshes;
 }
 
-const std::vector<glm::mat4>& Scene::getMeshTransforms() {
-    return _meshTransforms;
+const std::vector<glm::mat4>& Scene::getWorldTransforms(RenderNode type) {
+    VK_ASSERT(type < RenderNode::COUNT, "Unnvalid type");
+    return _worldTransforms[(uint32_t)type];
 }
+
 
 const std::vector<Material>& Scene::getMaterials() {
     return _materials;

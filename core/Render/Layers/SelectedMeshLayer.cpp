@@ -16,7 +16,7 @@
 // The currently used produces bad results for meshes with transforms not centered at the mesh center. The transform of the mesh
 // could corrected to be at its center : https://github.com/alexandrelipp/Velcro/issues/22
 
-SelectedMeshLayer::SelectedMeshLayer(VkRenderPass renderPass, const Props& props) : _scene(props.scene) {
+SelectedMeshLayer::SelectedMeshLayer(VkRenderPass renderPass, const Props& props) {
     // init the uniform buffers
     for (auto& buffer : _vpUniformBuffers)
         buffer.init(_vrd->device, _vrd->physicalDevice, sizeof(glm::mat4));
@@ -255,9 +255,11 @@ void SelectedMeshLayer::onImGuiRender() {
     if (_selectedEntity == -1)
         return;
 
+    std::shared_ptr<Scene> scene = getCurrentScene();
+
     // display drag floats to control selected entity transform
     ImGui::Begin("Selected");
-    auto& transform = _scene->getTransform(_selectedEntity);
+    auto& transform = scene->getTransform(_selectedEntity);
     bool needUpdate = false;
     needUpdate |= ImGui::DragFloat3("Position", glm::value_ptr(transform.position), 0.01f);
     needUpdate |= ImGui::DragFloat3("Rotation", glm::value_ptr(transform.rotation), 0.01f);
@@ -271,13 +273,13 @@ void SelectedMeshLayer::onImGuiRender() {
     if (ImGui::DragFloat("##Uniform", &factor, 0.01f)){
         transform.scale += transform.scale * (factor - transform.scale.x);
         transform.needUpdateModelMatrix = true;
-        _scene->setDirtyTransform(_selectedEntity);
+        scene->setDirtyTransform(_selectedEntity);
     }
 
     // notify the scene if the selected entity transform has changed
     if (needUpdate) {
         transform.needUpdateModelMatrix = true;
-        _scene->setDirtyTransform(_selectedEntity);
+        scene->setDirtyTransform(_selectedEntity);
     }
     ImGui::End();
 
@@ -295,12 +297,12 @@ void SelectedMeshLayer::setSelectedEntity(int selectedEntity) {
         return;
 
     // append all mesh components that are child of the selected entity
-    _scene->traverseRecursive(_selectedEntity, [this](int entity){
-        MeshComponent* mesh = _scene->getMesh(entity);
+    getCurrentScene()->traverseRecursive(_selectedEntity, [this](int entity){
+        MeshComponent* mesh = getCurrentScene()->getMesh(entity);
         if (mesh != nullptr)
             _selectedMeshes.push_back(mesh);
     });
-    SPDLOG_INFO("Selected mesh name {}", _scene->getName(selectedEntity));
+    SPDLOG_INFO("Selected mesh name {}", getCurrentScene()->getName(selectedEntity));
 }
 
 void SelectedMeshLayer::displayHierarchy(int entity) {
@@ -312,13 +314,15 @@ void SelectedMeshLayer::displayHierarchy(int entity) {
     if (entity == _selectedEntity)
         flags |= ImGuiTreeNodeFlags_Selected | ImGuiTreeNodeFlags_DefaultOpen;
 
+    std::shared_ptr<Scene> scene = getCurrentScene();
+
     // get tag and hierarchy
-    HierarchyComponent& hc = _scene->getHierarchy(entity);
+    HierarchyComponent& hc = scene->getHierarchy(entity);
     if (hc.firstChild == -1)
         flags |= ImGuiTreeNodeFlags_Leaf;
 
     // check if the node is opened and if it's the selected entity
-    bool opened = ImGui::TreeNodeEx((void*) entity, flags, _scene->getName(entity).c_str());
+    bool opened = ImGui::TreeNodeEx((void*) entity, flags, scene->getName(entity).c_str());
 
     ImGui::PushID((int)entity);
 
@@ -330,7 +334,7 @@ void SelectedMeshLayer::displayHierarchy(int entity) {
 
     // recursively traverse all the children if the node is opened
     if (opened) {
-        for (int e = hc.firstChild; e != -1; e = _scene->getHierarchy(e).nextSibling)
+        for (int e = hc.firstChild; e != -1; e = scene->getHierarchy(e).nextSibling)
             displayHierarchy(e);
         ImGui::TreePop();
     }
@@ -360,8 +364,10 @@ void SelectedMeshLayer::displayGuizmo(int selectedEntity) {
         snapValue = snap;
     }
 
+    std::shared_ptr<Scene> scene = getCurrentScene();
+
     // get the transform
-    auto& ntc =  _scene->getTransform(selectedEntity);
+    auto& ntc =  scene->getTransform(selectedEntity);
     glm::mat4 transform = ntc.worldTransform;
 
     // the Y is flipped for vulkan (see camera!), but ImGuizmo does not expect it to be flipped, so we flip it back!
@@ -374,7 +380,7 @@ void SelectedMeshLayer::displayGuizmo(int selectedEntity) {
 
 
     if (ImGuizmo::IsUsing()) {
-        auto& hc = _scene->getHierarchy(selectedEntity);
+        auto& hc = scene->getHierarchy(selectedEntity);
 
         // updated local transform
         glm::mat4 localTransform;
@@ -385,8 +391,8 @@ void SelectedMeshLayer::displayGuizmo(int selectedEntity) {
         }
             // if we have a parent, we need to take in count its world transform
         else {
-            auto& parentH = _scene->getHierarchy(hc.parent);
-            auto& parentTC = _scene->getTransform(hc.parent);
+            auto& parentH = scene->getHierarchy(hc.parent);
+            auto& parentTC = scene->getTransform(hc.parent);
             localTransform = glm::inverse(parentTC.worldTransform) * transform;
         }
 
@@ -400,7 +406,7 @@ void SelectedMeshLayer::displayGuizmo(int selectedEntity) {
         ntc.needUpdateModelMatrix = true;
 
         // notify the scene about the change
-        _scene->setDirtyTransform(selectedEntity);
+        scene->setDirtyTransform(selectedEntity);
     }
 }
 

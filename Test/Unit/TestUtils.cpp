@@ -6,9 +6,6 @@
 #include <core/Utils/UtilsTemplate.h>
 #include <core/Utils/UtilsVulkan.h>
 #include <core/Utils/UtilsMath.h>
-#include <msdf-atlas-gen/utf8.h>
-
-#include <string>
 
 TEST_CASE( "VectorSizeByte", "[UtilsTemplate]" ) {
     std::vector<int> ok = {1, 2, 3};
@@ -51,27 +48,3 @@ TEST_CASE( "IsFeaturesSupported", "[UtilsVulkan]") {
     REQUIRE(utils::isFeaturesSupported({VK_TRUE, VK_TRUE, VK_TRUE}, {VK_FALSE, VK_FALSE, VK_TRUE, VK_FALSE, VK_FALSE}));
     REQUIRE(utils::isFeaturesSupported({}, {}));
 }
-
-TEST_CASE( "Stub", "[UtilsVulkan]"){
-    using namespace std;
-    string text = "今!é123";
-    //for(size_t i = 0; i < text.length();)
-//    {
-//        int cplen = 1;
-//        if((text[i] & 0xf8) == 0xf0) cplen = 4;
-//        else if((text[i] & 0xf0) == 0xe0) cplen = 3;
-//        else if((text[i] & 0xe0) == 0xc0) cplen = 2;
-//        if((i + cplen) > text.length()) cplen = 1;
-//
-//        cout << text.substr(i, cplen) << endl;
-//        i += cplen;
-//    }
-
-    std::vector<msdf_atlas::unicode_t> unicodes;
-    msdf_atlas::utf8Decode(unicodes, text.c_str());
-    for (auto u : unicodes)
-        std::cout << u << std::endl;
-
-
-
-};

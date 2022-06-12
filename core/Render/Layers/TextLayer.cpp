@@ -88,6 +88,7 @@ void TextLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& p
         _textureId = (ImTextureID)ImGui_ImplVulkan_AddTexture(_texture.getSampler(), _texture.getImageView(),
                                                               VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL);
 
+    //auto& texts = getCurrentScene()->get
     // nothing to do if not chars
     if(_chars.empty())
         return;

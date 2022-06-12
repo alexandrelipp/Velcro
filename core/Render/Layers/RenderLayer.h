@@ -7,6 +7,7 @@
 #include "../VulkanRenderDevice.hpp"
 #include "../../events/Event.h"
 #include "../Factory/FactoryVulkan.h"
+#include "../../Scene/Scene.h"
 
 #include <vulkan/vulkan_core.h>
 #include <glm/glm.hpp>
@@ -24,6 +25,8 @@ public:
     virtual void fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex) = 0;
     virtual void onImGuiRender() = 0;
 
+    static std::shared_ptr<Scene> getCurrentScene();
+
 protected:
     explicit RenderLayer();
 
@@ -33,7 +36,7 @@ protected:
     void bindPipelineAndDS(VkCommandBuffer commandBuffer, uint32_t commandBufferIndex);
 
 
-public:
+protected:
     static inline VulkanRenderDevice* _vrd = nullptr;
     static inline VkExtent2D _swapchainExtent{};
 
@@ -45,6 +48,9 @@ public:
     // graphics pipeline
     VkPipelineLayout _pipelineLayout = nullptr;
     VkPipeline _graphicsPipeline = nullptr;
+
+private:
+    static inline std::shared_ptr<Scene> _currentScene = nullptr;
 };
 
 
