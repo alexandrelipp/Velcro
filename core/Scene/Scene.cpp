@@ -85,6 +85,7 @@ MeshComponent* Scene::getMesh(int entity) {
     return &_meshes[it->second];
 }
 
+// TODO : make more general for other renderNode ??
 /// creates a mesh for the given entityID and returns the created mesh
 MeshComponent& Scene::createMesh(int entityID){
     auto& meshesMap = _renderNodesMap[(uint32_t)RenderNode::MESH];
