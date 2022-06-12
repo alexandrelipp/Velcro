@@ -66,10 +66,15 @@ private:
     std::vector<TransformComponent> _transforms;
     std::vector<std::string> _entityNames;
 
-    /// map of entity to meshID
-    std::unordered_map<int, int> _meshesMap;
-    std::vector<glm::mat4> _meshTransforms; ///< transforms to be uploaded to gpu
+    /// map of entity to renderNodeID
+    std::array<std::unordered_map<int, int>, (uint32_t)RenderNode::COUNT> _renderNodesMap;
+
+
     std::vector<MeshComponent> _meshes;
+    std::vector<TextComponent> _texts;
+
+    // TODO : array? one vector/renderNode ?
+    std::vector<glm::mat4> _meshTransforms; ///< transforms to be uploaded to gpu
 
     ///< vector of material data and material name. Index in vector corresponds to the meshes material index
     std::vector<Material> _materials;

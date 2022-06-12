@@ -177,7 +177,7 @@ bool Renderer::init() {
     _renderLayers.push_back(std::make_shared<TextLayer>(_renderPass));
 
     // push flipbook layer before last to make it in front of models
-    _renderLayers.push_back(std::make_shared<FlipbookLayer>(_renderPass));
+    //renderLayers.push_back(std::make_shared<FlipbookLayer>(_renderPass));
 
     // finish with imgui layer (overlay)
     _imGuiLayer = std::make_shared<ImGuiLayer>(_renderPass);

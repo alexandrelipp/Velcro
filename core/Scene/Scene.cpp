@@ -79,18 +79,20 @@ TransformComponent& Scene::getTransform(int entity) {
 }
 
 MeshComponent* Scene::getMesh(int entity) {
-    auto it = _meshesMap.find(entity);
-    if (it == _meshesMap.end())
+    auto it = _renderNodesMap[(uint32_t)RenderNode::MESH].find(entity);
+    if (it == _renderNodesMap[(uint32_t)RenderNode::MESH].end())
         return nullptr;
     return &_meshes[it->second];
 }
 
 /// creates a mesh for the given entityID and returns the created mesh
 MeshComponent& Scene::createMesh(int entityID){
+    auto& meshesMap = _renderNodesMap[(uint32_t)RenderNode::MESH];
+
     // check if the mesh already exists
-    if (_meshesMap.find(entityID) != _meshesMap.end()){
+    if (meshesMap.find(entityID) != meshesMap.end()){
         SPDLOG_INFO("Mesh already exists\n");
-        return _meshes[_meshesMap[entityID]];
+        return _meshes[meshesMap[entityID]];
     }
     // create new mesh
     int newMeshID = _meshTransforms.size();
@@ -99,7 +101,7 @@ MeshComponent& Scene::createMesh(int entityID){
     _meshes.back().meshIndex = newMeshID;
 
     // associate entity with new mesh
-    _meshesMap[entityID] = newMeshID;
+    meshesMap[entityID] = newMeshID;
     return _meshes.back();
 }
 
@@ -161,8 +163,8 @@ void Scene::propagateTransforms() {
             tc.worldTransform = _transforms[hie.parent].worldTransform * tc.localTransform;
 
             // update the mesh transform at well if it exists
-            auto it = _meshesMap.find(entity);
-            if (it != _meshesMap.end()){
+            auto it = _renderNodesMap[(uint32_t)RenderNode::MESH].find(entity);
+            if (it != _renderNodesMap[(uint32_t)RenderNode::MESH].end()){
                 _meshTransforms[it->second] = tc.worldTransform;
             }
         }

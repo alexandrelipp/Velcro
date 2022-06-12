@@ -28,6 +28,8 @@ public:
 private:
     void createGraphicsPipeline();
 
+    void regenerateTexture();
+
     /// Generates a multi-channel signed distance field using the given filename and the atlas params
     bool generateAtlasMSDF(const std::string& fontFilename);
 
@@ -70,5 +72,6 @@ private:
     ///< map of unicode -> glyph Data. Could be a vector if all glyphs unicode are continuous and starting from 0 (not the case)
     std::unordered_map<msdfgen::unicode_t, GlyphData> _charMap;
     msdfgen::FontMetrics _fontMetrics{}; ///< Metrics about the font. Not currently used. Remove?
+    msdf_atlas::Charset _charset = msdf_atlas::Charset::ASCII; ///< Represents all char currently in atlas/used
 };
 
