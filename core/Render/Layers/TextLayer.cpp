@@ -88,6 +88,7 @@ void TextLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& p
         _textureId = (ImTextureID)ImGui_ImplVulkan_AddTexture(_texture.getSampler(), _texture.getImageView(),
                                                               VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL);
 
+    //auto& texts = getCurrentScene()->get
     // nothing to do if not chars
     if(_chars.empty())
         return;
@@ -99,7 +100,7 @@ void TextLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& p
     for(uint32_t i = 0; i < _chars.size(); ++i){
         auto it = _charMap.find(_chars[i]);
         if (it == _charMap.end()){
-            SPDLOG_ERROR("Glyph with unicode {} has not been generated", i);
+            SPDLOG_ERROR("Glyph with unicode {} has not been generated", it->first);
             continue;
         }
         auto& rect = it->second.rect;
@@ -157,12 +158,22 @@ void TextLayer::onImGuiRender() {
     for (uint32_t i = 0; i < _chars.size(); ++i){
         buffer[i] = _chars[i];
     }
+
     if (ImGui::InputText("Text", buffer, sizeof(buffer))){
-        auto size = strlen(buffer);
         _chars.clear();
-        for (uint32_t i = 0; i < size; ++i){
-            _chars.push_back(buffer[i]);
+        // decode buffer into unicode vector
+        msdf_atlas::utf8Decode(_chars, buffer);
+
+        // regenerate atlas if char is not present
+        bool needRegen = false;
+        for (auto c : _chars){
+            if (!_charMap.contains(c)) {
+                _charset.add(c);
+                needRegen = true;
+            }
         }
+        if (needRegen)
+            regenerateTexture();
     }
 
     // scale of the chars
@@ -176,35 +187,7 @@ void TextLayer::onImGuiRender() {
     if (ImGui::Button("Apply")){
         SPDLOG_INFO("Updating texture info");
 
-        // destroy old msdf after waiting for idle
-        vkDeviceWaitIdle(_vrd->device);
-        _texture.destroy(_vrd->device);
-
-        // generate a new atlas with updated params (will recreate the texture)
-        generateAtlasMSDF(FONT_FILENAME);
-
-        // update descriptors with new texture
-        VkDescriptorImageInfo imageInfo = {
-            .sampler = _texture.getSampler(),
-            .imageView = _texture.getImageView(),
-            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-        };
-        for (auto& descriptorSet : _descriptorSets) {
-            VkWriteDescriptorSet writeDescriptorSet = {
-                    .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-                    .dstSet = descriptorSet,
-                    .dstBinding = 2,
-                    .dstArrayElement = 0,
-                    .descriptorCount = 1,
-                    .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-                    .pImageInfo = &imageInfo
-            };
-            vkUpdateDescriptorSets(_vrd->device, 1, &writeDescriptorSet, 0, nullptr);
-        }
-
-        // FIXME : This is a memory leak. The older descriptor never gets deallocated. Would probably require an imgui fix
-        _textureId = (ImTextureID)ImGui_ImplVulkan_AddTexture(_texture.getSampler(), _texture.getImageView(),
-                                                              VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL);
+        regenerateTexture();
 
         // destroy pipeline and create a new one
         vkDestroyPipeline(_vrd->device, _graphicsPipeline, nullptr);
@@ -259,6 +242,39 @@ void TextLayer::createGraphicsPipeline() {
     };
     _graphicsPipeline = Factory::createGraphicsPipeline(_vrd->device, _swapchainExtent, _renderPass, _pipelineLayout, props);
 }
+
+void TextLayer::regenerateTexture() {
+    // destroy old msdf after waiting for idle
+    vkDeviceWaitIdle(_vrd->device);
+    _texture.destroy(_vrd->device);
+
+    // generate a new atlas with updated params (will recreate the texture)
+    generateAtlasMSDF(FONT_FILENAME);
+
+    // update descriptors with new texture
+    VkDescriptorImageInfo imageInfo = {
+            .sampler = _texture.getSampler(),
+            .imageView = _texture.getImageView(),
+            .imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    };
+    for (auto& descriptorSet : _descriptorSets) {
+        VkWriteDescriptorSet writeDescriptorSet = {
+                .sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                .dstSet = descriptorSet,
+                .dstBinding = 2,
+                .dstArrayElement = 0,
+                .descriptorCount = 1,
+                .descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                .pImageInfo = &imageInfo
+        };
+        vkUpdateDescriptorSets(_vrd->device, 1, &writeDescriptorSet, 0, nullptr);
+    }
+
+    // FIXME : This is a memory leak. The older descriptor never gets deallocated. Would probably require an imgui fix
+    _textureId = (ImTextureID)ImGui_ImplVulkan_AddTexture(_texture.getSampler(), _texture.getImageView(),
+                                                          VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL);
+}
+
 
 
 bool TextLayer::generateAtlasSDF(const std::string& fontFilename) {
@@ -370,7 +386,7 @@ bool TextLayer::generateAtlasMSDF(const std::string& fontFilename) {
     // The second argument can be ignored unless you mix different font sizes in one atlas.
     // In the last argument, you can specify a charset other than ASCII.
     // To load specific glyph indices, use loadGlyphs instead.
-    fontGeometry.loadCharset(font, 1.0, Charset::ASCII);
+    fontGeometry.loadCharset(font, 1.0, _charset);
 
     // Apply MSDF edge coloring. See edge-coloring.h for other coloring strategies.
     const double maxCornerAngle = 3.0;
@@ -424,8 +440,8 @@ bool TextLayer::generateAtlasMSDF(const std::string& fontFilename) {
         };
 
         // cast code point to a char to print it. Will only work for ascii set
-        char c = glyph.getCodepoint();
-        SPDLOG_INFO("Char {} bound l {:03.2f} b {:03.2f} r {:03.2f} t {:03.2f} """, c, l, b, r, t);
+        uint32_t c = glyph.getCodepoint();
+        SPDLOG_INFO("Unicode {} bound l {:03.2f} b {:03.2f} r {:03.2f} t {:03.2f} """, c, l, b, r, t);
     }
 
     // get bitmap from generator

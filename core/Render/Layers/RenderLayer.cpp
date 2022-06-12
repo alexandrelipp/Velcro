@@ -12,6 +12,7 @@ RenderLayer::RenderLayer() {
         Renderer* renderer = Application::getApp()->getRenderer();
         _vrd = renderer->getRenderDevice();
         _swapchainExtent = renderer->getSwapchainExtent();
+        _currentScene = std::make_shared<Scene>("NanoWorld");
     }
 }
 
@@ -34,4 +35,8 @@ void RenderLayer::bindPipelineAndDS(VkCommandBuffer commandBuffer, uint32_t comm
     vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _graphicsPipeline);
     vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, _pipelineLayout,
                             0, 1, &_descriptorSets[commandBufferIndex], 0, nullptr);
+}
+
+std::shared_ptr<Scene> RenderLayer::getCurrentScene() {
+    return _currentScene;
 }

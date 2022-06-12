@@ -79,27 +79,30 @@ TransformComponent& Scene::getTransform(int entity) {
 }
 
 MeshComponent* Scene::getMesh(int entity) {
-    auto it = _meshesMap.find(entity);
-    if (it == _meshesMap.end())
+    auto it = _renderNodesMap[(uint32_t)RenderNode::MESH].find(entity);
+    if (it == _renderNodesMap[(uint32_t)RenderNode::MESH].end())
         return nullptr;
     return &_meshes[it->second];
 }
 
+// TODO : make more general for other renderNode ??
 /// creates a mesh for the given entityID and returns the created mesh
 MeshComponent& Scene::createMesh(int entityID){
+    auto& meshesMap = _renderNodesMap[(uint32_t)RenderNode::MESH];
+
     // check if the mesh already exists
-    if (_meshesMap.find(entityID) != _meshesMap.end()){
+    if (meshesMap.find(entityID) != meshesMap.end()){
         SPDLOG_INFO("Mesh already exists\n");
-        return _meshes[_meshesMap[entityID]];
+        return _meshes[meshesMap[entityID]];
     }
     // create new mesh
-    int newMeshID = _meshTransforms.size();
-    _meshTransforms.emplace_back(1.f);
+    int newMeshID = _meshes.size();
+    _worldTransforms[(uint32_t)RenderNode::MESH].emplace_back(1.f);
     _meshes.emplace_back();
     _meshes.back().meshIndex = newMeshID;
 
     // associate entity with new mesh
-    _meshesMap[entityID] = newMeshID;
+    meshesMap[entityID] = newMeshID;
     return _meshes.back();
 }
 
@@ -160,10 +163,13 @@ void Scene::propagateTransforms() {
             // compute world transform using parent
             tc.worldTransform = _transforms[hie.parent].worldTransform * tc.localTransform;
 
-            // update the mesh transform at well if it exists
-            auto it = _meshesMap.find(entity);
-            if (it != _meshesMap.end()){
-                _meshTransforms[it->second] = tc.worldTransform;
+            // update the world transform at well if it exists
+            for (uint32_t i = 0; i < (uint32_t)RenderNode::COUNT; ++i){
+                auto it = _renderNodesMap[i].find(entity);
+                if (it != _renderNodesMap[i].end()){
+                    _worldTransforms[i][it->second] = tc.worldTransform;
+                    break;
+                }
             }
         }
         _changedTransforms[i].clear();
@@ -194,9 +200,11 @@ const std::vector<MeshComponent>& Scene::getMeshes() {
     return _meshes;
 }
 
-const std::vector<glm::mat4>& Scene::getMeshTransforms() {
-    return _meshTransforms;
+const std::vector<glm::mat4>& Scene::getWorldTransforms(RenderNode type) {
+    VK_ASSERT(type < RenderNode::COUNT, "Unnvalid type");
+    return _worldTransforms[(uint32_t)type];
 }
+
 
 const std::vector<Material>& Scene::getMaterials() {
     return _materials;

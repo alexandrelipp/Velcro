@@ -21,11 +21,28 @@ struct HierarchyComponent {
     int nextSibling = -1;
 };
 
+enum class RenderNode{
+    MESH = 0,
+    TEXT,
+    COUNT
+};
+
+//TODO : rename to mesh node?
 struct MeshComponent {
     uint32_t firstVertexIndex = 0; ///< Index in the index buffer of the first vertex
     uint32_t indexCount = 0;       ///< Number of indices
     uint32_t meshIndex = 0;        ///< Index of the mesh in the scene
     uint32_t materialIndex = 0;    ///< Index of the material (assimp)
+};
+
+struct TextComponent {
+    std::string text;
+    glm::vec4   color;
+    // glm::vec4 outlineColor;
+    // glm::vec4 background color
+    // glm::vec4 borderColor
+    // float border thickness
+    // float rounding
 };
 
 struct Material {

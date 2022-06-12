@@ -17,7 +17,6 @@
 class SelectedMeshLayer : public RenderLayer {
 public:
     struct Props{
-        std::shared_ptr<Scene> scene;
         DeviceSSBO vertices;
         DeviceSSBO indices;
         std::array<HostSSBO, MAX_FRAMES_IN_FLIGHT> meshTransformBuffers{};
@@ -45,7 +44,6 @@ private:
     // Buffers
     std::array<UniformBuffer, MAX_FRAMES_IN_FLIGHT> _vpUniformBuffers{};
     VkPushConstantRange _scaleFactor{};
-    std::shared_ptr<Scene> _scene = nullptr;
 
     std::vector<MeshComponent*> _selectedMeshes;
     int _selectedEntity = -1;

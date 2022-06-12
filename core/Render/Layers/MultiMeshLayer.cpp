@@ -13,7 +13,7 @@
 
 
 MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
-    // static assert making sure no padding is added to our struct, or else SSBO will be wrong (does no expect padding)
+    // static assert making sure no padding is added to our struct, or else SSBO will be wrong (does not expect padding)
     static_assert(sizeof(Material) ==  sizeof(Material::ambientColor) +
                                        sizeof(Material::diffuseColor) +
                                        sizeof(Material::specularColor));
@@ -22,28 +22,28 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
     for (auto& buffer : _vpUniformBuffers)
         buffer.init(_vrd->device, _vrd->physicalDevice, sizeof(glm::mat4));
 
-    _scene = std::make_shared<Scene>("NanoWorld");
+    std::shared_ptr<Scene> scene = getCurrentScene();
     //FactoryModel::importFromFile("../../../core/Assets/Models/Nano/nanosuit.obj", _scene);
     //FactoryModel::importFromFile("../../../core/Assets/Models/utahTeapot.fbx", _scene);
     //FactoryModel::importFromFile("../../../core/Assets/Models/engine.fbx", _scene);
     // https://sketchfab.com/3d-models/low-poly-truck-car-drifter-f3750246b6564607afbefc61cb1683b1
 #define DRIFTER
 #ifdef DRIFTER
-    FactoryModel::importFromFile("../../../core/Assets/Models/Drifter/source/Jeep_done.fbx", _scene);
+    FactoryModel::importFromFile("../../../core/Assets/Models/Drifter/source/Jeep_done.fbx", scene);
     // nice little model but the default scale is stupid
-    auto& rootTransform = _scene->getTransform(1);
+    auto& rootTransform = scene->getTransform(1);
     rootTransform.scale *= 0.01f;
     rootTransform.needUpdateModelMatrix = true;
-    _scene->setDirtyTransform(1);
+    scene->setDirtyTransform(1);
 #endif
 
-    FactoryModel::importFromFile("../../../core/Assets/Models/Bell Huey.fbx", _scene);
+    FactoryModel::importFromFile("../../../core/Assets/Models/Bell Huey.fbx", scene);
     //FactoryModel::importFromFile("../../../core/Assets/Models/duck/scene.gltf", _scene);
 
     static_assert(sizeof(Vertex) == sizeof(Vertex::position) + sizeof(Vertex::normal) + sizeof(Vertex::uv));
 
-    auto [vertices, vtxSize] = _scene->getVerticesData();
-    auto [indices, idxSize] = _scene->getIndicesData();
+    auto [vertices, vtxSize] = scene->getVerticesData();
+    auto [indices, idxSize] = scene->getIndicesData();
 
     // init the vertices ssbo
     _vertices.init(_vrd, vtxSize, vertices);
@@ -56,7 +56,7 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
 
     // add all meshes as indirect commands
     std::vector<VkDrawIndirectCommand> indirectCommands;
-    const auto& meshes = _scene->getMeshes();
+    const auto& meshes = scene->getMeshes();
     for (uint32_t i = 0; i < meshes.size(); ++i){
         indirectCommands.push_back({
                .vertexCount = meshes[i].indexCount,
@@ -80,7 +80,7 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
     }
 
     // init the materials buffer
-    const auto& materials = _scene->getMaterials();
+    const auto& materials = scene->getMaterials();
     _materialsSSBO.init(_vrd, utils::vectorSizeByte(materials), (void*)materials.data());
 
     // init the statue texture
@@ -99,7 +99,6 @@ MultiMeshLayer::MultiMeshLayer(VkRenderPass renderPass) {
 
     // create the selected mesh layer
     SelectedMeshLayer::Props selectedMeshProps = {
-        .scene = _scene,
         .vertices = _vertices,
         .indices = _indices,
         .meshTransformBuffers = _meshTransformBuffers
@@ -137,14 +136,14 @@ void MultiMeshLayer::fillCommandBuffer(VkCommandBuffer commandBuffer, uint32_t c
 
     // render
     vkCmdDrawIndirect(commandBuffer, _indirectCommandBuffer.getBuffer(), 0,
-                      _scene->getMeshes().size(), sizeof(VkDrawIndirectCommand));
+                      getCurrentScene()->getMeshes().size(), sizeof(VkDrawIndirectCommand));
 }
 
 void MultiMeshLayer::update(float dt, uint32_t commandBufferIndex, const glm::mat4& pv) {
-    _scene->propagateTransforms();
+    getCurrentScene()->propagateTransforms();
     glm::mat4 nec = pv; // TODO : necessary??
     VK_ASSERT(_vpUniformBuffers[commandBufferIndex].setData(_vrd->device, glm::value_ptr(nec), sizeof(pv)), "Failed to dat");
-    const auto& transforms = _scene->getMeshTransforms();
+    const auto& transforms = getCurrentScene()->getWorldTransforms(RenderNode::MESH);
     _meshTransformBuffers[commandBufferIndex].setData(_vrd, (void*)transforms.data(), utils::vectorSizeByte(transforms));
 }
 

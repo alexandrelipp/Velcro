@@ -47,6 +47,7 @@ public:
 
     void traverseRecursive(int entity, std::function<void(int entt)> foo);
 
+    // TODO : remove these 2 methods
     /// pair of vertex* / size(in bytes)
     std::pair<Vertex*, uint32_t> getVerticesData();
 
@@ -54,8 +55,9 @@ public:
     std::pair<uint32_t*, uint32_t> getIndicesData();
 
     /// return pair of transform* / size(in bytes)
-    const std::vector<glm::mat4>& getMeshTransforms();
+    const std::vector<glm::mat4>& getWorldTransforms(RenderNode type);
 
+    const std::vector<TextComponent>& getTexts();
     const std::vector<MeshComponent>& getMeshes();
     const std::vector<Material>& getMaterials();
 
@@ -66,10 +68,13 @@ private:
     std::vector<TransformComponent> _transforms;
     std::vector<std::string> _entityNames;
 
-    /// map of entity to meshID
-    std::unordered_map<int, int> _meshesMap;
-    std::vector<glm::mat4> _meshTransforms; ///< transforms to be uploaded to gpu
+    /// map of entity to renderNodeID
+    std::array<std::unordered_map<int, int>, (uint32_t)RenderNode::COUNT> _renderNodesMap;
+
     std::vector<MeshComponent> _meshes;
+    std::vector<TextComponent> _texts;
+
+    std::array<std::vector<glm::mat4>, (uint32_t)RenderNode::COUNT> _worldTransforms; ///< transforms to be uploaded to gpu
 
     ///< vector of material data and material name. Index in vector corresponds to the meshes material index
     std::vector<Material> _materials;

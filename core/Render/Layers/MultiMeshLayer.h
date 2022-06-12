@@ -41,9 +41,6 @@ private:
 
     VkPushConstantRange _cameraPosPC{};
 
-    // Scene
-    std::shared_ptr<Scene> _scene = nullptr;
-
     ///< Selected mesh layer
     std::shared_ptr<SelectedMeshLayer> _selectedMeshLayer = nullptr;
 
